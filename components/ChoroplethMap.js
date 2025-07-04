@@ -8,7 +8,7 @@ if (typeof window !== 'undefined') {
   require('leaflet/dist/leaflet.css')
 }
 
-const colors = ['#ff0a0a', '#f2ce02', '#ebff0a', '#85e62c', '#209c05']
+const colors = ['#209c05', '#85e62c', '#ebff0a', '#f2ce02', '#ff0a0a']
 
 // Fungsi Jenks Natural Breaks untuk membagi data ke n_classes
 function jenks(data, n_classes) {
@@ -52,7 +52,7 @@ function jenks(data, n_classes) {
   return kclass
 }
 
-export default function ChoroplethMap({ geojson, hazard, period, model }) {
+export default function ChoroplethMap({ geojson, hazard, model }) {
   const mapEl = useRef(null)
   const mapRef = useRef(null)
   const layerRef = useRef(null)
@@ -85,14 +85,14 @@ export default function ChoroplethMap({ geojson, hazard, period, model }) {
   // Render choropleth + popup + legend setiap data berubah
   useEffect(() => {
     const map = mapRef.current
-    if (!map || !geojson || !hazard || !period || !model) return
+    if (!map || !geojson || !hazard || !model) return
 
     // Hapus layer & legend lama
     if (layerRef.current) layerRef.current.remove()
     if (legendRef.current) map.removeControl(legendRef.current)
 
     // siapkan Jenks pada data geojson
-    const metric = `aal_${hazard}_${period}_${model === 'total' ? 'total' : model}`
+    const metric = `aal_${hazard}_${model === 'total' ? 'total' : model}`
     const vals = geojson.features.map(f => f.properties[metric] || 0)
     const grades = jenks(vals, 5).sort((a, b) => a - b)
 
@@ -193,7 +193,7 @@ export default function ChoroplethMap({ geojson, hazard, period, model }) {
       lc.style.bottom = '20px'   // naikkan 30px dari bottom
       lc.style.left   = '20px'   // geser 30px dari kiri
     }
-  }, [geojson, hazard, period, model])
+  }, [geojson, hazard, model])
 
   return <div ref={mapEl} id="map" className="h-[480px] w-full rounded-lg" />
 }

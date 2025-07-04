@@ -19,7 +19,6 @@ const DirectLossMap     = dynamic(() => import('../components/DirectLossMap'), {
 export default function Calculation() {
   // Choropleth state
   const [hazard, setHazard] = useState('')
-  const [period, setPeriod] = useState('')
   const [model, setModel]   = useState('')
   const { geojson: aalGeojson } = useAALProvinsi()
 
@@ -59,8 +58,6 @@ export default function Calculation() {
             <FilterChoropleth
               hazard={hazard}
               setHazard={setHazard}
-              period={period}
-              setPeriod={setPeriod}
               model={model}
               setModel={setModel}
             />
@@ -68,7 +65,6 @@ export default function Calculation() {
               <ChoroplethMap
                 geojson={aalGeojson}
                 hazard={hazard}
-                period={period}
                 model={model}
               />
             </div>

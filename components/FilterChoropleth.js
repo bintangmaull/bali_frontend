@@ -1,12 +1,12 @@
 // components/FilterChoropleth.js
 import Select from './ui/Select';
 
-const periodMap = {
-  gempa: ['500', '250', '100'],
-  banjir: ['100', '50', '25'],
-  longsor: ['5', '2'],
-  gunungberapi: ['250', '100', '50']
-};
+// const periodMap = {
+//   gempa: ['500', '250', '100'],
+//   banjir: ['100', '50', '25'],
+//   longsor: ['5', '2'],
+//   gunungberapi: ['250', '100', '50']
+// };
 
 const hazardLabels = {
   gempa: 'Gempa Bumi',
@@ -22,15 +22,20 @@ const modelLabels = {
   total: 'Total'
 };
 
+// Daftar bencana diambil langsung dari hazardLabels
+const hazardOptions = Object.keys(hazardLabels).map(key => ({
+  value: key,
+  label: hazardLabels[key]
+}));
+
 export default function FilterChoropleth({
   hazard, setHazard,
-  period, setPeriod,
   model, setModel
 }) {
   // when hazard changes, reset period & model
   const onHazardChange = (h) => {
     setHazard(h);
-    setPeriod('');
+    // setPeriod('');
     setModel('');
   };
 
@@ -41,14 +46,11 @@ export default function FilterChoropleth({
           id="hazardSelect"
           value={hazard}
           onChange={onHazardChange}
-          options={Object.keys(periodMap).map(key => ({
-            value: key,
-            label: hazardLabels[key]
-          }))}
+          options={hazardOptions}
           placeholder="Pilih Bencana"
           className="w-64 md:w"
         />
-        <Select
+        {/* <Select
           id="periodSelect"
           value={period}
           onChange={setPeriod}
@@ -59,7 +61,7 @@ export default function FilterChoropleth({
           placeholder="Pilih Return Period"
           disabled={!hazard}
           className="w-64 md:w"
-        />
+        /> */}
         <Select
           id="modelSelect"
           value={model}
@@ -69,7 +71,7 @@ export default function FilterChoropleth({
             label: modelLabels[m]
           }))}
           placeholder="Pilih Jenis Bangunan"
-          disabled={!period}
+          disabled={!hazard}
           className="w-64 md:w"
         />
       </div>
