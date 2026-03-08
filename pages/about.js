@@ -1,5 +1,6 @@
 // pages/about.js
 import Header from '../components/Header'
+import { useTheme } from '../context/ThemeContext'
 
 const leadership = [
   {
@@ -24,33 +25,11 @@ const leadership = [
   },
 ]
 
-// Daftar Dosen Pembimbing
-const supervisors = [
-  {
-    name: 'Prof. Dr. Irwan Meilano, S.T., M.Sc.',
-    role: 'Dosen Pembimbing 1',
-    imageUrl: '/pakimei.svg',
-  },
-  {
-    name: 'Dr. Riantini Virtriana, S.T., M.T.',
-    role: 'Dosen Pembimbing 2',
-    imageUrl: '/burian.svg',
-  },
-  {
-    name: 'Deni Suwardhi, S.T., M.T., Ph.D.',
-    role: 'Dosen Pembimbing 2',
-    imageUrl: '/pakdeni.svg',
-  },
-  {
-    name: 'Dr.Techn. Nabila Sofia Eryan Putri S.T.,M.T.',
-    role: 'Dosen Pembimbing 2',
-    imageUrl: '/bunabila.svg',
-  },
-]
-
 export default function About() {
+  const { darkMode } = useTheme()
+
   return (
-    <div className="min-h-screen bg-[#0D0F12] text-gray-200">
+    <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-[#0D0F12] text-gray-200' : 'bg-gray-100 text-gray-800'}`}>
       <Header />
 
       <main className="max-w-screen mx-auto py-10 px-6 space-y-12 mt-18">
@@ -60,10 +39,10 @@ export default function About() {
             <h1 className="text-4xl font-semibold text-[#ff6a00]">
               Capstone AAL
             </h1>
-            <p className="mt-4 text-lg text-white text-justify">
+            <p className={`mt-4 text-lg text-justify transition-colors duration-300 ${darkMode ? 'text-white' : 'text-gray-700'}`}>
               CardinAAL dikembangkan oleh tim yang terdiri dari mahasiswa Program Studi Teknik
               Geodesi dan Geomatika 2021 Institut Teknologi Bandung untuk memenuhi SKS mata kuliah GD4201 Capstone Project.
-              Selain itu, mahasiswa juga berkolaborasi dengan dosen pembimbing untuk membantu memberikan masukan dan arahan dalam pengembangan 
+              Selain itu, mahasiswa juga berkolaborasi dengan dosen pembimbing untuk membantu memberikan masukan dan arahan dalam pengembangan
               dashboard ini.
               Kami berkomitmen untuk membangun dashboard yang berguna dan mudah digunakan untuk
               menghitung kerugian tahunan rata-rata (Average Annual Loss) dan kerugian langsung (Direct Loss)
@@ -78,14 +57,14 @@ export default function About() {
             </h2>
             <ul role="list" className="grid gap-x-8 gap-y-12 sm:grid-cols-2">
               {leadership.map((person) => (
-                <li key={person.name} className="flex items-center gap-x-6 border-black">
+                <li key={person.name} className={`flex items-center gap-x-6 rounded-xl p-4 transition-colors duration-300 ${darkMode ? 'bg-[#1E2023]' : 'bg-white shadow-sm'}`}>
                   <img
                     src={person.imageUrl}
                     alt={person.name}
-                    className="h-50 w-50 rounded-full object-cover border-black"
+                    className="h-50 w-50 rounded-full object-cover"
                   />
                   <div>
-                    <h3 className="text-lg font-semibold text-white">
+                    <h3 className={`text-lg font-semibold transition-colors duration-300 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                       {person.name}
                     </h3>
                     <p className="text-lg text-[#ff6a00]">{person.role}</p>
@@ -95,29 +74,6 @@ export default function About() {
             </ul>
           </section>
 
-          {/*Dosen Pembimbing */}
-          <section>
-            <h2 className="text-3xl font-semibold text-[#ff6a00] mb-6 mt-18">
-              Dosen Pembimbing
-            </h2>
-            <ul role="list" className="grid gap-x-8 gap-y-12 sm:grid-cols-2">
-              {supervisors.map((sup) => (
-                <li key={sup.name} className="flex items-center gap-x-6">
-                  <img
-                    src={sup.imageUrl}
-                    alt={sup.name}
-                    className="h-50 w-50 rounded-full object-cover"
-                  />
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">
-                      {sup.name}
-                    </h3>
-                    <p className="text-lg text-[#ff6a00]">{sup.role}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
         </div>
       </main>
     </div>

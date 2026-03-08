@@ -1,6 +1,7 @@
 // components/FilterDirectLoss.js
 import React, { useMemo } from 'react'
 import Select from './ui/Select';
+import { useTheme } from '../context/ThemeContext';
 
 export default function FilterDirectLoss({
   provList,
@@ -15,6 +16,8 @@ export default function FilterDirectLoss({
   setSearch,
   geojson
 }) {
+  const { darkMode } = useTheme();
+
   // Generate suggestions based on current filters and search term
   const suggestions = useMemo(() => {
     if (!selectedProv || !selectedKota || !search) return [];
@@ -30,11 +33,17 @@ export default function FilterDirectLoss({
         })
         .map((f) => f.properties.nama_gedung)
         .filter((v, i, a) => a.indexOf(v) === i)
-        // hide exact match so suggestions clear on click
         .filter((v) => v.toLowerCase() !== lower)
         .slice(0, 20)
     );
   }, [geojson, selectedProv, selectedKota, filters, search]);
+
+  // Classes berdasarkan mode
+  const inputCls = darkMode
+    ? 'bg-[#2a2d31] border-gray-600 text-gray-200 placeholder-gray-500 focus:ring-blue-400 focus:border-blue-400'
+    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500';
+  const dropdownBg = darkMode ? 'bg-[#2a2d31] border-gray-600' : 'bg-white border-gray-200';
+  const dropdownItem = darkMode ? 'text-gray-200 hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100';
 
   return (
     <div className="flex flex-col gap-4 overflow-visible">
@@ -63,8 +72,8 @@ export default function FilterDirectLoss({
       <div className="flex flex-wrap gap-4">
         {[
           { key: 'BMN', label: 'Bangunan Milik Negara' },
-          { key: 'FS',  label: 'Fasilitas Kesehatan' },
-          { key: 'FD',  label: 'Fasilitas Pendidikan' }
+          { key: 'FS', label: 'Fasilitas Kesehatan' },
+          { key: 'FD', label: 'Fasilitas Pendidikan' }
         ].map((type) => (
           <label
             key={type.key}
@@ -89,7 +98,7 @@ export default function FilterDirectLoss({
             placeholder="Cari nama gedung..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className={`w-full p-3 border rounded-lg focus:ring-2 transition-colors duration-300 ${inputCls}`}
             disabled={!selectedProv || !selectedKota}
           />
           <button
@@ -112,12 +121,12 @@ export default function FilterDirectLoss({
 
         {/* Suggestions Dropdown */}
         {suggestions.length > 0 && (
-          <ul className="absolute top-full left-0 z-[9999] w-full max-h-48 overflow-y-auto bg-white border border-gray-300 rounded-lg mt-1 font-[SF Pro] text-sm shadow-lg">
+          <ul className={`absolute top-full left-0 z-[9999] w-full max-h-48 overflow-y-auto border rounded-lg mt-1 font-[SF Pro] text-sm shadow-lg ${dropdownBg}`}>
             {suggestions.map((name) => (
               <li
                 key={name}
                 onClick={() => setSearch(name)}
-                className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-900 font-[SF Pro]"
+                className={`px-4 py-2 cursor-pointer font-[SF Pro] ${dropdownItem}`}
               >
                 {name}
               </li>

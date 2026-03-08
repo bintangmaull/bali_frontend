@@ -7,8 +7,9 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
-  Legend, // Legend mungkin tidak diperlukan lagi, tapi kita simpan
+  Legend,
 } from 'recharts';
+import { useTheme } from '../context/ThemeContext';
 
 // Konfigurasi bencana disederhanakan, hanya butuh label dan warna
 const hazardsConfig = [
@@ -35,12 +36,12 @@ const formatYAxis = (value) => {
   return value.toLocaleString('id-ID');
 };
 
-// Tooltip kustom yang lebih sederhana
-const CustomTooltip = ({ active, payload, label }) => {
+// Tooltip kustom
+function CustomTooltip({ active, payload, label, darkMode }) {
   if (active && payload && payload.length) {
     const data = payload[0];
     return (
-      <div className="bg-gray-800 text-white p-2 rounded border border-gray-700">
+      <div className={`p-2 rounded border text-sm ${darkMode ? 'bg-gray-800 text-white border-gray-700' : 'bg-white text-gray-900 border-gray-200 shadow'}`}>
         <strong>{`Bencana: ${label}`}</strong>
         <div style={{ color: data.fill, marginTop: '4px' }}>
           Total AAL:{' '}
@@ -54,16 +55,23 @@ const CustomTooltip = ({ active, payload, label }) => {
     );
   }
   return null;
-};
+}
 
 
 export default function ChartsSection({ provs, data, load }) {
-  // Fungsi untuk membangun data chart, sekarang jauh lebih sederhana
+  const { darkMode } = useTheme();
+
+  // Classes berdasarkan mode
+  const chartCardBg = darkMode ? 'bg-gray-800' : 'bg-gray-50 border border-gray-200';
+  const titleColor = darkMode ? 'text-white' : 'text-gray-800';
+  const tickColor = darkMode ? '#ddd' : '#555';
+  const gridColor = darkMode ? '#444' : '#ccc';
+  const cursorColor = darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+
+  // Fungsi untuk membangun data chart
   const buildChartData = (bangunanTipe) =>
     hazardsConfig.map((hazard) => ({
       name: hazard.label,
-      // Mengambil nilai dari kolom AAL total per bencana
-      // contoh: aal_gempa_total, aal_banjir_bmn, dll.
       aal: data?.[`aal_${hazard.key}_${bangunanTipe}`] ?? 0,
       fill: hazard.color,
     }));
@@ -73,7 +81,10 @@ export default function ChartsSection({ provs, data, load }) {
       <div className="mb-4">
         {/* Dropdown untuk memilih provinsi */}
         <select
-          className="w-72 rounded-4xl bg-[#C6FF00] px-4 py-2 text-black appearance-none"
+          className={`w-72 rounded-4xl px-4 py-2 appearance-none transition-colors duration-300 ${darkMode
+              ? 'bg-[#C6FF00] text-black'
+              : 'bg-[#C6FF00] text-black border border-yellow-400'
+            }`}
           defaultValue=""
           onChange={(e) => load(e.target.value)}
         >
@@ -88,34 +99,32 @@ export default function ChartsSection({ provs, data, load }) {
         {chartTypes.map(({ title, tipe }) => {
           const chartData = buildChartData(tipe);
           return (
-            <div key={tipe} className="bg-gray-800 rounded-lg p-4">
-              <h3 className="text-white text-center mb-2">{title}</h3>
+            <div key={tipe} className={`${chartCardBg} rounded-lg p-4 transition-colors duration-300`}>
+              <h3 className={`${titleColor} text-center mb-2 transition-colors duration-300`}>{title}</h3>
               <ResponsiveContainer width="100%" height={350}>
                 <BarChart
                   data={chartData}
                   margin={{ top: 20, right: 20, bottom: 5, left: 30 }}
                   barGap={10}
                 >
-                  <CartesianGrid stroke="#444" strokeDasharray="3 3" />
+                  <CartesianGrid stroke={gridColor} strokeDasharray="3 3" />
                   <XAxis
                     dataKey="name"
-                    tick={{ fill: '#ddd', fontSize: 14 }}
+                    tick={{ fill: tickColor, fontSize: 14 }}
                     interval={0}
                   />
                   <YAxis
                     tickFormatter={formatYAxis}
-                    tick={{ fill: '#ddd', fontSize: 12 }}
-                    width={80} // Memberi ruang untuk label (T, M, JT)
+                    tick={{ fill: tickColor, fontSize: 12 }}
+                    width={80}
                   />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.1)' }} />
-                  {/* Tidak perlu Legend jika hanya satu bar */}
-                  {/* <Legend /> */}
-
-                  {/* Hanya ada satu komponen Bar sekarang */}
+                  <Tooltip
+                    content={<CustomTooltip darkMode={darkMode} />}
+                    cursor={{ fill: cursorColor }}
+                  />
                   <Bar
                     dataKey="aal"
                     radius={[4, 4, 0, 0]}
-                  // Warna diambil dari data, tidak perlu loop
                   />
                 </BarChart>
               </ResponsiveContainer>

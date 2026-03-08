@@ -1,4 +1,4 @@
-// components/DisasterCurves.js
+﻿// components/DisasterCurves.js
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import {
@@ -11,11 +11,11 @@ import {
   Legend,
   Ticks
 } from 'chart.js'
-import { getDisasterCurves } from '../src/lib/api' // sesuaikan path
-// register component‐level Chart.js modules
+import { getDisasterCurves } from '../src/lib/api'
+import { useTheme } from '../context/ThemeContext'
+
 ChartJS.register(LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
-// load Line chart only on client
 const Line = dynamic(() => import('react-chartjs-2').then(m => m.Line), {
   ssr: false
 })
@@ -35,9 +35,23 @@ function getDamageFromCurve(curve, xInput) {
   return null;
 }
 
-function DisasterCurveBox({ key, label, grouped, taxonomyList, datasets, maxX, popup, setPopup, closePopup }) {
+function DisasterCurveBox({ keyProp: key, label, grouped, taxonomyList, datasets, maxX, popup, setPopup, closePopup, darkMode }) {
   const [intensityInput, setIntensityInput] = useState('');
   const [damageResults, setDamageResults] = useState(null);
+
+  // Warna chart berdasarkan mode
+  const tickColor = darkMode ? '#ffffff' : '#444444';
+  const gridColor = darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)';
+  const titleColor = darkMode ? '#ffffff' : '#333333';
+  const legendColor = darkMode ? '#ffffff' : '#333333';
+  const cardBg = darkMode ? 'bg-gray-800' : 'bg-gray-50 border border-gray-200';
+  const headText = darkMode ? '' : 'text-gray-800';
+  const inputCls = darkMode
+    ? 'p-2 rounded bg-gray-700 text-white border border-gray-500 w-48'
+    : 'p-2 rounded bg-white text-gray-900 border border-gray-300 w-48';
+  const tableBorderCls = darkMode ? 'border-gray-600' : 'border-gray-200';
+  const tableHeadBg = darkMode ? 'bg-gray-700' : 'bg-gray-100';
+  const tableRowBorder = darkMode ? 'border-gray-700' : 'border-gray-200';
 
   const handleCheckDamage = (e) => {
     e.preventDefault();
@@ -60,8 +74,8 @@ function DisasterCurveBox({ key, label, grouped, taxonomyList, datasets, maxX, p
   };
 
   return (
-    <div className="bg-gray-800 p-4 rounded-lg shadow relative">
-      <h2 className="text-xl font-semibold mb-4">{label}</h2>
+    <div className={`${cardBg} p-4 rounded-lg shadow relative transition-colors duration-300`}>
+      <h2 className={`text-xl font-semibold mb-4 ${headText}`}>{label}</h2>
       <Line
         data={{ datasets }}
         options={{
@@ -70,7 +84,7 @@ function DisasterCurveBox({ key, label, grouped, taxonomyList, datasets, maxX, p
             legend: {
               position: 'top',
               labels: {
-                color: '#ffffff',
+                color: legendColor,
                 usePointStyle: true,
                 pointStyle: 'line',
                 padding: 10,
@@ -80,10 +94,7 @@ function DisasterCurveBox({ key, label, grouped, taxonomyList, datasets, maxX, p
             tooltip: { enabled: false }
           },
           elements: {
-            point: {
-              radius: 0,
-              hoverRadius: 0
-            }
+            point: { radius: 0, hoverRadius: 0 }
           },
           onClick: (event, elements, chart) => {
             if (!chart) return;
@@ -103,135 +114,119 @@ function DisasterCurveBox({ key, label, grouped, taxonomyList, datasets, maxX, p
               });
             });
             if (closest) {
-              setPopup({
-                key,
-                label,
-                x: closest.x,
-                y: closest.y,
-                left: mouseX,
-                top: mouseY
-              });
+              setPopup({ key, label, x: closest.x, y: closest.y, left: mouseX, top: mouseY });
             }
           },
           scales: {
-            x: { 
-              type: 'linear', 
-              min: 0, 
-              max: maxX, 
-              title: { 
-                display: true, 
-                text: 'Intensitas Bencana', 
-                color: '#ffffff', font: { size: 14 }
-              } , 
-              ticks: {
-                color: '#ffffff',
-                font: { size: 12 }
-              },
-              grid: {
-                color: '#ffffff'
-            }
-          },
-            y: {
-              min: 0, 
-              max: 1, 
-              title: { 
-                display: true, 
-                text: 'Tingkat Kerusakan',  
-                color: '#ffffff',
+            x: {
+              type: 'linear',
+              min: 0,
+              max: maxX,
+              title: {
+                display: true,
+                text: 'Intensitas Bencana',
+                color: titleColor,
                 font: { size: 14 }
               },
-            ticks: {
-              color: '#ffffff',
-              font: { size: 12 }
+              ticks: { color: tickColor, font: { size: 12 } },
+              grid: { color: gridColor }
             },
-            grid: {
-              color: '#ffffff'
+            y: {
+              min: 0,
+              max: 1,
+              title: {
+                display: true,
+                text: 'Tingkat Kerusakan',
+                color: titleColor,
+                font: { size: 14 }
+              },
+              ticks: { color: tickColor, font: { size: 12 } },
+              grid: { color: gridColor }
             }
           }
-        }
-      }}
-    />
-    {/* Popup custom per grafik, hanya muncul jika popup.key === key */}
-    {popup && popup.key === key && (
-      <div
-        style={{
-          position: 'absolute',
-          left: popup.left + 20,
-          top: popup.top,
-          background: 'rgba(30,41,59,0.98)',
-          color: 'white',
-          border: '1px solid #888',
-          borderRadius: 8,
-          padding: '12px 18px',
-          zIndex: 10,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
         }}
-      >
-        <div><b>{popup.label}</b></div>
-        <div><b>Intensitas:</b> {popup.x}</div>
-        <div><b>Tingkat Kerusakan:</b> {popup.y}</div>
-        <button
-          onClick={closePopup}
-          style={{
-            marginTop: 8,
-            background: '#334155',
-            color: 'white',
-            border: 'none',
-            borderRadius: 4,
-            padding: '2px 10px',
-            cursor: 'pointer',
-            fontSize: 12
-          }}
-        >Tutup</button>
-      </div>
-    )}
-    {/* Input intensitas dan hasil kerusakan untuk semua taxonomy/label */}
-    <form onSubmit={handleCheckDamage} className="mt-4 flex flex-col md:flex-row items-center gap-2">
-      <input
-        type="number"
-        step="any"
-        value={intensityInput}
-        onChange={e => setIntensityInput(e.target.value)}
-        placeholder="Masukkan Intensitas Bencana"
-        className="p-2 rounded bg-gray-700 text-white border border-gray-500 w-48"
       />
-      <button
-        type="submit"
-        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-      >Cek Tingkat Kerusakan</button>
-    </form>
-    {damageResults && Array.isArray(damageResults) && (
-      <table className="mt-2 text-white border border-gray-600 w-full max-w-md text-sm">
-        <thead>
-          <tr className="bg-gray-700">
-            <th className="p-2 text-left">{key === 'banjir' ? 'Lantai' : 'Taxonomy'}</th>
-            <th className="p-2 text-left">Tingkat Kerusakan</th>
-          </tr>
-        </thead>
-        <tbody>
-          {damageResults.map((r, i) => (
-            <tr key={i} className="border-t border-gray-700">
-              <td className="p-2">{r.label}</td>
-              <td className="p-2">{typeof r.value === 'number' ? r.value.toFixed(4) : r.value}</td>
+
+      {/* Popup custom per grafik */}
+      {popup && popup.key === key && (
+        <div
+          style={{
+            position: 'absolute',
+            left: popup.left + 20,
+            top: popup.top,
+            background: darkMode ? 'rgba(30,41,59,0.98)' : 'rgba(255,255,255,0.98)',
+            color: darkMode ? 'white' : '#333',
+            border: '1px solid #888',
+            borderRadius: 8,
+            padding: '12px 18px',
+            zIndex: 10,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+          }}
+        >
+          <div><b>{popup.label}</b></div>
+          <div><b>Intensitas:</b> {popup.x}</div>
+          <div><b>Tingkat Kerusakan:</b> {popup.y}</div>
+          <button
+            onClick={closePopup}
+            style={{
+              marginTop: 8,
+              background: darkMode ? '#334155' : '#e5e7eb',
+              color: darkMode ? 'white' : '#333',
+              border: 'none',
+              borderRadius: 4,
+              padding: '2px 10px',
+              cursor: 'pointer',
+              fontSize: 12
+            }}
+          >Tutup</button>
+        </div>
+      )}
+
+      {/* Input intensitas */}
+      <form onSubmit={handleCheckDamage} className="mt-4 flex flex-col md:flex-row items-center gap-2">
+        <input
+          type="number"
+          step="any"
+          value={intensityInput}
+          onChange={e => setIntensityInput(e.target.value)}
+          placeholder="Masukkan Intensitas Bencana"
+          className={inputCls}
+        />
+        <button
+          type="submit"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+        >Cek Tingkat Kerusakan</button>
+      </form>
+
+      {damageResults && Array.isArray(damageResults) && (
+        <table className={`mt-2 border w-full max-w-md text-sm ${tableBorderCls} ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+          <thead>
+            <tr className={tableHeadBg}>
+              <th className="p-2 text-left">{key === 'banjir' ? 'Lantai' : 'Taxonomy'}</th>
+              <th className="p-2 text-left">Tingkat Kerusakan</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    )}
-    {damageResults && typeof damageResults === 'string' && (
-      <div className="mt-2 text-red-400">{damageResults}</div>
-    )}
-  </div>
+          </thead>
+          <tbody>
+            {damageResults.map((r, i) => (
+              <tr key={i} className={`border-t ${tableRowBorder}`}>
+                <td className="p-2">{r.label}</td>
+                <td className="p-2">{typeof r.value === 'number' ? r.value.toFixed(4) : r.value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {damageResults && typeof damageResults === 'string' && (
+        <div className="mt-2 text-red-400">{damageResults}</div>
+      )}
+    </div>
   );
 }
 
 export default function DisasterCurves() {
+  const { darkMode } = useTheme()
   const [rawData, setRawData] = useState(null)
-  // State popup global, simpan key grafik, label, dan data klik
-  const [popup, setPopup] = useState(null) // {key, label, x, y, left, top}
-  // Tambahkan state untuk input intensitas dan hasil kerusakan
-  const [intensityInput, setIntensityInput] = useState('');
-  const [damageResults, setDamageResults] = useState(null);
+  const [popup, setPopup] = useState(null)
 
   useEffect(() => {
     getDisasterCurves()
@@ -242,33 +237,33 @@ export default function DisasterCurves() {
   const closePopup = () => setPopup(null)
 
   if (!rawData) {
-    return <p className="p-8 text-center">Loading charts…</p>
+    return <p className={`p-8 text-center ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Loading charts…</p>
   }
 
   const taxonomyColors = {
     lightwood: '#ffc107',
-    mur:       '#fd7e14',
-    mcf:       '#dc3545',
-    cr:        '#6f42c1',
-    '1.0':     '#ffc107',
-    '2.0':     '#dc3545',
+    mur: '#fd7e14',
+    mcf: '#dc3545',
+    cr: '#6f42c1',
+    '1.0': '#ffc107',
+    '2.0': '#dc3545',
   };
 
   const disasters = [
-    { key: 'gempa',        label: 'Gempa', xAxisLabel: 'Intensitas Bencana (MMI)' },
-    { key: 'banjir',       label: 'Banjir', xAxisLabel: 'Kedalaman Banjir (m)' },
+    { key: 'gempa', label: 'Gempa', xAxisLabel: 'Intensitas Bencana (MMI)' },
+    { key: 'banjir', label: 'Banjir', xAxisLabel: 'Kedalaman Banjir (m)' },
     { key: 'gunungberapi', label: 'Gunung Berapi', xAxisLabel: 'Intensitas Bencana (kPa)' },
-    { key: 'longsor',      label: 'Longsor', xAxisLabel: 'Intensitas Bencana (Momentum Flux)' }
+    { key: 'longsor', label: 'Longsor', xAxisLabel: 'Intensitas Bencana (Momentum Flux)' }
   ]
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-white">
+    <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
       {disasters.map(({ key, label }) => {
         const grouped = rawData[key] || {}
         const taxonomyList =
           key === 'banjir'
             ? Object.keys(grouped)
-            : ['lightwood','mur','mcf','cr']
+            : ['lightwood', 'mur', 'mcf', 'cr']
         const allX = taxonomyList.flatMap(t => grouped[t]?.x || [])
         const maxX = allX.length ? Math.max(...allX) : 0
         const datasets = taxonomyList.map(tax => {
@@ -276,18 +271,10 @@ export default function DisasterCurves() {
           const data = pts.x.map((x, i) => ({ x, y: pts.y[i] }))
           let labelText;
           if (key === 'banjir') {
-            labelText = {
-              '1.0': 'Lantai 1',
-              '2.0': 'Lantai 2'
-            }[tax] || `Kurva ${tax}`;
+            labelText = { '1.0': 'Lantai 1', '2.0': 'Lantai 2' }[tax] || `Kurva ${tax}`;
           } else {
-            labelText = {
-              lightwood: 'Lightwood',
-              mur: 'MUR',
-              mcf: 'MCF',
-              cr: 'CR'
-            }[tax] || tax;
-          }   
+            labelText = { lightwood: 'Lightwood', mur: 'MUR', mcf: 'MCF', cr: 'CR' }[tax] || tax;
+          }
           return {
             label: labelText,
             data,
@@ -309,11 +296,10 @@ export default function DisasterCurves() {
             popup={popup}
             setPopup={setPopup}
             closePopup={closePopup}
+            darkMode={darkMode}
           />
         )
       })}
     </div>
   )
 }
-
-
