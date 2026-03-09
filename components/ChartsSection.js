@@ -79,16 +79,16 @@ export default function ChartsSection({ provs, data, load }) {
   return (
     <section className="p-6">
       <div className="mb-4">
-        {/* Dropdown untuk memilih provinsi */}
+        {/* Dropdown untuk memilih kota */}
         <select
           className={`w-72 rounded-4xl px-4 py-2 appearance-none transition-colors duration-300 ${darkMode
-              ? 'bg-[#C6FF00] text-black'
-              : 'bg-[#C6FF00] text-black border border-yellow-400'
+            ? 'bg-[#C6FF00] text-black'
+            : 'bg-[#C6FF00] text-black border border-yellow-400'
             }`}
           defaultValue=""
           onChange={(e) => load(e.target.value)}
         >
-          <option value="" disabled>Pilih Provinsi</option>
+          <option value="" disabled>Pilih Kota</option>
           {provs.map((p) => (
             <option key={p} value={p}>{p}</option>
           ))}

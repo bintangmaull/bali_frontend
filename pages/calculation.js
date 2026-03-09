@@ -3,7 +3,7 @@ import dynamic from 'next/dynamic'
 import { useState } from 'react'
 
 // Hooks
-import useAALProvinsi from '../hooks/useAALProvinsi'
+import useAALKota from '../hooks/useAALKota'
 import useChartData from '../hooks/useChartData'
 import useDirectLoss from '../hooks/useDirectLoss'
 
@@ -24,7 +24,7 @@ export default function Calculation() {
   // Choropleth state
   const [hazard, setHazard] = useState('')
   const [model, setModel] = useState('')
-  const { geojson: aalGeojson } = useAALProvinsi()
+  const { geojson: aalGeojson } = useAALKota()
 
   // Charts state
   const { provs, data, load } = useChartData()
@@ -59,7 +59,7 @@ export default function Calculation() {
         <section className="w-full">
           <div className={`${cardBg} shadow-xs rounded-lg p-6 flex flex-col space-y-4 md:col-span-2 ${shadow} transition-colors duration-300`}>
             <h2 className={`text-2xl font-semibold mb-6 font-[SF Pro] ${headText}`}>
-              Average Annual Loss di Indonesia
+              Average Annual Loss per Kota di Provinsi Bali
             </h2>
             <FilterChoropleth
               hazard={hazard}
@@ -77,7 +77,7 @@ export default function Calculation() {
             <div className="flex justify-end">
               <button
                 className="px-6 py-2 bg-[#22D3EE] text-black rounded-4xl hover:bg-[#3B82F6] hover:text-white font-[SF Pro] transition"
-                onClick={() => window.open('/api/aal-provinsi/download', '_blank')}
+                onClick={() => window.open('/api/aal-kota/download', '_blank')}
               >
                 Unduh Data
               </button>
@@ -88,7 +88,7 @@ export default function Calculation() {
         {/* AAL Charts */}
         <section className={`${cardBg} rounded-lg shadow-xs p-6 ${shadow} transition-colors duration-300`}>
           <h2 className={`text-2xl font-semibold px-4 mb-0.5 font-[SF Pro] ${headText}`}>
-            Diagram Batang Average Annual Loss Provinsi
+            Diagram Batang Average Annual Loss Kota
           </h2>
           <ChartsSection provs={provs} data={data} load={load} />
         </section>
@@ -117,6 +117,7 @@ export default function Calculation() {
                 geojson={dlGeojson}
                 filters={filters}
                 search={search}
+                selectedKota={selectedKota}
               />
             </div>
           </div>

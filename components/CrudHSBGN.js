@@ -4,7 +4,6 @@ import Modal from './ui/Modal'
 import Button from './ui/Button'
 import { useTheme } from '../context/ThemeContext'
 import {
-  getProvinsi,
   getHSBGN,
   updateHSBGN,
   recalcAll
@@ -12,16 +11,13 @@ import {
 
 export default function CrudHSBGN() {
   const { darkMode } = useTheme()
-  const [provOptions, setProvOptions] = useState([])
   const [rows, setRows] = useState([])
-  const [filterProv, setFilterProv] = useState('')
   const [searchCity, setSearchCity] = useState('')
   const [editing, setEditing] = useState(null)
   const [newValue, setNewValue] = useState('')
   const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
-    getProvinsi().then(setProvOptions).catch(console.error)
     reloadTable()
   }, [])
 
@@ -30,9 +26,8 @@ export default function CrudHSBGN() {
   }
 
   const filteredRows = rows.filter(r => {
-    const matchProv = !filterProv || r.provinsi === filterProv
     const matchCity = !searchCity || r.kota.toLowerCase().includes(searchCity.toLowerCase())
-    return matchProv && matchCity
+    return matchCity
   })
 
   function onEditClick(row) {
@@ -70,17 +65,6 @@ export default function CrudHSBGN() {
     <div className={`${cardBg} p-6 rounded-lg shadow flex flex-col gap-4 transition-colors duration-300`}>
       {/* Filters */}
       <div className="flex flex-col gap-2">
-        <label className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-700'}`}></label>
-        <select
-          className="border px-4 py-2 rounded-4xl bg-[#C6FF00] appearance-none w-72"
-          value={filterProv}
-          onChange={e => setFilterProv(e.target.value)}
-        >
-          <option value="">Pilih Provinsi</option>
-          {provOptions.map(p => <option key={p} value={p}>{p}</option>)}
-        </select>
-
-        <label className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-700'}`}></label>
         <input
           type="text"
           className={inputCls}
@@ -96,7 +80,6 @@ export default function CrudHSBGN() {
           <thead className="bg-[#0a2c68] text-white rounded-lg">
             <tr>
               <th className="p-2 text-justify">Kota</th>
-              <th className="p-2 text-justify">Provinsi</th>
               <th className="p-2 text-center whitespace-nowrap">Nilai HSBGN</th>
               <th className="p-2 text-center">Aksi</th>
             </tr>
@@ -105,7 +88,6 @@ export default function CrudHSBGN() {
             {filteredRows.map(r => (
               <tr key={r.id_kota} className={`border-t ${borderCls} ${rowHover} transition-colors duration-150`}>
                 <td className={`p-2 ${rowText}`}>{r.kota}</td>
-                <td className={`p-2 ${rowText}`}>{r.provinsi}</td>
                 <td className={`p-2 ${rowText} text-center`}>Rp {Number(r.hsbgn).toLocaleString('id-ID')}</td>
                 <td className={`p-2 ${rowText} text-right`}>
                   <Button
@@ -134,15 +116,7 @@ export default function CrudHSBGN() {
               readOnly
             />
           </div>
-          <div>
-            <label className="text-sm font-semibold">Provinsi</label>
-            <input
-              type="text"
-              className="border p-2 w-full rounded-lg"
-              value={editing?.provinsi || ''}
-              readOnly
-            />
-          </div>
+
           <div>
             <label className="text-sm font-semibold">Nilai HSBGN (Rp)</label>
             <input

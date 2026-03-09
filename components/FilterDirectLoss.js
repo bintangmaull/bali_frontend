@@ -20,7 +20,7 @@ export default function FilterDirectLoss({
 
   // Generate suggestions based on current filters and search term
   const suggestions = useMemo(() => {
-    if (!selectedProv || !selectedKota || !search) return [];
+    if (!selectedKota || !search) return [];
     const lower = search.toLowerCase();
     return (
       geojson.features
@@ -28,7 +28,7 @@ export default function FilterDirectLoss({
           const p = f.properties;
           const type = (p.id_bangunan || '').split('_')[0];
           if (!filters[type]) return false;
-          if (p.provinsi !== selectedProv || p.kota !== selectedKota) return false;
+          if (p.kota !== selectedKota) return false;
           return p.nama_gedung.toLowerCase().includes(lower);
         })
         .map((f) => f.properties.nama_gedung)
@@ -36,7 +36,7 @@ export default function FilterDirectLoss({
         .filter((v) => v.toLowerCase() !== lower)
         .slice(0, 20)
     );
-  }, [geojson, selectedProv, selectedKota, filters, search]);
+  }, [geojson, selectedKota, filters, search]);
 
   // Classes berdasarkan mode
   const inputCls = darkMode
@@ -47,22 +47,13 @@ export default function FilterDirectLoss({
 
   return (
     <div className="flex flex-col gap-4 overflow-visible">
-      {/* Filter Provinsi dan Kota */}
+      {/* Filter Kota */}
       <div className="flex flex-wrap gap-4">
-        <Select
-          id="provinsiSelect"
-          value={selectedProv}
-          onChange={setSelectedProv}
-          options={provList}
-          placeholder="Pilih Provinsi"
-          className="w-72"
-        />
         <Select
           id="kotaSelect"
           value={selectedKota}
           onChange={setSelectedKota}
           options={kotaList}
-          disabled={!selectedProv}
           placeholder="Pilih Kota"
           className="w-64"
         />
@@ -99,7 +90,7 @@ export default function FilterDirectLoss({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className={`w-full p-3 border rounded-lg focus:ring-2 transition-colors duration-300 ${inputCls}`}
-            disabled={!selectedProv || !selectedKota}
+            disabled={!selectedKota}
           />
           <button
             type="button"

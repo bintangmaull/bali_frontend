@@ -4,60 +4,61 @@ import 'leaflet/dist/leaflet.css'
 import 'leaflet.markercluster/dist/MarkerCluster.css'
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 import 'leaflet.markercluster'
+import { getKotaBoundary } from '../src/lib/api'
 
 const icons = {
-  BMN: L.icon({ 
-    iconUrl: 'icons/gedungnegara.svg', 
-    iconSize: [20,20], 
-    iconAnchor:[6,20], 
-    popupAnchor:[0,-20],
+  BMN: L.icon({
+    iconUrl: 'icons/gedungnegara.svg',
+    iconSize: [20, 20],
+    iconAnchor: [6, 20],
+    popupAnchor: [0, -20],
     className: 'rounded-icon'
   }),
-  FS:  L.icon({ 
-    iconUrl: 'icons/kesehatan.svg',      
-    iconSize: [20,20], 
-    iconAnchor:[6,20], 
-    popupAnchor:[0,-20],
+  FS: L.icon({
+    iconUrl: 'icons/kesehatan.svg',
+    iconSize: [20, 20],
+    iconAnchor: [6, 20],
+    popupAnchor: [0, -20],
     className: 'rounded-icon'
   }),
-  FD:  L.icon({ 
-    iconUrl: 'icons/sekolah.svg',    
-    iconSize: [20,20], 
-    iconAnchor:[6,20], 
-    popupAnchor:[0,-20],
+  FD: L.icon({
+    iconUrl: 'icons/sekolah.svg',
+    iconSize: [20, 20],
+    iconAnchor: [6, 20],
+    popupAnchor: [0, -20],
     className: 'rounded-icon'
   })
 }
 
 function getJenksBreaks(data, nClasses) {
   if (data.length === 0) return []
-  const sorted = data.slice().sort((a,b) => a - b)
+  const sorted = data.slice().sort((a, b) => a - b)
   const lowerClassLimits = Array(sorted.length + 1).fill().map(() => Array(nClasses + 1).fill(0))
   const varianceCombinations = Array(sorted.length + 1).fill().map(() => Array(nClasses + 1).fill(Infinity))
 
-  for(let i = 1; i <= nClasses; i++) {
+  for (let i = 1; i <= nClasses; i++) {
     lowerClassLimits[1][i] = 1
     varianceCombinations[1][i] = 0
-    for(let j = 2; j <= sorted.length; j++) {
+    for (let j = 2; j <= sorted.length; j++) {
       varianceCombinations[j][i] = Infinity
     }
   }
 
-  for(let l = 2; l <= sorted.length; l++) {
+  for (let l = 2; l <= sorted.length; l++) {
     let sum = 0, sumSquares = 0, w = 0
     let varianceTemp = 0
 
-    for(let m = 1; m <= l; m++) {
+    for (let m = 1; m <= l; m++) {
       const val = sorted[l - m]
       sum += val
       sumSquares += val * val
       w++
       varianceTemp = sumSquares - (sum * sum) / w
       const i4 = l - m
-      if(i4 !== 0) {
-        for(let j = 2; j <= nClasses; j++) {
+      if (i4 !== 0) {
+        for (let j = 2; j <= nClasses; j++) {
           const val2 = varianceTemp + varianceCombinations[i4][j - 1]
-          if(varianceCombinations[l][j] > val2) {
+          if (varianceCombinations[l][j] > val2) {
             lowerClassLimits[l][j] = i4 + 1
             varianceCombinations[l][j] = val2
           }
@@ -73,7 +74,7 @@ function getJenksBreaks(data, nClasses) {
   breaks[0] = sorted[0]
 
   let k = sorted.length
-  for(let count = nClasses; count > 1; count--) {
+  for (let count = nClasses; count > 1; count--) {
     const idx = lowerClassLimits[k][count] - 2
     breaks[count - 1] = sorted[idx]
     k = lowerClassLimits[k][count] - 1
@@ -81,11 +82,12 @@ function getJenksBreaks(data, nClasses) {
   return breaks
 }
 
-export default function DirectLossMap({ geojson, filters, search }) {
-  const mapEl      = useRef(null)
-  const mapRef     = useRef(null)
+export default function DirectLossMap({ geojson, filters, search, selectedKota }) {
+  const mapEl = useRef(null)
+  const mapRef = useRef(null)
   const clusterRef = useRef(null)
-  const legendRef  = useRef(null)
+  const legendRef = useRef(null)
+  const boundaryRef = useRef(null)
 
   const formatRupiah = (num) =>
     'Rp ' + Number(num).toLocaleString('id-ID', { minimumFractionDigits: 0 })
@@ -93,15 +95,15 @@ export default function DirectLossMap({ geojson, filters, search }) {
   // Fungsi format angka ke string dengan satuan (triliun, miliar, juta)
   function formatNumberWithUnit(value) {
     if (value >= 1e12) return (value / 1e12).toFixed(2) + ' T'  // Triliun
-    if (value >= 1e9)  return (value / 1e9).toFixed(2) + ' M'   // Miliar
-    if (value >= 1e6)  return (value / 1e6).toFixed(2) + ' jt'  // Juta
-    if (value >= 1e3)  return (value / 1e3).toFixed(2) + ' rb'  // Ribu (optional)
+    if (value >= 1e9) return (value / 1e9).toFixed(2) + ' M'   // Miliar
+    if (value >= 1e6) return (value / 1e6).toFixed(2) + ' jt'  // Juta
+    if (value >= 1e3) return (value / 1e3).toFixed(2) + ' rb'  // Ribu (optional)
     return value.toString()
   }
 
   useEffect(() => {
     if (mapRef.current) return
-    mapRef.current = L.map(mapEl.current, { zoomControl: false }).setView([-8.9,116.4],5)
+    mapRef.current = L.map(mapEl.current, { zoomControl: false }).setView([-8.9, 116.4], 5)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
       opacity: 0.7
@@ -116,6 +118,31 @@ export default function DirectLossMap({ geojson, filters, search }) {
     })
     mapRef.current.addLayer(clusterRef.current)
   }, [])
+
+  // Render batas kota
+  useEffect(() => {
+    if (!mapRef.current) return
+    // Hapus boundary lama
+    if (boundaryRef.current) {
+      mapRef.current.removeLayer(boundaryRef.current)
+      boundaryRef.current = null
+    }
+    if (!selectedKota) return
+    getKotaBoundary(selectedKota)
+      .then(data => {
+        if (!data || !data.features || data.features.length === 0) return
+        boundaryRef.current = L.geoJSON(data, {
+          style: {
+            color: '#3b82f6',
+            weight: 2.5,
+            opacity: 0.9,
+            fillOpacity: 0,
+            dashArray: '6 4'
+          }
+        }).addTo(mapRef.current)
+      })
+      .catch(() => { })
+  }, [selectedKota])
 
   useEffect(() => {
     if (!mapRef.current) return
@@ -199,7 +226,7 @@ export default function DirectLossMap({ geojson, filters, search }) {
 
     const jenksBreaks = getJenksBreaks(allDirectLossValues, 3)
 
-    cluster.options.iconCreateFunction = function(cluster) {
+    cluster.options.iconCreateFunction = function (cluster) {
       const markers = cluster.getAllChildMarkers()
       const avgDirectLoss = markers.reduce((acc, m) => acc + (m.options.directLossValue || 0), 0) / markers.length
 

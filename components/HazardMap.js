@@ -9,31 +9,33 @@ import CrudBuildings from './CrudBuildings'
 const icons = {
   BMN: L.icon({
     iconUrl: 'icons/gedungnegara.svg',
-    iconSize: [20,20],
-    iconAnchor: [6,20],
-    popupAnchor: [0,-20],
+    iconSize: [20, 20],
+    iconAnchor: [6, 20],
+    popupAnchor: [0, -20],
     className: 'rounded-icon'
   }),
   FS: L.icon({
     iconUrl: 'icons/kesehatan.svg',
-    iconSize: [20,20],
-    iconAnchor: [6,20],
-    popupAnchor: [0,-20],
+    iconSize: [20, 20],
+    iconAnchor: [6, 20],
+    popupAnchor: [0, -20],
     className: 'rounded-icon'
   }),
   FD: L.icon({
     iconUrl: 'icons/sekolah.svg',
-    iconSize: [20,20],
-    iconAnchor: [6,20],
-    popupAnchor: [0,-20],
+    iconSize: [20, 20],
+    iconAnchor: [6, 20],
+    popupAnchor: [0, -20],
     className: 'rounded-icon'
   }),
 }
 
 export default function HazardMap({ provinsi, kota, setProvinsi, setKota }) {
+  const [selectedBuilding, setSelectedBuilding] = React.useState('')
   const mapEl = useRef(null)
   const mapRef = useRef(null)
   const buildingCluster = useRef(null)
+  const boundaryLayer = useRef(null)
   const markers = useRef([])
 
   function handleSearchBuilding({ lat, lon }) {
@@ -44,12 +46,14 @@ export default function HazardMap({ provinsi, kota, setProvinsi, setKota }) {
 
   useEffect(() => {
     if (mapRef.current) return
-    const map = L.map(mapEl.current, { zoomControl: false }).setView([-6.2,106.8],9)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    // Default ke koordinat Bali saat pertama dimuat
+    const map = L.map(mapEl.current, { zoomControl: false }).setView([-8.4, 115.2], 9)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
       opacity: 0.7,
     }).addTo(map)
     mapRef.current = map
+
 
     // Tambahkan legenda jenis bangunan
     const legend = L.control({ position: 'bottomright' })
@@ -61,7 +65,7 @@ export default function HazardMap({ provinsi, kota, setProvinsi, setKota }) {
       div.style.color = 'black'
       div.style.opacity = '0.8'
       div.style.fontSize = '0.8rem'
-      
+
       let html = '<h4 class="text-black font-bold mb-1">Jenis Bangunan</h4>'
       html += `
         <div style="display:flex; align-items:center; margin-bottom:4px;">
@@ -108,9 +112,9 @@ export default function HazardMap({ provinsi, kota, setProvinsi, setKota }) {
     cluster.clearLayers()
     markers.current = []
 
-    if (!provinsi || !kota) return
+    if (!kota) return
 
-    fetch(`/api/gedung?provinsi=${encodeURIComponent(provinsi)}&kota=${encodeURIComponent(kota)}`)
+    fetch(`/api/gedung?kota=${encodeURIComponent(kota)}`)
       .then(r => r.json())
       .then(data => {
         const markersList = data.features.map(f => {
@@ -120,7 +124,14 @@ export default function HazardMap({ provinsi, kota, setProvinsi, setKota }) {
             icon: icons[type] || icons.FD,
             riseOnHover: true
           })
-          
+
+          marker.bindTooltip(f.properties.nama_gedung, {
+            direction: 'top',
+            offset: [0, -20],
+            className: 'building-tooltip',
+            opacity: 0.9
+          })
+
           marker.on('click', () => {
             if (!marker.getPopup()) {
               const popupContent = `
@@ -131,24 +142,74 @@ export default function HazardMap({ provinsi, kota, setProvinsi, setKota }) {
               `
               marker.bindPopup(popupContent)
             }
+            // Update tabel agar menampilkan gedung ini
+            setSelectedBuilding(f.properties.nama_gedung)
           })
           return marker
         })
-        
+
         markers.current = markersList
         cluster.addLayers(markers.current)
-
         cluster.refreshClusters()
 
-        setTimeout(() => {
-          const bounds = cluster.getBounds()
-          if (bounds.isValid()) {
-            map.fitBounds(bounds, {
-              padding: [50, 50],
-              maxZoom: 14
-            })
-          }
-        }, 50)
+        // Ambil batas kota menggunakan API yang sudah ada
+        if (boundaryLayer.current) {
+          map.removeLayer(boundaryLayer.current)
+          boundaryLayer.current = null
+        }
+
+        fetch(`/api/kota-boundary?kota=${encodeURIComponent(kota)}`)
+          .then(res => res.json())
+          .then(geoJsonData => {
+            if (geoJsonData && geoJsonData.features && geoJsonData.features.length > 0) {
+              boundaryLayer.current = L.geoJSON(geoJsonData, {
+                style: {
+                  color: '#475569',
+                  weight: 2,
+                  opacity: 0.8,
+                  fillColor: '#94a3b8',
+                  fillOpacity: 0.2,
+                  dashArray: '5, 5'
+                }
+              }).addTo(map)
+
+              // Gabungkan bounds cluster dan boundary agar map view pas
+              const clusterBounds = cluster.getBounds()
+              const boundaryBounds = boundaryLayer.current.getBounds()
+
+              let finalBounds = clusterBounds
+              if (boundaryBounds.isValid()) {
+                finalBounds = clusterBounds.isValid() ? clusterBounds.extend(boundaryBounds) : boundaryBounds
+              }
+
+              if (finalBounds.isValid()) {
+                map.fitBounds(finalBounds, {
+                  padding: [50, 50],
+                  maxZoom: 14
+                })
+              }
+            } else {
+              // Jika boundary tidak ada, fall back ke cluster bounds
+              const bounds = cluster.getBounds()
+              if (bounds.isValid()) {
+                map.fitBounds(bounds, {
+                  padding: [50, 50],
+                  maxZoom: 14
+                })
+              }
+            }
+          })
+          .catch(err => {
+            console.error('Error fetching city boundary:', err)
+            // Fall back ke cluster bounds
+            const bounds = cluster.getBounds()
+            if (bounds.isValid()) {
+              map.fitBounds(bounds, {
+                padding: [50, 50],
+                maxZoom: 14
+              })
+            }
+          })
 
       })
       .catch(error => {
@@ -158,6 +219,9 @@ export default function HazardMap({ provinsi, kota, setProvinsi, setKota }) {
     return () => {
       if (buildingCluster.current) {
         buildingCluster.current.clearLayers()
+      }
+      if (boundaryLayer.current && mapRef.current) {
+        mapRef.current.removeLayer(boundaryLayer.current)
       }
       markers.current = []
     }
@@ -176,6 +240,34 @@ export default function HazardMap({ provinsi, kota, setProvinsi, setKota }) {
           .rounded-icon img {
             border-radius: 50%;
           }
+          
+          /* Sembunyikan tooltip pada default, TAPI tetap munculkan jika di-hover */
+          .hide-tooltips .building-tooltip {
+            opacity: 0 !important;
+            visibility: hidden;
+          }
+          /* Tulisan selalu muncul ketika zoom >= 15 ATAU saat di-hover */
+          .show-tooltips .building-tooltip,
+          .leaflet-marker-icon:hover + .building-tooltip,
+          .building-tooltip:hover {
+            opacity: 1 !important;
+            visibility: visible !important;
+          }
+          .building-tooltip {
+            background-color: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            border: none;
+            box-shadow: none;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+            transition: opacity 0.2s;
+          }
+          .building-tooltip::before {
+            display: none;
+          }
         `}
       </style>
       <div className="md:w-1/2 p-4 bg-[#1E2023] rounded-lg flex flex-col">
@@ -185,6 +277,8 @@ export default function HazardMap({ provinsi, kota, setProvinsi, setKota }) {
           kotaFilter={kota}
           setKotaFilter={setKota}
           onSearchBuilding={handleSearchBuilding}
+          externalSearch={selectedBuilding}
+          setExternalSearch={setSelectedBuilding}
         />
       </div>
       <div className="md:w-1/2 h-[600px] rounded-xl overflow-hidden">

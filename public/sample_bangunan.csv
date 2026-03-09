@@ -1,2 +1,2 @@
-nama_gedung,alamat,provinsi,kota,lon,lat,kode_bangunan,taxonomy,luas
-Gedung A,Jl. Merdeka 1,DKI JAKARTA,KOTA JAKARTA PUSAT,106.827153,-6.17511,BMN,MCF,120.5
+nama_gedung,alamat,provinsi,kota,lon,lat,kode_bangunan,taxonomy,luas,jumlah_lantai
+Gedung A,Jl. Merdeka 1,DKI JAKARTA,KOTA JAKARTA PUSAT,106.827153,-6.17511,BMN,MCF,120,2
