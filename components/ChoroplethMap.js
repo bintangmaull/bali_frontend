@@ -1,12 +1,9 @@
 // components/ChoroplethMap.js
 import { useRef, useEffect } from 'react'
 
-// Muat Leaflet hanya di client-side
-let L
-if (typeof window !== 'undefined') {
-  L = require('leaflet')
-  require('leaflet/dist/leaflet.css')
-}
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
+
 
 const colors = ['#209c05', '#85e62c', '#ebff0a', '#f2ce02', '#ff0a0a']
 
