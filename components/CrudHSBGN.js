@@ -6,7 +6,7 @@ import { useTheme } from '../context/ThemeContext'
 import {
   getHSBGN,
   updateHSBGN,
-  recalcAll
+  recalcHSBGN
 } from '../src/lib/api'
 
 export default function CrudHSBGN() {
@@ -16,6 +16,8 @@ export default function CrudHSBGN() {
   const [editing, setEditing] = useState(null)
   const [newValue, setNewValue] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [successMsg, setSuccessMsg] = useState('')
 
   useEffect(() => {
     reloadTable()
@@ -39,9 +41,11 @@ export default function CrudHSBGN() {
     setIsSaving(true)
     try {
       await updateHSBGN(editing.id_kota, parseFloat(newValue))
-      window.alert('Database berhasil diperbarui')
-      await recalcAll()
-      window.alert('Perhitungan selesai')
+      await recalcHSBGN(editing.id_kota)
+
+      setSuccessMsg('Pembaruan data dan perhitungan nilai AAL kota telah berhasil diselesaikan.')
+      setShowSuccess(true)
+
       reloadTable()
       setEditing(null)
     } catch (err) {
@@ -167,6 +171,23 @@ export default function CrudHSBGN() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Success Modal */}
+      <Modal isOpen={showSuccess} onClose={() => setShowSuccess(false)}>
+        <div className="text-center p-4">
+          <div className="text-5xl mb-4">✅</div>
+          <h3 className="text-xl font-bold mb-2">Berhasil!</h3>
+          <p className={rowText}>{successMsg}</p>
+          <div className="mt-6">
+            <Button
+              onClick={() => setShowSuccess(false)}
+              className="bg-green-600 hover:bg-green-700 text-white px-8"
+            >
+              Tutup
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   )

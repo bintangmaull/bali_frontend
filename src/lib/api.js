@@ -130,30 +130,20 @@ export async function recalc(bangunanId) {
     : '/process_join'
   const method = bangunanId != null ? 'POST' : 'GET'
 
-  const res = await fetchJSON(url, { method })
-  if (!res.ok) {
-    console.warn(`⚠️ recalc request to ${url} returned status ${res.status}, diabaikan`)
-    return null
-  }
   try {
-    return await res.json()
-  } catch {
-    // Kalau body bukan JSON atau kosong, anggap sukses
+    return await fetchJSON(url, { method })
+  } catch (err) {
+    console.warn(`⚠️ recalc error for ${url}:`, err)
     return null
   }
 }
 
 // Alias yang jelas: global recalc setelah CSV upload
 export async function recalcAll() {
-  // Memanggil endpoint GET /process_join
-  const res = await fetchJSON('/process_join', { method: 'GET' })
-  if (!res.ok) {
-    console.warn(`⚠️ recalcAll request to /process_join returned status ${res.status}, diabaikan`)
-    return null
-  }
   try {
-    return await res.json()
-  } catch {
+    return await fetchJSON('/process_join', { method: 'GET' })
+  } catch (err) {
+    console.warn(`⚠️ recalcAll error:`, err)
     return null
   }
 }
@@ -161,4 +151,11 @@ export async function recalcAll() {
 // kurva
 export function getDisasterCurves() {
   return fetchJSON('/api/disaster-curves')
+}
+
+/**
+ * Targeted recalculation for a specific city when HSBGN is updated.
+ */
+export function recalcHSBGN(hsbgnId) {
+  return fetchJSON(`/api/hsbgn/${hsbgnId}/recalc`, { method: 'POST' })
 }

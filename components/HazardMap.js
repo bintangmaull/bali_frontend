@@ -55,6 +55,7 @@ export default function HazardMap({ provinsi, kota, setProvinsi, setKota }) {
     mapRef.current = map
 
 
+
     // Tambahkan legenda jenis bangunan
     const legend = L.control({ position: 'bottomright' })
     legend.onAdd = () => {
@@ -241,18 +242,6 @@ export default function HazardMap({ provinsi, kota, setProvinsi, setKota }) {
             border-radius: 50%;
           }
           
-          /* Sembunyikan tooltip pada default, TAPI tetap munculkan jika di-hover */
-          .hide-tooltips .building-tooltip {
-            opacity: 0 !important;
-            visibility: hidden;
-          }
-          /* Tulisan selalu muncul ketika zoom >= 15 ATAU saat di-hover */
-          .show-tooltips .building-tooltip,
-          .leaflet-marker-icon:hover + .building-tooltip,
-          .building-tooltip:hover {
-            opacity: 1 !important;
-            visibility: visible !important;
-          }
           .building-tooltip {
             background-color: rgba(0, 0, 0, 0.75);
             color: #fff;
