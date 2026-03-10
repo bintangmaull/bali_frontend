@@ -188,9 +188,8 @@ export default function PetaBencana() {
     if (typeof window === 'undefined') return
     if (mapObj.current) return
 
-    // Import Leaflet only on client
-    const L = require('leaflet')
-    require('leaflet/dist/leaflet.css')
+    // Leaflet is already imported at the top level and this component is dynamically loaded with ssr: false
+
 
     // Define bounds for Indonesia
     const southWest = L.latLng(-11.0, 94.5)
