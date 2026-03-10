@@ -12,7 +12,7 @@ import Header from '../components/Header'
 import FilterChoropleth from '../components/FilterChoropleth'
 const ChoroplethMap = dynamic(() => import('../components/ChoroplethMap'), { ssr: false })
 
-import ChartsSection from '../components/ChartsSection'
+const ChartsSection = dynamic(() => import('../components/ChartsSection'), { ssr: false })
 import FilterDirectLoss from '../components/FilterDirectLoss'
 const DirectLossMap = dynamic(() => import('../components/DirectLossMap'), { ssr: false })
 
