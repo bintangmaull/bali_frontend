@@ -32,7 +32,7 @@ export default function About() {
     <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-[#0D0F12] text-gray-200' : 'bg-gray-100 text-gray-800'}`}>
       <Header />
 
-      <main className="max-w-screen mx-auto py-10 px-6 space-y-12 mt-18">
+      <main className="max-w-screen mx-auto pb-10 px-6 space-y-12 pt-32 md:pt-24 lg:pt-20">
         <div className="mx-auto max-w-7xl">
           {/* Intro */}
           <div className="w-full mb-12">

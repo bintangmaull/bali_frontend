@@ -54,7 +54,7 @@ export default function Calculation() {
     <div className={`min-h-screen transition-colors duration-300 ${pageBg}`}>
       <Header />
 
-      <main className="max-w-screen mx-auto py-6 px-6 space-y-4 mt-16">
+      <main className="max-w-screen mx-auto pb-6 px-6 space-y-4 pt-32 md:pt-24 lg:pt-20">
         {/* AAL Choropleth */}
         <section className="w-full">
           <div className={`${cardBg} shadow-xs rounded-lg p-6 flex flex-col space-y-3 md:col-span-2 ${shadow} transition-colors duration-300`}>

@@ -12,7 +12,7 @@ export default function Home() {
       <Header />
 
       {/* Main content pushed below fixed header */}
-      <main className="pt-18 relative h-screen flex flex-col">
+      <main className="pt-32 md:pt-24 lg:pt-20 relative h-screen flex flex-col">
         {/* Background wrapper */}
         <div className="absolute inset-0 h-full w-full -z-10">
           <Image

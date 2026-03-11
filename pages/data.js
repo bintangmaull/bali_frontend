@@ -41,7 +41,7 @@ export default function Home() {
     <div className={`min-h-screen transition-colors duration-300 ${pageBg}`}>
       <Header />
 
-      <main className="max-w-screen mx-auto py-4 md:py-6 px-2 md:px-6 space-y-4 mt-16">
+      <main className="max-w-screen mx-auto pb-4 md:pb-6 px-2 md:px-6 space-y-4 pt-32 md:pt-24 lg:pt-20">
         {/* Manajemen Data Bangunan */}
         <section className={`${cardBg} rounded-xl p-3 md:p-6 shadow-xs ${shadow} transition-colors duration-300`}>
           <h2 className={`text-xl md:text-2xl font-bold mb-6 ${headText}`}>Manajemen Data Bangunan</h2>
