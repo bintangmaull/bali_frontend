@@ -105,6 +105,21 @@ export default function HazardMap({ provinsi, kota, setProvinsi, setKota }) {
     map.setMaxZoom(19)
   }, [])
 
+  // Handle zoom adjustment on fullscreen
+  useEffect(() => {
+    const handleFullscreen = () => {
+      const map = mapRef.current
+      if (!map) return
+      if (document.fullscreenElement) {
+        map.setZoom(map.getZoom() + 2)
+      } else {
+        map.setZoom(map.getZoom() - 2)
+      }
+    }
+    document.addEventListener('fullscreenchange', handleFullscreen)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreen)
+  }, [])
+
   useEffect(() => {
     if (!mapRef.current || !buildingCluster.current) return
     const map = mapRef.current
@@ -227,9 +242,8 @@ export default function HazardMap({ provinsi, kota, setProvinsi, setKota }) {
       markers.current = []
     }
   }, [provinsi, kota])
-
   return (
-    <div className="flex flex-col md:flex-row gap-4 items-start min-h-[600px]">
+    <div className="flex flex-col md:flex-row gap-4 items-start h-[480px]">
       <style>
         {`
           .rounded-icon {
@@ -259,7 +273,7 @@ export default function HazardMap({ provinsi, kota, setProvinsi, setKota }) {
           }
         `}
       </style>
-      <div className="md:w-1/2 p-4 bg-[#1E2023] rounded-lg flex flex-col">
+      <div className="w-full md:w-1/2 flex flex-col">
         <CrudBuildings
           provFilter={provinsi}
           setProvFilter={setProvinsi}
@@ -270,7 +284,7 @@ export default function HazardMap({ provinsi, kota, setProvinsi, setKota }) {
           setExternalSearch={setSelectedBuilding}
         />
       </div>
-      <div className="md:w-1/2 h-[600px] rounded-xl overflow-hidden">
+      <div className="w-full md:w-1/2 h-[480px] rounded-xl overflow-hidden mt-4 md:mt-0">
         <div ref={mapEl} id="map" className="h-full w-full" />
       </div>
     </div>

@@ -71,7 +71,7 @@ const legendStyles = {
     { color: "#cc6600", label: '5.53 - 12.20' },
     { color: "#ff0000", label: '12.20 - 28.46' },
   ],
-   'hazard_banjir_depth_50': [
+  'hazard_banjir_depth_50': [
     { color: "#004d00", label: '0' }, // Assuming 0 is a specific entry
     { color: "#006400", label: '0.00 - 0.76' }, // Example ranges, ADJUST THESE
     { color: "#66cc00", label: '0.76 - 2.26' },
@@ -79,7 +79,7 @@ const legendStyles = {
     { color: "#cc6600", label: '5.29 - 12.25' },
     { color: "#ff0000", label: '12.25 - 24.78' },
   ],
-   'hazard_banjir_depth_100': [
+  'hazard_banjir_depth_100': [
     { color: "#004d00", label: '0' }, // Assuming 0 is a specific entry
     { color: "#006400", label: '0.00 - 0.99' }, // Example ranges, ADJUST THESE
     { color: "#66cc00", label: '0.99 - 2.93' },
@@ -87,7 +87,7 @@ const legendStyles = {
     { color: "#cc6600", label: '6.72 - 14.95' },
     { color: "#ff0000", label: '14.95 - 61.71' },
   ],
-   'hazard_longsor_mflux_2': [
+  'hazard_longsor_mflux_2': [
     { color: "#004d00", label: '0' }, // Assuming 0 is a specific entry
     { color: "#006400", label: '0.00 - 27545.29' }, // Example ranges, ADJUST THESE
     { color: "#66cc00", label: '27545.29 - 80138.96' },
@@ -95,7 +95,7 @@ const legendStyles = {
     { color: "#cc6600", label: '154185.00 - 261752.95' },
     { color: "#ff0000", label: '261752.95 - 884917.38' },
   ],
-   'hazard_longsor_mflux_5': [
+  'hazard_longsor_mflux_5': [
     { color: "#004d00", label: '0' }, // Assuming 0 is a specific entry
     { color: "#006400", label: '0.00 - 27456.30' }, // Example ranges, ADJUST THESE
     { color: "#66cc00", label: '27456.30 - 79212.81' },
@@ -103,7 +103,7 @@ const legendStyles = {
     { color: "#cc6600", label: '151713.78 - 257144.77' },
     { color: "#ff0000", label: '257144.77 - 884646.50' },
   ],
-   'hazard_gunungberapi_kpa_50': [
+  'hazard_gunungberapi_kpa_50': [
     { color: "#004d00", label: '0' }, // Assuming 0 is a specific entry
     { color: "#006400", label: '0.00 - 0.00' }, // Example ranges, ADJUST THESE
     { color: "#66cc00", label: '0.00 - 0.00' },
@@ -111,17 +111,17 @@ const legendStyles = {
     { color: "#cc6600", label: '0.00 - 0.00' },
     { color: "#ff0000", label: '0.00 - 0.00' },
   ],
-   'hazard_gunungberapi_kpa_100': [
-    { color: "#004d00", label: '0' }, 
-    { color: "#006400", label: '0.00 - 0.11' }, 
+  'hazard_gunungberapi_kpa_100': [
+    { color: "#004d00", label: '0' },
+    { color: "#006400", label: '0.00 - 0.11' },
     { color: "#66cc00", label: '0.11 - 0.49' },
     { color: "#edd16d", label: '0.49 - 1.16' },
     { color: "#cc6600", label: '1.16 - 2.10' },
     { color: "#ff0000", label: '2.10 - 3.19' },
   ],
-   'hazard_gunungberapi_kpa_250': [
-    { color: "#004d00", label: '0' }, 
-    { color: "#006400", label: '0.00 - 0.61' }, 
+  'hazard_gunungberapi_kpa_250': [
+    { color: "#004d00", label: '0' },
+    { color: "#006400", label: '0.00 - 0.61' },
     { color: "#66cc00", label: '0.61 - 1.94' },
     { color: "#edd16d", label: '1.94 - 3.89' },
     { color: "#cc6600", label: '3.89 - 6.47' },
@@ -169,8 +169,8 @@ export default function PetaBencana() {
     const div = legendControl.current.getContainer();
 
     if (!legendInfo || !div) {
-        div.innerHTML = ''; // Clear legend if no info or layerName
-        return;
+      div.innerHTML = ''; // Clear legend if no info or layerName
+      return;
     }
 
     let html = '<b>Intensitas Bencana</b><br>';
@@ -237,6 +237,21 @@ export default function PetaBencana() {
     }
   }, [])
 
+  // Handle zoom adjustment on fullscreen
+  useEffect(() => {
+    const handleFullscreen = () => {
+      const map = mapObj.current
+      if (!map) return
+      if (document.fullscreenElement) {
+        map.setZoom(map.getZoom() + 2)
+      } else {
+        map.setZoom(map.getZoom() - 2)
+      }
+    }
+    document.addEventListener('fullscreenchange', handleFullscreen)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreen)
+  }, [])
+
   // Effect to handle layer changes
   useEffect(() => {
     if (mapObj.current && selectedIntensitas) {
@@ -275,11 +290,11 @@ export default function PetaBencana() {
           />
         </div>
       </div>
-      <div className="relative h-[480px] w-full rounded-lg overflow-hidden">
+      <div className="relative h-[450px] w-full rounded-lg overflow-hidden">
         <div ref={mapRef} id="map" className="h-full w-full" />
       </div>
       {/* Add custom legend styling here */}
-       <style jsx>{`
+      <style jsx>{`
         .info.legend {
           background: none;
           background-color: rgba(255, 255, 255, 0.8);

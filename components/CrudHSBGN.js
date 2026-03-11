@@ -66,7 +66,7 @@ export default function CrudHSBGN() {
   const borderCls = darkMode ? 'border-gray-700' : 'border-gray-200'
 
   return (
-    <div className={`${cardBg} p-6 rounded-lg shadow flex flex-col gap-4 transition-colors duration-300`}>
+    <div className={`${cardBg} p-3 rounded-lg shadow flex flex-col gap-4 transition-colors duration-300`}>
       {/* Filters */}
       <div className="flex flex-col gap-2">
         <input
@@ -80,7 +80,7 @@ export default function CrudHSBGN() {
 
       {/* Table */}
       <div className="overflow-auto max-h-[400px]">
-        <table className="w-full text-sm mt-4">
+        <table className="w-full text-sm mt-2">
           <thead className="bg-[#0a2c68] text-white rounded-lg">
             <tr>
               <th className="p-2 text-justify">Kota</th>

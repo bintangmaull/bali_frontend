@@ -57,7 +57,7 @@ export default function About() {
             </h2>
             <ul role="list" className="grid gap-x-8 gap-y-12 sm:grid-cols-2">
               {leadership.map((person) => (
-                <li key={person.name} className={`flex items-center gap-x-6 rounded-xl p-4 transition-colors duration-300 ${darkMode ? 'bg-[#1E2023]' : 'bg-white shadow-sm'}`}>
+                <li key={person.name} className={`flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 sm:gap-x-6 rounded-xl p-4 transition-colors duration-300 ${darkMode ? 'bg-[#1E2023]' : 'bg-white shadow-sm'}`}>
                   <img
                     src={person.imageUrl}
                     alt={person.name}

@@ -41,10 +41,10 @@ export default function Home() {
     <div className={`min-h-screen transition-colors duration-300 ${pageBg}`}>
       <Header />
 
-      <main className="max-w-screen mx-auto py-10 px-6 space-y-6 mt-18">
+      <main className="max-w-screen mx-auto py-4 md:py-6 px-2 md:px-6 space-y-4 mt-16">
         {/* Manajemen Data Bangunan */}
-        <section className={`${cardBg} rounded-xl p-6 shadow-xs ${shadow} transition-colors duration-300`}>
-          <h2 className={`text-2xl font-bold mb-6 ${headText}`}>Manajemen Data Bangunan</h2>
+        <section className={`${cardBg} rounded-xl p-3 md:p-6 shadow-xs ${shadow} transition-colors duration-300`}>
+          <h2 className={`text-xl md:text-2xl font-bold mb-6 ${headText}`}>Manajemen Data Bangunan</h2>
           <HazardMap
             provinsi={selectedProv}
             kota={selectedKota}
@@ -54,8 +54,8 @@ export default function Home() {
         </section>
 
         {/* HSBGN */}
-        <section className={`${cardBg} rounded-xl p-6 shadow-xs ${shadow} md:w-1/2 center mx-auto transition-colors duration-300`}>
-          <h2 className={`text-2xl font-bold mb-6 ${headText}`}>Manajemen Harga Satuan Bangunan Gedung Negara</h2>
+        <section className={`${cardBg} rounded-xl p-3 md:p-6 shadow-xs ${shadow} w-full max-w-3xl mx-auto transition-colors duration-300`}>
+          <h2 className={`text-xl md:text-2xl font-bold mb-2 ${headText}`}>Manajemen Harga Satuan Bangunan Gedung Negara</h2>
           <CrudHSBGN />
         </section>
 
@@ -68,7 +68,7 @@ export default function Home() {
 
         {/* Kurva Kerentanan */}
         <section className={`${cardBg} rounded-xl p-6 shadow-xs ${shadow} transition-colors duration-300`}>
-          <h2 className={`text-2xl font-bold mb-6 ${headText}`}>Kurva Kerentanan</h2>
+          <h2 className={`text-2xl font-bold mb-2 ${headText}`}>Kurva Kerentanan</h2>
           <DisasterCurves />
         </section>
       </main>

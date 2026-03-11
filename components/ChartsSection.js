@@ -58,6 +58,28 @@ function CustomTooltip({ active, payload, label, darkMode }) {
 }
 
 
+// Custom Tick untuk X-Axis agar teks bisa 2 baris
+function CustomXAxisTick({ x, y, payload, tickColor }) {
+  const words = payload.value.split(' ');
+  return (
+    <g transform={`translate(${x},${y})`}>
+      {words.map((word, index) => (
+        <text
+          key={index}
+          x={0}
+          y={index * 12}
+          dy={10}
+          textAnchor="middle"
+          fill={tickColor}
+          fontSize={10}
+        >
+          {word}
+        </text>
+      ))}
+    </g>
+  );
+}
+
 export default function ChartsSection({ provs, data, load }) {
   const { darkMode } = useTheme();
 
@@ -77,11 +99,14 @@ export default function ChartsSection({ provs, data, load }) {
     }));
 
   return (
-    <section className="p-6">
-      <div className="mb-4">
+    <section className="py-2 px-2 sm:px-6">
+      <div className="mb-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <h2 className={`text-xl md:text-2xl font-semibold font-[SF Pro] ${titleColor}`}>
+          Diagram Batang Average Annual Loss Kota
+        </h2>
         {/* Dropdown untuk memilih kota */}
         <select
-          className={`w-72 rounded-4xl px-4 py-2 appearance-none transition-colors duration-300 ${darkMode
+          className={`w-48 sm:w-64 rounded-4xl px-3 py-1.5 text-sm appearance-none transition-colors duration-300 text-center ${darkMode
             ? 'bg-[#C6FF00] text-black'
             : 'bg-[#C6FF00] text-black border border-yellow-400'
             }`}
@@ -95,28 +120,32 @@ export default function ChartsSection({ provs, data, load }) {
         </select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {chartTypes.map(({ title, tipe }) => {
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {chartTypes.map(({ title, tipe }, index) => {
           const chartData = buildChartData(tipe);
+          // "Semua Bangunan" (index 0) dibuat full-width di layar besar (optional)
+          // Namun user minta 3 sisanya 1 baris. Jadi md:grid-cols-2 lg:grid-cols-3 
+          // akan menempatkan 3 chart di baris yang sama pada layar lebar.
           return (
-            <div key={tipe} className={`${chartCardBg} rounded-lg p-4 transition-colors duration-300`}>
-              <h3 className={`${titleColor} text-center mb-2 transition-colors duration-300`}>{title}</h3>
-              <ResponsiveContainer width="100%" height={350}>
+            <div key={tipe} className={`${chartCardBg} rounded-lg p-2 sm:p-4 transition-colors duration-300 ${index === 0 ? 'lg:col-span-3' : 'lg:col-span-1'}`}>
+              <h3 className={`${titleColor} text-center mb-2 transition-colors duration-300 text-sm sm:text-base`}>{title}</h3>
+              <ResponsiveContainer width="100%" height={index === 0 ? 200 : 180}>
                 <BarChart
                   data={chartData}
-                  margin={{ top: 20, right: 20, bottom: 5, left: 30 }}
+                  margin={{ top: 20, right: 10, bottom: 10, left: -15 }}
                   barGap={10}
                 >
                   <CartesianGrid stroke={gridColor} strokeDasharray="3 3" />
                   <XAxis
                     dataKey="name"
-                    tick={{ fill: tickColor, fontSize: 14 }}
                     interval={0}
+                    tick={<CustomXAxisTick tickColor={tickColor} />}
+                    height={40}
                   />
                   <YAxis
                     tickFormatter={formatYAxis}
-                    tick={{ fill: tickColor, fontSize: 12 }}
-                    width={80}
+                    tick={{ fill: tickColor, fontSize: 10 }}
+                    width={60}
                   />
                   <Tooltip
                     content={<CustomTooltip darkMode={darkMode} />}

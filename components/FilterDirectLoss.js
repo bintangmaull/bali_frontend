@@ -46,55 +46,52 @@ export default function FilterDirectLoss({
   const dropdownItem = darkMode ? 'text-gray-200 hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100';
 
   return (
-    <div className="flex flex-col gap-4 overflow-visible">
-      {/* Filter Kota */}
-      <div className="flex flex-wrap gap-4">
+    <div className="flex flex-col gap-2 overflow-visible">
+      {/* Row 1: Pilih Kota + Filter Tipe Bangunan */}
+      <div className="flex flex-row flex-nowrap overflow-x-auto gap-2 items-center py-1 scrollbar-hide">
         <Select
           id="kotaSelect"
           value={selectedKota}
           onChange={setSelectedKota}
           options={kotaList}
-          placeholder="Pilih Kota"
-          className="w-64"
+          placeholder="Kota"
+          className="w-32 min-w-[120px] text-xs !px-2 !py-1"
         />
-      </div>
-
-      {/* Filter Tipe Bangunan */}
-      <div className="flex flex-wrap gap-4">
         {[
-          { key: 'BMN', label: 'Bangunan Milik Negara' },
-          { key: 'FS', label: 'Fasilitas Kesehatan' },
-          { key: 'FD', label: 'Fasilitas Pendidikan' }
+          { key: 'BMN', label: 'BMN', full: 'Bangunan Milik Negara' },
+          { key: 'FS', label: 'Faskes', full: 'Fasilitas Kesehatan' },
+          { key: 'FD', label: 'Fasdik', full: 'Fasilitas Pendidikan' }
         ].map((type) => (
           <label
             key={type.key}
-            className="flex items-center gap-2 text-black px-4 py-2 bg-[#C084FC] rounded-4xl hover:bg-cyan-700 hover:text-black cursor-pointer"
+            title={type.full}
+            className="flex items-center gap-1.5 text-black px-2 py-1 bg-[#C084FC] rounded-full hover:bg-cyan-700 hover:text-black cursor-pointer whitespace-nowrap"
           >
             <input
               type="checkbox"
               checked={filters[type.key]}
               onChange={() => setFilters((f) => ({ ...f, [type.key]: !f[type.key] }))}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             />
-            <span className="text-sm font-medium text-gray-700">{type.label}</span>
+            <span className="text-xs text-gray-800">{type.label}</span>
           </label>
         ))}
       </div>
 
-      {/* Pencarian Gedung dengan Preview */}
+      {/* Row 2: Cari + Unduh */}
       <div className="relative">
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-row gap-2 items-center">
           <input
             type="text"
             placeholder="Cari nama gedung..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className={`w-full p-3 border rounded-lg focus:ring-2 transition-colors duration-300 ${inputCls}`}
+            className={`flex-1 p-1.5 text-xs border rounded focus:ring-2 transition-colors duration-300 ${inputCls}`}
             disabled={!selectedKota}
           />
           <button
             type="button"
-            className="ml-2 px-4 py-2 bg-[#22D3EE] text-black rounded-4xl hover:bg-[#3B82F6] hover:text-white font-[SF Pro] whitespace-nowrap transition"
+            className="px-2.5 py-1.5 bg-[#22D3EE] text-black text-xs rounded hover:bg-[#3B82F6] hover:text-white whitespace-nowrap transition shadow-sm"
             onClick={() => {
               const params = new URLSearchParams();
               if (selectedProv) params.append('provinsi', selectedProv);

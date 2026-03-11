@@ -73,15 +73,20 @@ export default function ChoroplethMap({ geojson, hazard, model }) {
     }).addTo(mapRef.current)
   }, [])
 
-  // Fit map to full GeoJSON bounds as soon as data loads (disabled: default is Bali)
-  // useEffect(() => {
-  //   const map = mapRef.current
-  //   if (!map || !geojson) return
-  //   const tempLayer = L.geoJSON(geojson)
-  //   const fullBounds = tempLayer.getBounds()
-  //   map.fitBounds(fullBounds, { padding: [20, 20] })
-  //   map.setMaxBounds(fullBounds)
-  // }, [geojson])
+  // Handle zoom adjustment on fullscreen
+  useEffect(() => {
+    const handleFullscreen = () => {
+      const map = mapRef.current
+      if (!map) return
+      if (document.fullscreenElement) {
+        map.setZoom(map.getZoom() + 2)
+      } else {
+        map.setZoom(map.getZoom() - 2)
+      }
+    }
+    document.addEventListener('fullscreenchange', handleFullscreen)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreen)
+  }, [])
 
   // Render choropleth + popup + legend setiap data berubah
   useEffect(() => {
@@ -125,10 +130,7 @@ export default function ChoroplethMap({ geojson, hazard, model }) {
         const props = feature.properties
         const nama = props.kota || props.nama_kota || props.provinsi || props.nama_provinsi || 'Unknown'
         const val = props[metric] || 0
-        // Remove the default click popup
-        // layer.bindPopup(`<strong>${prov}</strong><br/>AAL: ${fmtPopup(val)}`)
 
-        // Add hover events
         layer.on({
           mouseover: (e) => {
             const layer = e.target;
@@ -141,16 +143,13 @@ export default function ChoroplethMap({ geojson, hazard, model }) {
             if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
               layer.bringToFront();
             }
-            // Open popup on hover
             L.popup()
               .setLatLng(layer.getBounds().getCenter())
               .setContent(`<strong>${nama}</strong><br/>AAL: ${fmtPopup(val)}`)
               .openOn(map);
           },
           mouseout: (e) => {
-            // Reset style on mouseout
             layerRef.current.resetStyle(e.target);
-            // Close popup on mouseout
             map.closePopup();
           },
         });
@@ -158,43 +157,52 @@ export default function ChoroplethMap({ geojson, hazard, model }) {
     }).addTo(map)
 
     // Tambah legend di pojok kiri bawah
-    legendRef.current = L.control({ position: 'bottomleft' })
-    legendRef.current.onAdd = () => {
+    const legend = L.control({ position: 'bottomleft' })
+    legend.onAdd = () => {
       const div = L.DomUtil.create('div', 'info legend')
-      div.style.background = 'rgba(255,255,255,0.9)'
-      div.style.padding = '8px'
+      div.style.background = 'rgba(255,255,255,0.95)'
+      div.style.padding = '6px 10px'
       div.style.borderRadius = '4px'
       div.style.color = '#000'
       div.style.fontFamily = 'sans-serif'
-      div.style.lineHeight = '1.5em'
-      div.innerHTML = '<strong>Average Annual Loss (Rp)</strong><br/>'
+      div.style.lineHeight = '1.2'
+      div.style.fontSize = '0.7rem'
+      div.style.border = '1px solid #ccc'
+      div.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)'
+      div.innerHTML = '<strong style="font-size:0.75rem">AAL (Rp)</strong><br/>'
 
-      // Tambahkan kelas pertama dengan "Kurang dari"
       div.innerHTML +=
-        `<i style="background:${colors[0]};width:18px;height:12px;display:inline-block;margin-right:6px;border:1px solid #ccc"></i>` +
-        `Kurang dari ${fmtLegend(grades[1])}<br/>`
+        `<div style="display:flex; align-items:center; margin-bottom:2px;">` +
+        `<i style="background:${colors[0]};width:12px;height:10px;display:inline-block;margin-right:6px;border:1px solid #ccc"></i>` +
+        `<span>&lt; ${fmtLegend(grades[1])}</span></div>`
 
-      // Tambahkan kelas menengah
       for (let i = 1; i < grades.length - 2; i++) {
         div.innerHTML +=
-          `<i style="background:${colors[i]};width:18px;height:12px;display:inline-block;margin-right:6px;border:1px solid #ccc"></i>` +
-          `${fmtLegend(grades[i])} – ${fmtLegend(grades[i + 1])}<br/>`
+          `<div style="display:flex; align-items:center; margin-bottom:2px;">` +
+          `<i style="background:${colors[i]};width:12px;height:10px;display:inline-block;margin-right:6px;border:1px solid #ccc"></i>` +
+          `<span>${fmtLegend(grades[i])} – ${fmtLegend(grades[i + 1])}</span></div>`
       }
 
-      // Tambahkan kelas terakhir dengan "Lebih dari"
       div.innerHTML +=
-        `<i style="background:${colors[colors.length - 1]};width:18px;height:12px;display:inline-block;margin-right:6px;border:1px solid #ccc"></i>` +
-        `Lebih dari ${fmtLegend(grades[grades.length - 2])}<br/>`
+        `<div style="display:flex; align-items:center;">` +
+        `<i style="background:${colors[colors.length - 1]};width:12px;height:10px;display:inline-block;margin-right:6px;border:1px solid #ccc"></i>` +
+        `<span>&gt; ${fmtLegend(grades[grades.length - 2])}</span></div>`
 
       return div
     }
-    legendRef.current.addTo(map)
-    const lc = legendRef.current.getContainer()
-    if (lc) {
-      lc.style.bottom = '20px'   // naikkan 30px dari bottom
-      lc.style.left = '20px'   // geser 30px dari kiri
+    legend.addTo(mapRef.current)
+    legendRef.current = legend
+
+    return () => {
+      if (legendRef.current) legendRef.current.remove()
     }
   }, [geojson, hazard, model])
 
-  return <div ref={mapEl} id="map" className="h-[480px] w-full rounded-lg" />
+  return (
+    <div className="relative h-full">
+      <style>
+      </style>
+      <div ref={mapEl} id="map" className="h-full w-full rounded-lg" />
+    </div>
+  )
 }

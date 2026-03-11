@@ -36,6 +36,7 @@ function LoadingSpinner() {
 }
 
 function MiniMap({ lat, lon, onLatLonChange, onLocationSelect, kode_bangunan }) {
+  const { darkMode } = useTheme()
   const mapEl = useRef(null)
   const mapRef = useRef(null)
   const markerRef = useRef(null)
@@ -107,7 +108,7 @@ function MiniMap({ lat, lon, onLatLonChange, onLocationSelect, kode_bangunan }) 
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Cari lokasi (misal: Taman Mini Indonesia Indah)"
-          className="border p-2 rounded-lg w-full text-black"
+          className={`border p-2 rounded-lg w-full ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'}`}
         />
         <button type="submit" className="bg-blue-500 text-white px-3 rounded-lg" disabled={isSearching}>
           Cari
@@ -379,10 +380,10 @@ export default function CrudBuildings({
   const theadBg = darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-700'
   const rowText = darkMode ? 'text-white' : 'text-gray-800'
   const rowHover = darkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-50'
-  const inputCls = darkMode ? 'border p-2 rounded-lg flex-1 text-white bg-gray-700 border-gray-600' : 'border p-2 rounded-lg flex-1 text-gray-900 bg-white border-gray-300'
+  const inputCls = darkMode ? 'border p-1.5 md:p-2 text-xs md:text-sm rounded-lg flex-1 text-white bg-gray-700 border-gray-600' : 'border p-1.5 md:p-2 text-xs md:text-sm rounded-lg flex-1 text-gray-900 bg-white border-gray-300'
 
   return (
-    <div className={`${cardBg} p-5 -mx-4 rounded-2xl shadow flex flex-col h-[600px] -my-4 transition-colors duration-300 relative`}>
+    <div className={`${cardBg} p-3 md:p-5 md:rounded-2xl shadow flex flex-col h-[480px] transition-colors duration-300 relative`}>
 
       {/* Notifikasi Modal Upload */}
       {uploadSuccessMsg && (
@@ -398,68 +399,82 @@ export default function CrudBuildings({
         </div>
       )}
 
-      <h2 className={`${infoBg} rounded-xl p-2 mb-3 transition-colors duration-300`}>
-        Untuk mengunggah data bangunan, pastikan mengikuti template pengisian data dengan baik.
-        Silakan unduh terlebih dahulu.
-        <br />
-        <a
-          href="/sample_bangunan.csv"
-          download="template_data_bangunan.csv"
-          className="inline-block mt-4 px-4 py-2 bg-[#22D3EE] text-black rounded-4xl hover:bg-[#3B82F6] hover:text-white transition"
-        >
-          Unduh Template CSV
-        </a>
-      </h2>
-
-      <div className="space-y-2">
-        <div className="flex gap-2">
-          <input
-            type="file"
-            accept=".csv"
-            ref={fileInputRef}
-            onChange={e => setFile(e.target.files[0])}
-            className={inputCls}
-          />
-          <Button
-            onClick={onUpload}
-            disabled={!file || isUploading}
-            className="bg-[#22D3EE] text-black rounded-4xl hover:bg-[#3B82F6] hover:text-white px-4 py-2 transition"
+      {/* Upload Section with Hover Instructions */}
+      <div className="relative group mb-3">
+        <div className="flex flex-col md:flex-row gap-2 items-stretch md:items-center">
+          <div className="flex-1 flex flex-col sm:flex-row gap-2">
+            <input
+              type="file"
+              accept=".csv"
+              ref={fileInputRef}
+              onChange={e => setFile(e.target.files[0])}
+              className={`${inputCls} w-full`}
+            />
+            <Button
+              onClick={onUpload}
+              disabled={!file || isUploading}
+              className="bg-[#22D3EE] text-black rounded-4xl hover:bg-[#3B82F6] hover:text-white px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm transition whitespace-nowrap text-center sm:w-auto w-full"
+            >
+              {isUploading && <LoadingSpinner />} Unggah Data
+            </Button>
+          </div>
+          <a
+            href="/sample_bangunan.csv"
+            download="template_data_bangunan.csv"
+            className="px-3 py-1.5 md:px-4 md:py-2 bg-[#C6FF00] text-black rounded-4xl hover:bg-[#A8D600] transition text-xs md:text-sm font-semibold whitespace-nowrap shadow-sm text-center md:w-auto w-full"
           >
-            {isUploading && <LoadingSpinner />} Unggah Data
-          </Button>
+            Unduh Template CSV
+          </a>
         </div>
-        <div className="flex gap-2 flex-wrap items-end">
-          <Select id="kotaFilter" value={kotaFilter} onChange={setKotaFilter} options={['', ...kotaList]} placeholder="Pilih Kota" className="w-48" />
+
+        {/* Hover Tooltip Instructions */}
+        <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block w-full max-w-md z-[1001]">
+          <div className={`${infoBg} p-3 rounded-xl shadow-xl border ${darkMode ? 'border-gray-600' : 'border-gray-200'} text-xs animate-in fade-in slide-in-from-bottom-2 duration-200`}>
+            <p className="font-semibold mb-1">💡 Petunjuk Unggah:</p>
+            <p>Pastikan mengikuti template pengisian data dengan baik agar perhitungan AAL dan Direct Loss akurat. Silakan unduh template CSV di samping jika belum memilikinya.</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-2 md:space-y-4 flex flex-col">
+        <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end w-full">
+          <div className="w-full sm:w-48">
+            <Select id="kotaFilter" value={kotaFilter} onChange={setKotaFilter} options={['', ...kotaList]} placeholder="Pilih Kota" className="w-full" />
+          </div>
           <input
             type="text"
             placeholder="Cari Nama Gedung"
             disabled={!kotaFilter}
             value={search}
             onChange={e => doSetSearch(e.target.value)}
-            className={inputCls}
+            className={`${inputCls} w-full sm:flex-1`}
           />
           <Button
             onClick={() => setModalMode('add')}
-            className="text-black px-4 py-2 bg-[#C084FC] rounded-4xl hover:bg-cyan-700 hover:text-white"
+            className="text-black px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm bg-[#C084FC] rounded-4xl hover:bg-cyan-700 hover:text-white text-center w-full sm:w-auto"
           >
             Tambah
           </Button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto mt-4 h-[600px]">
-        <table className="w-full text-sm">
+      <div className="flex-1 overflow-x-auto overflow-y-auto mt-4 h-[480px] rounded-lg">
+        <table className="w-full text-xs text-left whitespace-nowrap">
           <thead className={`${theadBg} sticky top-0 transition-colors duration-300`}>
             <tr>
               <th
-                className="p-2 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-between"
+                className="p-2 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                 onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
               >
                 Nama Gedung {sortOrder === 'asc' ? '▲' : '▼'}
               </th>
-              {['Alamat', 'Kota', 'Lon', 'Lat', 'Lantai', 'Taxonomy', 'Aksi'].map(h => (
-                <th key={h} className="p-2">{h}</th>
-              ))}
+              <th className="p-2">Alamat</th>
+              <th className="p-2">Kota</th>
+              <th className="p-2">Lon</th>
+              <th className="p-2">Lat</th>
+              <th className="p-2">Lantai</th>
+              <th className="p-2">Taxonomy</th>
+              <th className="p-2">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -474,11 +489,11 @@ export default function CrudBuildings({
                   type: (b.id_bangunan || '').split('_')[0]
                 })}
               >
-                <td className={`p-2 ${rowText}`}>{b.nama_gedung}</td>
-                <td className={`p-2 ${rowText}`}>{b.alamat}</td>
+                <td className={`p-2 ${rowText} truncate max-w-[200px]`} title={b.nama_gedung}>{b.nama_gedung}</td>
+                <td className={`p-2 ${rowText} truncate max-w-[200px]`} title={b.alamat}>{b.alamat}</td>
                 <td className={`p-2 ${rowText}`}>{b.kota}</td>
-                <td className={`p-2 ${rowText}`}>{b.lon}</td>
-                <td className={`p-2 ${rowText}`}>{b.lat}</td>
+                <td className={`p-2 ${rowText}`}>{parseFloat(b.lon).toFixed(6)}</td>
+                <td className={`p-2 ${rowText}`}>{parseFloat(b.lat).toFixed(6)}</td>
                 <td className={`p-2 ${rowText}`}>{b.jumlah_lantai}</td>
                 <td className={`p-2 ${rowText}`}>{b.taxonomy}</td>
                 <td className="p-2 space-x-2">
@@ -493,10 +508,10 @@ export default function CrudBuildings({
 
 
       <Modal isOpen={modalMode === 'add'} onClose={() => setModalMode('')}>
-        <AddForm onSave={onAdd} isSavingAdd={isSavingAdd} />
+        <AddForm onSave={onAdd} isSavingAdd={isSavingAdd} darkMode={darkMode} />
       </Modal>
       <Modal isOpen={modalMode === 'edit'} onClose={() => setModalMode('')}>
-        <EditForm initial={editing} onSave={onSaveEdit} isSavingEdit={isSavingEdit} />
+        <EditForm initial={editing} onSave={onSaveEdit} isSavingEdit={isSavingEdit} darkMode={darkMode} />
       </Modal>
       <Modal isOpen={!!deleteTarget} onClose={() => !isDeleting && setDeleteTarget(null)}>
         <h3 className="text-lg font-bold mb-4">Hapus Bangunan</h3>
@@ -523,7 +538,7 @@ export default function CrudBuildings({
           </span>
         </p>
 
-        <div className="overflow-x-auto max-h-[60vh] rounded-lg border border-gray-200">
+        <div className="overflow-x-auto overflow-y-auto max-h-[60vh] max-w-full rounded-lg border border-gray-200 block">
           <table className="min-w-full text-sm">
             <thead className="bg-[#475569] text-white sticky top-0 z-10">
               <tr>
@@ -671,7 +686,7 @@ export default function CrudBuildings({
   )
 }
 
-function AddForm({ onSave, isSavingAdd }) {
+function AddForm({ onSave, isSavingAdd, darkMode }) {
   const [data, setData] = useState({
     nama_gedung: '', alamat: '', luas: '', jumlah_lantai: '',
     provinsi: 'BALI', kota: '', lon: '115.2', lat: '-8.4', taxonomy: '', kode_bangunan: ''
@@ -687,6 +702,24 @@ function AddForm({ onSave, isSavingAdd }) {
     setData(d => ({ ...d, lat: lat.toString(), lon: lon.toString() }))
   }
 
+  const inputCls = `border p-2 w-full rounded-lg ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'}`;
+
+  const isValid = () => {
+    const luas = parseFloat(data.luas);
+    const isValidLuas = !isNaN(luas) && luas > 0;
+    const lantaiStr = String(data.jumlah_lantai).trim();
+    const isValidLantai = /^[1-9]\d*$/.test(lantaiStr); 
+
+    return (
+      data.nama_gedung.trim() !== '' &&
+      isValidLuas &&
+      isValidLantai &&
+      data.kota !== '' &&
+      data.taxonomy !== '' &&
+      data.kode_bangunan !== ''
+    );
+  };
+
   return (
     <>
       <h3 className="text-lg font-bold mb-4">Tambah Bangunan</h3>
@@ -700,7 +733,8 @@ function AddForm({ onSave, isSavingAdd }) {
             step={fld === 'luas' ? 'any' : undefined}
             value={data[fld]}
             onChange={e => setData(d => ({ ...d, [fld]: e.target.value }))}
-            className="border p-2 w-full rounded-lg"
+            className={inputCls}
+            placeholder={fld === 'luas' ? 'Harus angka > 0' : fld === 'jumlah_lantai' ? 'Bulat positif (contoh: 2)' : ''}
           />
         </div>
       ))}
@@ -711,11 +745,11 @@ function AddForm({ onSave, isSavingAdd }) {
       <div className="grid grid-cols-2 gap-2 mb-2">
         <div>
           <label className="block text-sm font-semibold">Longitude</label>
-          <input type="number" step="any" value={data.lon} onChange={e => setData(d => ({ ...d, lon: e.target.value }))} className="border p-2 w-full rounded-lg" />
+          <input type="number" step="any" value={data.lon} onChange={e => setData(d => ({ ...d, lon: e.target.value }))} className={inputCls} />
         </div>
         <div>
           <label className="block text-sm font-semibold">Latitude</label>
-          <input type="number" step="any" value={data.lat} onChange={e => setData(d => ({ ...d, lat: e.target.value }))} className="border p-2 w-full rounded-lg" />
+          <input type="number" step="any" value={data.lat} onChange={e => setData(d => ({ ...d, lat: e.target.value }))} className={inputCls} />
         </div>
       </div>
       <MiniMap lat={parseFloat(data.lat)} lon={parseFloat(data.lon)} onLatLonChange={handleLatLonChange} kode_bangunan={data.kode_bangunan} />
@@ -730,8 +764,8 @@ function AddForm({ onSave, isSavingAdd }) {
       <div className="flex justify-end">
         <Button
           onClick={() => onSave({ ...data, luas: parseFloat(data.luas), jumlah_lantai: parseInt(data.jumlah_lantai, 10) })}
-          disabled={isSavingAdd}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+          disabled={isSavingAdd || !isValid()}
+          className={`px-4 py-2 rounded-lg ${(!isValid() || isSavingAdd) ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
         >
           {isSavingAdd ? 'Menyimpan...' : 'Tambah'}
         </Button>
@@ -740,13 +774,29 @@ function AddForm({ onSave, isSavingAdd }) {
   )
 }
 
-function EditForm({ initial, onSave, isSavingEdit }) {
+function EditForm({ initial, onSave, isSavingEdit, darkMode }) {
   const [data, setData] = useState(initial || {})
   useEffect(() => { setData(initial || {}) }, [initial])
 
   const handleLatLonChange = (lat, lon) => {
     setData(d => ({ ...d, lat: lat.toString(), lon: lon.toString() }))
   }
+
+  const inputCls = `border p-2 w-full rounded-lg ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'}`;
+
+  const isValid = () => {
+    const luas = parseFloat(data.luas);
+    const isValidLuas = !isNaN(luas) && luas > 0;
+    const lantaiStr = String(data.jumlah_lantai || '').trim();
+    const isValidLantai = /^[1-9]\d*$/.test(lantaiStr);
+
+    return (
+      (data.nama_gedung || '').trim() !== '' &&
+      isValidLuas &&
+      isValidLantai &&
+      (data.taxonomy || '') !== ''
+    );
+  };
 
   return (
     <>
@@ -761,7 +811,8 @@ function EditForm({ initial, onSave, isSavingEdit }) {
             step={['lon', 'lat', 'luas'].includes(fld) ? 'any' : undefined}
             value={data[fld] ?? ''}
             onChange={e => setData(d => ({ ...d, [fld]: e.target.value }))}
-            className="border p-2 w-full rounded-lg"
+            className={inputCls}
+            placeholder={fld === 'luas' ? 'Harus angka > 0' : fld === 'jumlah_lantai' ? 'Bulat positif (contoh: 2)' : ''}
           />
         </div>
       ))}
@@ -776,8 +827,9 @@ function EditForm({ initial, onSave, isSavingEdit }) {
         <select
           value={data.taxonomy || ''}
           onChange={e => setData(d => ({ ...d, taxonomy: e.target.value }))}
-          className="border p-2 w-full rounded-lg"
+          className={inputCls}
         >
+          <option value="">- Pilih Taksonomi -</option>
           <option value="CR">CR</option>
           <option value="MCF">MCF</option>
           <option value="MUR">MUR</option>
@@ -792,8 +844,8 @@ function EditForm({ initial, onSave, isSavingEdit }) {
             luas: parseFloat(data.luas), jumlah_lantai: parseInt(data.jumlah_lantai, 10),
             taxonomy: data.taxonomy
           })}
-          disabled={isSavingEdit}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+          disabled={isSavingEdit || !isValid()}
+          className={`px-4 py-2 rounded-lg ${(!isValid() || isSavingEdit) ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
         >
           {isSavingEdit ? 'Menyimpan...' : 'Simpan'}
         </Button>

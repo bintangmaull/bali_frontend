@@ -12,7 +12,7 @@ export default function Home() {
       <Header />
 
       {/* Main content pushed below fixed header */}
-      <main className="pt-25 relative h-screen flex flex-col">
+      <main className="pt-18 relative h-screen flex flex-col">
         {/* Background wrapper */}
         <div className="absolute inset-0 h-full w-full -z-10">
           <Image
@@ -32,7 +32,7 @@ export default function Home() {
         {/* Hero & CTA */}
         <div className="flex-1 flex items-center justify-center px-6">
           <div className="max-w-2xl text-center space-y-6">
-            <h1 className={`text-4xl md:text-6xl font-semibold font-[SF Pro] transition-colors duration-300 ${darkMode ? 'text-white' : 'text-gray-900'
+            <h1 className={`text-4xl sm:text-5xl md:text-6xl font-semibold font-[SF Pro] transition-colors duration-300 ${darkMode ? 'text-white' : 'text-gray-900'
               }`}>
               Selamat datang di CardinAAL
             </h1>
