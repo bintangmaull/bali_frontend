@@ -14,16 +14,20 @@ import {
   getBuilding,
   updateBuilding,
   deleteBuilding,
-  recalc as recalcApi
+  recalc as recalcApi,
+  getKota,
+  getKotaAll
 } from '../src/lib/api'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
 // Definisi ikon untuk tiap tipe bangunan
 const icons = {
-  BMN: L.icon({ iconUrl: 'icons/gedungnegara.svg', iconSize: [20, 20], iconAnchor: [6, 20], popupAnchor: [0, -20], className: 'rounded-icon' }),
-  FS: L.icon({ iconUrl: 'icons/kesehatan.svg', iconSize: [20, 20], iconAnchor: [6, 20], popupAnchor: [0, -20], className: 'rounded-icon' }),
-  FD: L.icon({ iconUrl: 'icons/sekolah.svg', iconSize: [20, 20], iconAnchor: [6, 20], popupAnchor: [0, -20], className: 'rounded-icon' }),
+  FS: L.icon({ iconUrl: 'icons/healthcare.svg', iconSize: [20, 20], iconAnchor: [6, 20], popupAnchor: [0, -20], className: 'rounded-icon' }),
+  FD: L.icon({ iconUrl: 'icons/education.svg', iconSize: [20, 20], iconAnchor: [6, 20], popupAnchor: [0, -20], className: 'rounded-icon' }),
+  ELECTRICITY: L.icon({ iconUrl: 'icons/electricity.svg', iconSize: [20, 20], iconAnchor: [6, 20], popupAnchor: [0, -20], className: 'rounded-icon' }),
+  HOTEL: L.icon({ iconUrl: 'icons/hotel.svg', iconSize: [20, 20], iconAnchor: [6, 20], popupAnchor: [0, -20], className: 'rounded-icon' }),
+  AIRPORT: L.icon({ iconUrl: 'icons/airport.svg', iconSize: [20, 20], iconAnchor: [6, 20], popupAnchor: [0, -20], className: 'rounded-icon' }),
 }
 
 function LoadingSpinner() {
@@ -133,9 +137,11 @@ function MiniMap({ lat, lon, onLatLonChange, onLocationSelect, kode_bangunan }) 
 }
 
 const buildingNameToCode = {
-  'Fasilitas Kesehatan': 'FS',
-  'Fasilitas Pendidikan': 'FD',
-  'Bangunan Milik Negara': 'BMN'
+  'Healthcare Facilities': 'FS',
+  'Educational Facilities': 'FD',
+  'Electricity': 'ELECTRICITY',
+  'Hotel': 'HOTEL',
+  'Airport': 'AIRPORT',
 }
 
 export default function CrudBuildings({
@@ -173,8 +179,8 @@ export default function CrudBuildings({
   const [previewHeaders, setPreviewHeaders] = useState([])
   const [mapPickerContext, setMapPickerContext] = useState(null) // { rowId, field }
 
-  // Load semua kota langsung saat mount (untuk filter bar)
-  useEffect(() => { getBuildingAllKota().then(setKotaList) }, [])
+  // Load semua kota langsung saat mount (untuk filter bar) dari master list HSBGN
+  useEffect(() => { getKotaAll().then(setKotaList) }, [])
 
   function refreshTable() {
     if (kotaFilter) {
@@ -561,9 +567,11 @@ export default function CrudBuildings({
                           onChange={(e) => handlePreviewChange(row._id, h, e.target.value)}
                           className={`border rounded p-1 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                         >
-                          <option value="BMN">BMN (Bangunan Milik Negara)</option>
-                          <option value="FS">FS (Fasilitas Kesehatan)</option>
-                          <option value="FD">FD (Fasilitas Pendidikan)</option>
+                          <option value="FS">FS (Healthcare Facilities)</option>
+                          <option value="FD">FD (Educational Facilities)</option>
+                          <option value="ELECTRICITY">ELECTRICITY (Electricity)</option>
+                          <option value="HOTEL">HOTEL (Hotel)</option>
+                          <option value="AIRPORT">AIRPORT (Airport)</option>
                         </select>
                       ) : h === 'taxonomy' ? (
                         <select
@@ -573,8 +581,6 @@ export default function CrudBuildings({
                         >
                           <option value="CR">CR</option>
                           <option value="MCF">MCF</option>
-                          <option value="MUR">MUR</option>
-                          <option value="LightWood">LightWood</option>
                         </select>
                       ) : h === 'kota' ? (
                         <select
@@ -693,9 +699,9 @@ function AddForm({ onSave, isSavingAdd, darkMode }) {
   })
   const [localKotaList, setLocalKotaList] = useState([])
 
-  // Load daftar kota Bali saat mount
+  // Load daftar kota Bali saat mount dari master list HSBGN
   useEffect(() => {
-    getBuildingKota('BALI').then(kl => setLocalKotaList(kl))
+    getKota('BALI').then(kl => setLocalKotaList(kl))
   }, [])
 
   const handleLatLonChange = (lat, lon) => {
@@ -755,11 +761,11 @@ function AddForm({ onSave, isSavingAdd, darkMode }) {
       <MiniMap lat={parseFloat(data.lat)} lon={parseFloat(data.lon)} onLatLonChange={handleLatLonChange} kode_bangunan={data.kode_bangunan} />
       <div className="mb-1">
         <label className="block text-sm font-semibold mb-1">JENIS BANGUNAN</label>
-        <Select id="addKodeBangunan" options={['Bangunan Milik Negara', 'Fasilitas Kesehatan', 'Fasilitas Pendidikan']} value={data.kode_bangunan} onChange={v => setData(d => ({ ...d, kode_bangunan: v }))} className="w-full mb-2" />
+        <Select id="addKodeBangunan" options={['Healthcare Facilities', 'Educational Facilities', 'Electricity', 'Hotel', 'Airport']} value={data.kode_bangunan} onChange={v => setData(d => ({ ...d, kode_bangunan: v }))} className="w-full mb-2" />
       </div>
       <div className="mb-4">
         <label className="block text-sm font-semibold mb-1">TAKSONOMI BANGUNAN</label>
-        <Select id="addTaxonomy" options={['CR', 'MCF', 'MUR', 'LightWood']} value={data.taxonomy} onChange={v => setData(d => ({ ...d, taxonomy: v }))} className="w-full" />
+        <Select id="addTaxonomy" options={['CR', 'MCF']} value={data.taxonomy} onChange={v => setData(d => ({ ...d, taxonomy: v }))} className="w-full" />
       </div>
       <div className="flex justify-end">
         <Button

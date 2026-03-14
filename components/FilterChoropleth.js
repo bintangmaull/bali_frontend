@@ -2,16 +2,18 @@
 import Select from './ui/Select';
 
 const hazards = [
-  { key: 'gempa', label: 'Gempa Bumi', short: 'Gempa' },
-  { key: 'banjir', label: 'Banjir', short: 'Banjir' },
-  { key: 'longsor', label: 'Longsor', short: 'Longsor' },
-  { key: 'gunungberapi', label: 'Gunung Berapi', short: 'Gunung' }
+  { key: 'pga', label: 'Gempa Bumi', short: 'Gempa' },
+  { key: 'inundansi', label: 'Tsunami', short: 'Tsunami' },
+  { key: 'r', label: 'Banjir (R)', short: 'Banjir R' },
+  { key: 'rc', label: 'Banjir (RC)', short: 'Banjir RC' }
 ];
 
 const modelOptions = [
-  { value: 'bmn', label: 'Bangunan Milik Negara', short: 'BMN' },
-  { value: 'fs', label: 'Fasilitas Kesehatan', short: 'Faskes' },
-  { value: 'fd', label: 'Fasilitas Pendidikan', short: 'Fasdik' },
+  { value: 'fs', label: 'Healthcare Facilities', short: 'Healthcare' },
+  { value: 'fd', label: 'Educational Facilities', short: 'Education' },
+  { value: 'electricity', label: 'Electricity', short: 'Electricity' },
+  { value: 'hotel', label: 'Hotel', short: 'Hotel' },
+  { value: 'airport', label: 'Airport', short: 'Airport' },
   { value: 'total', label: 'Total', short: 'Total' }
 ];
 

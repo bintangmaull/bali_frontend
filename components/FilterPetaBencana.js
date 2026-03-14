@@ -4,32 +4,25 @@ const layerGroups = [
   {
     label: 'Gempa Bumi',
     options: [
-      { value: 'hazard_gempa_mmi_100', label: 'Gempa Bumi MMI 100' },
-      { value: 'hazard_gempa_mmi_250', label: 'Gempa Bumi MMI 250' },
-      { value: 'hazard_gempa_mmi_500', label: 'Gempa Bumi MMI 500' }
+      { value: 'hazard_gempa_pga_100', label: 'Gempa PGA 100' },
+      { value: 'hazard_gempa_pga_250', label: 'Gempa PGA 250' },
+      { value: 'hazard_gempa_pga_500', label: 'Gempa PGA 500' },
+      { value: 'hazard_gempa_pga_1000', label: 'Gempa PGA 1000' }
     ]
   },
   {
     label: 'Banjir',
     options: [
-      { value: 'hazard_banjir_depth_25', label: 'Banjir Depth 25' },
-      { value: 'hazard_banjir_depth_50', label: 'Banjir Depth 50' },
-      { value: 'hazard_banjir_depth_100', label: 'Banjir Depth 100' }
+      { value: 'hazard_banjir_r_25', label: 'Banjir R 25-th' },
+      { value: 'hazard_banjir_r_100', label: 'Banjir R 100-th' },
+      { value: 'hazard_banjir_rc_25', label: 'Banjir RC 25-th' },
+      { value: 'hazard_banjir_rc_100', label: 'Banjir RC 100-th' }
     ]
   },
   {
-    label: 'Longsor',
+    label: 'Tsunami',
     options: [
-      { value: 'hazard_longsor_mflux_2', label: 'Longsor MFlux 2' },
-      { value: 'hazard_longsor_mflux_5', label: 'Longsor MFlux 5' }
-    ]
-  },
-  {
-    label: 'Gunung Berapi',
-    options: [
-      { value: 'hazard_gunungberapi_kpa_50', label: 'Gunung Berapi KPA 50' },
-      { value: 'hazard_gunungberapi_kpa_100', label: 'Gunung Berapi KPA 100' },
-      { value: 'hazard_gunungberapi_kpa_250', label: 'Gunung Berapi KPA 250' }
+      { value: 'hazard_tsunami_inundansi', label: 'Tsunami Inundansi' }
     ]
   }
 ]

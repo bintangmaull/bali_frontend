@@ -7,29 +7,31 @@ import 'leaflet/dist/leaflet.css'
 const bencanaOptions = [
   { value: 'gempa', label: 'Gempa Bumi' },
   { value: 'banjir', label: 'Banjir' },
-  { value: 'longsor', label: 'Longsor' },
-  { value: 'gunung', label: 'Gunung Berapi' }
+  { value: 'tsunami', label: 'Tsunami' }
 ]
 
 const intensitasOptions = {
   gempa: [
-    { value: 'hazard_gempa_mmi_100', label: 'MMI 100' },
-    { value: 'hazard_gempa_mmi_250', label: 'MMI 250' },
-    { value: 'hazard_gempa_mmi_500', label: 'MMI 500' }
+    { value: 'hazard_gempa_pga_100', label: 'PGA 100-th' },
+    { value: 'hazard_gempa_pga_200', label: 'PGA 200-th' },
+    { value: 'hazard_gempa_pga_250', label: 'PGA 250-th' },
+    { value: 'hazard_gempa_pga_500', label: 'PGA 500-th' },
+    { value: 'hazard_gempa_pga_1000', label: 'PGA 1000-th' }
   ],
   banjir: [
-    { value: 'hazard_banjir_depth_25', label: 'Depth 25' },
-    { value: 'hazard_banjir_depth_50', label: 'Depth 50' },
-    { value: 'hazard_banjir_depth_100', label: 'Depth 100' }
+    { value: 'hazard_banjir_r_2', label: 'Banjir R 2-th' },
+    { value: 'hazard_banjir_r_10', label: 'Banjir R 10-th' },
+    { value: 'hazard_banjir_r_50', label: 'Banjir R 50-th' },
+    { value: 'hazard_banjir_r_100', label: 'Banjir R 100-th' },
+    { value: 'hazard_banjir_r_250', label: 'Banjir R 250-th' },
+    { value: 'hazard_banjir_rc_2', label: 'Banjir RC 2-th' },
+    { value: 'hazard_banjir_rc_10', label: 'Banjir RC 10-th' },
+    { value: 'hazard_banjir_rc_50', label: 'Banjir RC 50-th' },
+    { value: 'hazard_banjir_rc_100', label: 'Banjir RC 100-th' },
+    { value: 'hazard_banjir_rc_250', label: 'Banjir RC 250-th' }
   ],
-  longsor: [
-    { value: 'hazard_longsor_mflux_2', label: 'Momentum Flux 2' },
-    { value: 'hazard_longsor_mflux_5', label: 'Momentum Flux 5' }
-  ],
-  gunung: [
-    { value: 'hazard_gunungberapi_kpa_50', label: 'kPa 50' },
-    { value: 'hazard_gunungberapi_kpa_100', label: 'kPa 100' },
-    { value: 'hazard_gunungberapi_kpa_250', label: 'kPa 250' }
+  tsunami: [
+    { value: 'hazard_tsunami_inundansi', label: 'Inundansi (m)' }
   ]
 }
 
@@ -126,6 +128,14 @@ const legendStyles = {
     { color: "#edd16d", label: '1.94 - 3.89' },
     { color: "#cc6600", label: '3.89 - 6.47' },
     { color: "#ff0000", label: '6.47 - 10.01' },
+  ],
+  'hazard_tsunami_inundansi': [
+    { color: "#004d00", label: '0' },
+    { color: "#006400", label: '0.00 - 1.50' },
+    { color: "#66cc00", label: '1.50 - 3.00' },
+    { color: "#edd16d", label: '3.00 - 5.00' },
+    { color: "#cc6600", label: '5.00 - 10.00' },
+    { color: "#ff0000", label: '10.00 - 20.00+' },
   ],
 };
 

@@ -14,7 +14,8 @@ export default function CrudHSBGN() {
   const [rows, setRows] = useState([])
   const [searchCity, setSearchCity] = useState('')
   const [editing, setEditing] = useState(null)
-  const [newValue, setNewValue] = useState('')
+  const [hsbgnSederhana, setHsbgnSederhana] = useState('')
+  const [hsbgnTidakSederhana, setHsbgnTidakSederhana] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [successMsg, setSuccessMsg] = useState('')
@@ -34,13 +35,17 @@ export default function CrudHSBGN() {
 
   function onEditClick(row) {
     setEditing(row)
-    setNewValue(row.hsbgn)
+    setHsbgnSederhana(row.hsbgn_sederhana)
+    setHsbgnTidakSederhana(row.hsbgn_tidaksederhana)
   }
 
   async function onSave() {
     setIsSaving(true)
     try {
-      await updateHSBGN(editing.id_kota, parseFloat(newValue))
+      await updateHSBGN(editing.id_kota, {
+        hsbgn_sederhana: parseFloat(hsbgnSederhana),
+        hsbgn_tidaksederhana: parseFloat(hsbgnTidakSederhana)
+      })
       await recalcHSBGN(editing.id_kota)
 
       setSuccessMsg('Pembaruan data dan perhitungan nilai AAL kota telah berhasil diselesaikan.')
@@ -84,7 +89,8 @@ export default function CrudHSBGN() {
           <thead className="bg-[#0a2c68] text-white rounded-lg">
             <tr>
               <th className="p-2 text-justify">Kota</th>
-              <th className="p-2 text-center whitespace-nowrap">Nilai HSBGN</th>
+              <th className="p-2 text-center whitespace-nowrap">HSBGN Sederhana</th>
+              <th className="p-2 text-center whitespace-nowrap">HSBGN Tidak Sederhana</th>
               <th className="p-2 text-center">Aksi</th>
             </tr>
           </thead>
@@ -92,7 +98,8 @@ export default function CrudHSBGN() {
             {filteredRows.map(r => (
               <tr key={r.id_kota} className={`border-t ${borderCls} ${rowHover} transition-colors duration-150`}>
                 <td className={`p-2 ${rowText}`}>{r.kota}</td>
-                <td className={`p-2 ${rowText} text-center`}>Rp {Number(r.hsbgn).toLocaleString('id-ID')}</td>
+                <td className={`p-2 ${rowText} text-center`}>Rp {Number(r.hsbgn_sederhana).toLocaleString('id-ID')}</td>
+                <td className={`p-2 ${rowText} text-center`}>Rp {Number(r.hsbgn_tidaksederhana).toLocaleString('id-ID')}</td>
                 <td className={`p-2 ${rowText} text-right`}>
                   <Button
                     onClick={() => onEditClick(r)}
@@ -121,15 +128,27 @@ export default function CrudHSBGN() {
             />
           </div>
 
-          <div>
-            <label className="text-sm font-semibold">Nilai HSBGN (Rp)</label>
-            <input
-              type="number"
-              className="border p-2 w-full rounded-lg"
-              value={newValue}
-              onChange={e => setNewValue(e.target.value)}
-              required
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-semibold">HSBGN Sederhana (Rp)</label>
+              <input
+                type="number"
+                className="border p-2 w-full rounded-lg"
+                value={hsbgnSederhana}
+                onChange={e => setHsbgnSederhana(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="text-sm font-semibold">HSBGN Tidak Sederhana (Rp)</label>
+              <input
+                type="number"
+                className="border p-2 w-full rounded-lg"
+                value={hsbgnTidakSederhana}
+                onChange={e => setHsbgnTidakSederhana(e.target.value)}
+                required
+              />
+            </div>
           </div>
           <div className="flex justify-end gap-4 mt-4">
             <Button

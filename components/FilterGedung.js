@@ -21,7 +21,6 @@ export default function FilterGedung({ provGedung, setProvGedung, kotaGedung, se
       </select>
       <div className="flex gap-2">
         {[
-          { key: 'BMN', label: 'Bangunan Milik Negara' },
           { key: 'FS', label: 'Fasilitas Kesehatan' },
           { key: 'FD', label: 'Fasilitas Pendidikan' }
         ].map(type => (

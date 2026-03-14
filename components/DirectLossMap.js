@@ -7,22 +7,36 @@ import 'leaflet.markercluster'
 import { getKotaBoundary } from '../src/lib/api'
 
 const icons = {
-  BMN: L.icon({
-    iconUrl: 'icons/gedungnegara.svg',
-    iconSize: [20, 20],
-    iconAnchor: [6, 20],
-    popupAnchor: [0, -20],
-    className: 'rounded-icon'
-  }),
   FS: L.icon({
-    iconUrl: 'icons/kesehatan.svg',
+    iconUrl: 'icons/healthcare.svg',
     iconSize: [20, 20],
     iconAnchor: [6, 20],
     popupAnchor: [0, -20],
     className: 'rounded-icon'
   }),
   FD: L.icon({
-    iconUrl: 'icons/sekolah.svg',
+    iconUrl: 'icons/education.svg',
+    iconSize: [20, 20],
+    iconAnchor: [6, 20],
+    popupAnchor: [0, -20],
+    className: 'rounded-icon'
+  }),
+  ELECTRICITY: L.icon({
+    iconUrl: 'icons/electricity.svg',
+    iconSize: [20, 20],
+    iconAnchor: [6, 20],
+    popupAnchor: [0, -20],
+    className: 'rounded-icon'
+  }),
+  HOTEL: L.icon({
+    iconUrl: 'icons/hotel.svg',
+    iconSize: [20, 20],
+    iconAnchor: [6, 20],
+    popupAnchor: [0, -20],
+    className: 'rounded-icon'
+  }),
+  AIRPORT: L.icon({
+    iconUrl: 'icons/airport.svg',
     iconSize: [20, 20],
     iconAnchor: [6, 20],
     popupAnchor: [0, -20],
@@ -177,7 +191,7 @@ export default function DirectLossMap({ geojson, filters, search, selectedKota }
         const p = f.properties
         if (selectedProvinsi && p.provinsi !== selectedProvinsi) return false
         if (selectedKota && p.kota !== selectedKota) return false
-        const type = (p.id_bangunan || '').split('_')[0]
+        const type = (p.id_bangunan || '').split('_')[0].toUpperCase()
         if (!filters[type]) return false
         return true
       })
@@ -192,7 +206,7 @@ export default function DirectLossMap({ geojson, filters, search, selectedKota }
       .forEach(f => {
         const p = f.properties
         const [lon, lat] = f.geometry.coordinates
-        const type = (p.id_bangunan || '').split('_')[0]
+        const type = (p.id_bangunan || '').split('_')[0].toUpperCase()
 
         if (!filters[type]) return
         if (selectedKota && p.kota !== selectedKota) return
@@ -213,31 +227,40 @@ export default function DirectLossMap({ geojson, filters, search, selectedKota }
             </div>
             
             <div style="border-top:1px solid #f3f4f6; padding-top:4px;">
-              <div style="font-weight:700; color:#3b82f6; margin-bottom:1px; font-size:0.8rem;">Kerugian Gempa</div>
-              <div style="font-size:0.75rem; padding-left:4px; color:#4b5563; margin-bottom:4px;">
-                500-th: <b>${formatNumberWithUnit(p.direct_loss_gempa_500 || 0)}</b><br/>
-                250-th: <b>${formatNumberWithUnit(p.direct_loss_gempa_250 || 0)}</b><br/>
-                100-th: <b>${formatNumberWithUnit(p.direct_loss_gempa_100 || 0)}</b>
+              <div style="font-weight:700; color:#3b82f6; margin-bottom:1px; font-size:0.8rem;">Kerugian Gempa (PGA)</div>
+              <div style="font-size:0.7rem; padding-left:4px; color:#4b5563; margin-bottom:4px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px;">
+                <span>1000-th: <b>${formatNumberWithUnit(p.direct_loss_pga_1000 || 0)}</b></span>
+                <span>500-th: <b>${formatNumberWithUnit(p.direct_loss_pga_500 || 0)}</b></span>
+                <span>250-th: <b>${formatNumberWithUnit(p.direct_loss_pga_250 || 0)}</b></span>
+                <span>200-th: <b>${formatNumberWithUnit(p.direct_loss_pga_200 || 0)}</b></span>
+                <span>100-th: <b>${formatNumberWithUnit(p.direct_loss_pga_100 || 0)}</b></span>
               </div>
 
-              <div style="font-weight:700; color:#10b981; margin-bottom:1px; font-size:0.8rem;">Kerugian Banjir</div>
-              <div style="font-size:0.75rem; padding-left:4px; color:#4b5563; margin-bottom:4px;">
-                100-th: <b>${formatNumberWithUnit(p.direct_loss_banjir_100 || 0)}</b><br/>
-                50-th: <b>${formatNumberWithUnit(p.direct_loss_banjir_50 || 0)}</b><br/>
-                25-th: <b>${formatNumberWithUnit(p.direct_loss_banjir_25 || 0)}</b>
+              <div style="font-weight:700; color:#22c55e; margin-bottom:1px; font-size:0.8rem;">Kerugian Banjir (R)</div>
+              <div style="font-size:0.7rem; padding-left:4px; color:#4b5563; margin-bottom:4px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px;">
+                <span>250-th: <b>${formatNumberWithUnit(p.direct_loss_r_250 || 0)}</b></span>
+                <span>100-th: <b>${formatNumberWithUnit(p.direct_loss_r_100 || 0)}</b></span>
+                <span>50-th: <b>${formatNumberWithUnit(p.direct_loss_r_50 || 0)}</b></span>
+                <span>25-th: <b>${formatNumberWithUnit(p.direct_loss_r_25 || 0)}</b></span>
+                <span>10-th: <b>${formatNumberWithUnit(p.direct_loss_r_10 || 0)}</b></span>
+                <span>5-th: <b>${formatNumberWithUnit(p.direct_loss_r_5 || 0)}</b></span>
+                <span>2-th: <b>${formatNumberWithUnit(p.direct_loss_r_2 || 0)}</b></span>
               </div>
 
-              <div style="font-weight:700; color:#f59e0b; margin-bottom:1px; font-size:0.8rem;">Kerugian Longsor</div>
-              <div style="font-size:0.75rem; padding-left:4px; color:#4b5563; margin-bottom:4px;">
-                5-th: <b>${formatNumberWithUnit(p.direct_loss_longsor_5 || 0)}</b><br/>
-                2-th: <b>${formatNumberWithUnit(p.direct_loss_longsor_2 || 0)}</b>
+              <div style="font-weight:700; color:#10b981; margin-bottom:1px; font-size:0.8rem;">Kerugian Banjir (RC)</div>
+              <div style="font-size:0.7rem; padding-left:4px; color:#4b5563; margin-bottom:4px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px;">
+                <span>250-th: <b>${formatNumberWithUnit(p.direct_loss_rc_250 || 0)}</b></span>
+                <span>100-th: <b>${formatNumberWithUnit(p.direct_loss_rc_100 || 0)}</b></span>
+                <span>50-th: <b>${formatNumberWithUnit(p.direct_loss_rc_50 || 0)}</b></span>
+                <span>25-th: <b>${formatNumberWithUnit(p.direct_loss_rc_25 || 0)}</b></span>
+                <span>10-th: <b>${formatNumberWithUnit(p.direct_loss_rc_10 || 0)}</b></span>
+                <span>5-th: <b>${formatNumberWithUnit(p.direct_loss_rc_5 || 0)}</b></span>
+                <span>2-th: <b>${formatNumberWithUnit(p.direct_loss_rc_2 || 0)}</b></span>
               </div>
 
-              <div style="font-weight:700; color:#ef4444; margin-bottom:1px; font-size:0.8rem;">Kerugian Gunung Berapi</div>
-              <div style="font-size:0.75rem; padding-left:4px; color:#4b5563;">
-                 250-th: <b>${formatNumberWithUnit(p.direct_loss_gunungberapi_250 || 0)}</b><br/>
-                 100-th: <b>${formatNumberWithUnit(p.direct_loss_gunungberapi_100 || 0)}</b><br/>
-                 50-th: <b>${formatNumberWithUnit(p.direct_loss_gunungberapi_50 || 0)}</b>
+              <div style="font-weight:700; color:#06b6d4; margin-bottom:1px; font-size:0.8rem;">Kerugian Tsunami (Inundansi)</div>
+              <div style="font-size:0.7rem; padding-left:4px; color:#4b5563;">
+                 Total: <b>${formatNumberWithUnit(p.direct_loss_inundansi || 0)}</b>
               </div>
             </div>
           </div>
@@ -307,16 +330,24 @@ export default function DirectLossMap({ geojson, filters, search, selectedKota }
       html += '<h4 style="margin-bottom:4px; font-size:0.75rem;">Jenis Gedung</h4>'
       html += `
         <div style="display:flex; align-items:center; margin-bottom:3px;">
-          <img src="icons/gedungnegara.svg" style="width:16px; height:16px; margin-right:6px;"/>
-          <span>BMN</span>
-        </div>
-        <div style="display:flex; align-items:center; margin-bottom:3px;">
-          <img src="icons/kesehatan.svg" style="width:16px; height:16px; margin-right:6px;"/>
-          <span>Faskes</span>
+          <img src="icons/healthcare.svg" style="width:16px; height:16px; margin-right:6px;"/>
+          <span>Healthcare Facilities</span>
         </div>
         <div style="display:flex; align-items:center;">
-          <img src="icons/sekolah.svg" style="width:16px; height:16px; margin-right:6px;"/>
-          <span>Fasdik</span>
+          <img src="icons/education.svg" style="width:16px; height:16px; margin-right:6px;"/>
+          <span>Educational Facilities</span>
+        </div>
+        <div style="display:flex; align-items:center; margin-top:3px;">
+          <img src="icons/electricity.svg" style="width:16px; height:16px; margin-right:6px;"/>
+          <span>Electricity</span>
+        </div>
+        <div style="display:flex; align-items:center; margin-top:3px;">
+          <img src="icons/hotel.svg" style="width:16px; height:16px; margin-right:6px;"/>
+          <span>Hotel</span>
+        </div>
+        <div style="display:flex; align-items:center; margin-top:3px;">
+          <img src="icons/airport.svg" style="width:16px; height:16px; margin-right:6px;"/>
+          <span>Airport</span>
         </div>
       `
       div.innerHTML = html

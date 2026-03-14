@@ -58,9 +58,11 @@ export default function FilterDirectLoss({
           className="w-32 min-w-[120px] text-xs !px-2 !py-1"
         />
         {[
-          { key: 'BMN', label: 'BMN', full: 'Bangunan Milik Negara' },
-          { key: 'FS', label: 'Faskes', full: 'Fasilitas Kesehatan' },
-          { key: 'FD', label: 'Fasdik', full: 'Fasilitas Pendidikan' }
+          { key: 'FS', label: 'Healthcare', full: 'Healthcare Facilities' },
+          { key: 'FD', label: 'Educational', full: 'Educational Facilities' },
+          { key: 'ELECTRICITY', label: 'Electricity', full: 'Electricity' },
+          { key: 'HOTEL', label: 'Hotel', full: 'Hotel' },
+          { key: 'AIRPORT', label: 'Airport', full: 'Airport' }
         ].map((type) => (
           <label
             key={type.key}
@@ -96,7 +98,6 @@ export default function FilterDirectLoss({
               const params = new URLSearchParams();
               if (selectedProv) params.append('provinsi', selectedProv);
               if (selectedKota) params.append('kota', selectedKota);
-              params.append('bmn', filters.BMN);
               params.append('fs', filters.FS);
               params.append('fd', filters.FD);
               if (search) params.append('search', search);

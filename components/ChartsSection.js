@@ -13,18 +13,19 @@ import { useTheme } from '../context/ThemeContext';
 
 // Konfigurasi bencana disederhanakan, hanya butuh label dan warna
 const hazardsConfig = [
-  { key: 'gempa', label: 'Gempa Bumi', color: '#2563eb' },
-  { key: 'banjir', label: 'Banjir', color: '#22c55e' },
-  { key: 'longsor', label: 'Longsor', color: '#f59e42' },
-  { key: 'gunungberapi', label: 'Gunung Berapi', color: '#e11d48' },
+  { key: 'pga', label: 'Gempa Bumi', color: '#2563eb' },
+  { key: 'inundansi', label: 'Tsunami', color: '#06b6d4' },
+  { key: 'r', label: 'Banjir (R)', color: '#22c55e' },
+  { key: 'rc', label: 'Banjir (RC)', color: '#10b981' },
 ];
 
-// Tipe bangunan yang akan ditampilkan dalam chart
 const chartTypes = [
-  { title: 'Semua Bangunan', tipe: 'total' },
-  { title: 'Bangunan Milik Negara', tipe: 'bmn' },
-  { title: 'Fasilitas Kesehatan', tipe: 'fs' },
-  { title: 'Fasilitas Pendidikan', tipe: 'fd' },
+  { title: 'All Buildings', tipe: 'total' },
+  { title: 'Healthcare Facilities', tipe: 'fs' },
+  { title: 'Educational Facilities', tipe: 'fd' },
+  { title: 'Electricity', tipe: 'electricity' },
+  { title: 'Hotel', tipe: 'hotel' },
+  { title: 'Airport', tipe: 'airport' },
 ];
 
 // Helper untuk format angka Y-Axis

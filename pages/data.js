@@ -16,6 +16,7 @@ import { useTheme } from '../context/ThemeContext'
 const HazardMap = dynamic(() => import('../components/HazardMap'), { ssr: false })
 const DisasterCurves = dynamic(() => import('../components/DisasterCurves'), { ssr: false })
 const PetaBencana = dynamic(() => import('../components/PetaBencana'), { ssr: false })
+const AdminProcessManager = dynamic(() => import('../components/AdminProcessManager'), { ssr: false })
 
 export default function Home() {
   const { darkMode } = useTheme()
@@ -36,6 +37,7 @@ export default function Home() {
   const cardBg = darkMode ? 'bg-[#1E2023]' : 'bg-white'
   const shadow = darkMode ? 'shadow-gray-600' : 'shadow-gray-300'
   const headText = darkMode ? 'text-white' : 'text-gray-900'
+  const textCls = darkMode ? 'text-gray-300' : 'text-gray-600'
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${pageBg}`}>
@@ -70,6 +72,13 @@ export default function Home() {
         <section className={`${cardBg} rounded-xl p-6 shadow-xs ${shadow} transition-colors duration-300`}>
           <h2 className={`text-2xl font-bold mb-2 ${headText}`}>Kurva Kerentanan</h2>
           <DisasterCurves />
+        </section>
+
+        {/* Background Processing / Admin */}
+        <section className={`${cardBg} rounded-xl p-6 shadow-xs ${shadow} transition-colors duration-300`}>
+          <h2 className={`text-2xl font-bold mb-2 ${headText}`}>Pemrosesan Data Latar Belakang (Admin)</h2>
+          <p className={`${textCls} mb-4 text-sm`}>Gunakan modul ini untuk memicu pemrosesan data besar di server jika terdapat perubahan signifikan pada kurva atau data bangunan.</p>
+          <AdminProcessManager />
         </section>
       </main>
     </div>

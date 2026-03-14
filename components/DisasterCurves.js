@@ -1,4 +1,4 @@
-﻿// components/DisasterCurves.js
+// components/DisasterCurves.js
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import {
@@ -64,9 +64,7 @@ function DisasterCurveBox({ keyProp: key, label, grouped, taxonomyList, datasets
       const curve = (grouped[tax]?.x || []).map((x, i) => ({ x, y: grouped[tax].y[i] }));
       const yVal = getDamageFromCurve(curve, xVal);
       return {
-        label: key === 'banjir'
-          ? ({ '1.0': 'Lantai 1', '2.0': 'Lantai 2' }[tax] || `Kurva ${tax}`)
-          : ({ lightwood: 'Lightwood', mur: 'MUR', mcf: 'MCF', cr: 'CR' }[tax] || tax),
+        label: TAXONOMY_LABELS[tax] || tax,
         value: yVal !== null ? yVal : 'Tidak ditemukan'
       };
     });
@@ -202,7 +200,7 @@ function DisasterCurveBox({ keyProp: key, label, grouped, taxonomyList, datasets
         <table className={`mt-2 border w-full max-w-md text-sm ${tableBorderCls} ${darkMode ? 'text-white' : 'text-gray-800'}`}>
           <thead>
             <tr className={tableHeadBg}>
-              <th className="p-2 text-left">{key === 'banjir' ? 'Lantai' : 'Taxonomy'}</th>
+              <th className="p-2 text-left">{['banjir', 'tsunami', 'gempa'].includes(key) ? 'Klasifikasi' : 'Taxonomy'}</th>
               <th className="p-2 text-left">Tingkat Kerusakan</th>
             </tr>
           </thead>
@@ -240,41 +238,47 @@ export default function DisasterCurves() {
     return <p className={`p-8 text-center ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Loading charts…</p>
   }
 
+  const TAXONOMY_LABELS = {
+    '1.0': 'Lantai 1',
+    '2.0': 'Lantai 2+',
+    '1': 'Lantai 1',
+    '2': 'Lantai 2+',
+    'cr': 'CR',
+    'mcf': 'MCF',
+    'mur': 'MUR',
+    'w': 'Lightwood/Wood',
+    'lightwood': 'Lightwood/Wood'
+  };
+
   const taxonomyColors = {
     lightwood: '#ffc107',
+    w: '#ffc107',
     mur: '#fd7e14',
     mcf: '#dc3545',
     cr: '#6f42c1',
     '1.0': '#ffc107',
     '2.0': '#dc3545',
+    '1': '#ffc107',
+    '2': '#dc3545',
   };
 
   const disasters = [
     { key: 'gempa', label: 'Gempa', xAxisLabel: 'Intensitas Bencana (MMI)' },
-    { key: 'banjir', label: 'Banjir', xAxisLabel: 'Kedalaman Banjir (m)' },
-    { key: 'gunungberapi', label: 'Gunung Berapi', xAxisLabel: 'Intensitas Bencana (kPa)' },
-    { key: 'longsor', label: 'Longsor', xAxisLabel: 'Intensitas Bencana (Momentum Flux)' }
+    { key: 'tsunami', label: 'Tsunami', xAxisLabel: 'Inundansi (m)' },
+    { key: 'banjir', label: 'Banjir', xAxisLabel: 'Kedalaman Banjir (m)' }
   ]
 
   return (
     <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
       {disasters.map(({ key, label }) => {
         const grouped = rawData[key] || {}
-        const taxonomyList =
-          key === 'banjir'
-            ? Object.keys(grouped)
-            : ['lightwood', 'mur', 'mcf', 'cr']
+        const taxonomyList = Object.keys(grouped);
         const allX = taxonomyList.flatMap(t => grouped[t]?.x || [])
         const maxX = allX.length ? Math.max(...allX) : 0
-        const datasets = taxonomyList.map(tax => {
+          const datasets = taxonomyList.map(tax => {
           const pts = grouped[tax] || { x: [], y: [] }
           const data = pts.x.map((x, i) => ({ x, y: pts.y[i] }))
-          let labelText;
-          if (key === 'banjir') {
-            labelText = { '1.0': 'Lantai 1', '2.0': 'Lantai 2' }[tax] || `Kurva ${tax}`;
-          } else {
-            labelText = { lightwood: 'Lightwood', mur: 'MUR', mcf: 'MCF', cr: 'CR' }[tax] || tax;
-          }
+          const labelText = TAXONOMY_LABELS[tax] || tax;
           return {
             label: labelText,
             data,

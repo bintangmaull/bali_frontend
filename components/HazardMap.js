@@ -7,22 +7,15 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 import CrudBuildings from './CrudBuildings'
 
 const icons = {
-  BMN: L.icon({
-    iconUrl: 'icons/gedungnegara.svg',
-    iconSize: [20, 20],
-    iconAnchor: [6, 20],
-    popupAnchor: [0, -20],
-    className: 'rounded-icon'
-  }),
   FS: L.icon({
-    iconUrl: 'icons/kesehatan.svg',
+    iconUrl: 'icons/healthcare.svg',
     iconSize: [20, 20],
     iconAnchor: [6, 20],
     popupAnchor: [0, -20],
     className: 'rounded-icon'
   }),
   FD: L.icon({
-    iconUrl: 'icons/sekolah.svg',
+    iconUrl: 'icons/education.svg',
     iconSize: [20, 20],
     iconAnchor: [6, 20],
     popupAnchor: [0, -20],
@@ -70,16 +63,12 @@ export default function HazardMap({ provinsi, kota, setProvinsi, setKota }) {
       let html = '<h4 class="text-black font-bold mb-1">Jenis Bangunan</h4>'
       html += `
         <div style="display:flex; align-items:center; margin-bottom:4px;">
-          <img src="icons/gedungnegara.svg" style="width:20px; height:20px; margin-right:6px; background:white; padding:2px; border-radius:50%; box-shadow:0 2px 4px rgba(0,0,0,0.2);"/>
-          <span>Bangunan Milik Negara</span>
-        </div>
-        <div style="display:flex; align-items:center; margin-bottom:4px;">
-          <img src="icons/kesehatan.svg" style="width:20px; height:20px; margin-right:6px; background:white; padding:2px; border-radius:50%; box-shadow:0 2px 4px rgba(0,0,0,0.2);"/>
-          <span>Fasilitas Kesehatan</span>
+          <img src="icons/healthcare.svg" style="width:20px; height:20px; margin-right:6px; background:white; padding:2px; border-radius:50%; box-shadow:0 2px 4px rgba(0,0,0,0.2);"/>
+          <span>Healthcare Facilities</span>
         </div>
         <div style="display:flex; align-items:center;">
-          <img src="icons/sekolah.svg" style="width:20px; height:20px; margin-right:6px; background:white; padding:2px; border-radius:50%; box-shadow:0 2px 4px rgba(0,0,0,0.2);"/>
-          <span>Fasilitas Pendidikan</span>
+          <img src="icons/education.svg" style="width:20px; height:20px; margin-right:6px; background:white; padding:2px; border-radius:50%; box-shadow:0 2px 4px rgba(0,0,0,0.2);"/>
+          <span>Educational Facilities</span>
         </div>
       `
       div.innerHTML = html

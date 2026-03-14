@@ -59,18 +59,18 @@ export function getGedung(provinsi, kota) {
 export function getHSBGN() {
   return fetchJSON('/api/hsbgn')
 }
-export function updateHSBGN(id, hsbgn) {
+export function updateHSBGN(id, payload) {
   return fetchJSON(`/api/hsbgn/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ hsbgn })
+    body: JSON.stringify(payload)
   })
 }
-export function addHSBGN(provinsi, kota, hsbgn) {
+export function addHSBGN(payload) {
   return fetchJSON('/api/hsbgn', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ provinsi, kota, hsbgn })
+    body: JSON.stringify(payload)
   })
 }
 
@@ -158,4 +158,21 @@ export function getDisasterCurves() {
  */
 export function recalcHSBGN(hsbgnId) {
   return fetchJSON(`/api/hsbgn/${hsbgnId}/recalc`, { method: 'POST' })
+}
+
+// Background Processing Endpoints (Admin)
+export function processCurveGempa() {
+  return fetchJSON('/process_kurva_gempa', { method: 'GET' })
+}
+export function processCurveTsunami() {
+  return fetchJSON('/process_kurva_tsunami', { method: 'GET' })
+}
+export function processCurveBanjir() {
+  return fetchJSON('/process_kurva_banjir', { method: 'GET' })
+}
+export function processCurveBanjirR() {
+  return fetchJSON('/process_kurva_banjir_r', { method: 'GET' })
+}
+export function processCurveBanjirRC() {
+  return fetchJSON('/process_kurva_banjir_rc', { method: 'GET' })
 }
