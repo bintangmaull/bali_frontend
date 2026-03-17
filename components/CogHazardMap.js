@@ -164,7 +164,8 @@ function detectHazard(filename) {
 }
 
 function extractRP(filename) {
-  const m = filename.match(/_?rp?(\d+)(?:\.tif)?$/i) || filename.match(/(\d+)(?:\.tif)?$/i)
+  // Matches ..._r<num>, ..._rc<num>, ..._rp<num>, ..._PGA_<num>, or just ..._<num> preceding .tif
+  const m = filename.match(/_?(?:r|rc|rp|PGA_)?(\d+)(?:\.tif)?$/i) || filename.match(/(\d+)(?:\.tif)?$/i)
   return m ? parseInt(m[1]) : null
 }
 
