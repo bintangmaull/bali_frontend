@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Info, Maximize2, Minimize2, MapPin, X, BarChart2, Check, ExternalLink, Filter, Shield, Layers, Calendar, ChevronDown, ChevronLeft, ChevronRight, Table2 as TableIcon } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 
 const colorsAAL = ['#1a9850', '#d9ef8b', '#fee08b', '#fc8d59', '#d73027', '#7f0000'];
 
@@ -86,6 +88,7 @@ function MiniBarChart({ data, maxVal, expAsset = 0 }) {
   const containerRef = React.useRef(null);
 
   const fmtFull = v => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v);
+  
   return (
     <div className="relative inline-block" ref={containerRef} onMouseLeave={() => setHoverData(null)}>
       <svg width={W} height={H} style={{overflow:'visible'}}>
@@ -144,8 +147,31 @@ function MiniBarChart({ data, maxVal, expAsset = 0 }) {
   );
 }
 
-function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup }) {
+function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup, onOpenTable }) {
+  const [zoomedChart, setZoomedChart] = useState(null);
+
   if (!boundaryData?.features?.length || !selectedGroup) return null;
+
+  const rpsConfig = React.useMemo(() => {
+    if (selectedGroup === 'earthquake') return ['100', '200', '250', '500', '1000'].map(rp => ({ key: `pga_${rp}`, label: `PGA ${rp}` }));
+    if (selectedGroup === 'tsunami') return [{ key: 'inundansi', label: 'Inundansi' }];
+    if (selectedGroup === 'banjir') return ['2', '5', '10', '25', '50', '100', '250'].flatMap(rp => [{ key: `r_${rp}`, label: `R ${rp}` }, { key: `rc_${rp}`, label: `RC ${rp}` }]);
+    return [];
+  }, [selectedGroup]);
+
+  const cityChartData = React.useMemo(() => {
+    if (selectedCityFeature) return [];
+    if (!boundaryData?.features) return [];
+    return boundaryData.features.map(f => {
+      const item = { kota: f.properties.nama_kota || f.properties.id_kota || 'Unknown' };
+      rpsConfig.forEach(rp => {
+        item[rp.key] = f.properties[`dl_sum_${rp.key}`] || 0;
+      });
+      return item;
+    }).sort((a,b) => a.kota.localeCompare(b.kota));
+  }, [boundaryData, selectedCityFeature, rpsConfig]);
+
+  const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#64748b', '#f97316', '#84cc16', '#fb7185', '#2dd4bf', '#a3e635', '#c084fc'];
 
   let totalCount = 0;
   let totalAsset = 0;
@@ -205,6 +231,34 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
     return [];
   };
 
+  const exposureChartData = React.useMemo(() => {
+    if (!boundaryData?.features) return [];
+    
+    return EXPOSURE_GROUPS.filter(g => g.exp !== 'total').map(group => {
+      const item = { exposure_name: group.label };
+      
+      rpsConfig.forEach(rp => {
+        let sum = 0;
+        
+        boundaryData.features.forEach(feature => {
+            let dlExp = feature.properties.dl_exposure || {};
+            if (typeof dlExp === 'string') {
+              try { dlExp = JSON.parse(dlExp); } catch { dlExp = {}; }
+            }
+            let expData = dlExp[group.exp] || {};
+            if (typeof expData === 'string') {
+              try { expData = JSON.parse(expData); } catch { expData = {}; }
+            }
+            sum += (expData[rp.key] || 0);
+        });
+        
+        item[rp.key] = sum;
+      });
+      
+      return item;
+    });
+  }, [boundaryData, rpsConfig]);
+
   const renderCharts = (groups) => {
     // Collect all data first to find the global max for scaling
     const groupData = groups.map(group => {
@@ -229,8 +283,19 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
       }
 
       return (
-        <div key={group.exp} className="bg-slate-50 rounded-xl p-3 mb-3 border border-slate-100/50">
-          <div className="text-[10px] font-bold text-slate-700 tracking-wide mb-2 text-center">{group.label}</div>
+        <div key={group.exp} className="bg-slate-50 rounded-xl p-3 mb-3 border border-slate-100/50 relative">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="text-[10px] font-bold text-slate-700 tracking-wide text-center">{group.label}</div>
+            {group.exp !== 'total' && (
+              <button
+                onClick={() => onOpenTable && onOpenTable(group.layerKey)}
+                title="Lihat Data Tabel"
+                className="text-slate-400 hover:text-blue-500 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded p-1 shadow-sm transition-colors"
+              >
+                <TableIcon size={12} strokeWidth={2.5} />
+              </button>
+            )}
+          </div>
           {group.exp !== 'total' && expCount > 0 && (
             <div className="flex justify-between items-center text-[9px] mb-3 px-2 border-b border-slate-200 pb-2">
               <div className="flex flex-col">
@@ -265,6 +330,244 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
         </div>
       </div>
 
+      {/* City Comparison Chart (Only when 'Semua Kota') */}
+      {!selectedCityFeature && cityChartData.length > 0 && (
+        <div className="w-full h-[180px] bg-white border border-slate-200 rounded-xl p-2 mt-2 shadow-sm relative z-0 flex flex-col">
+          <div className="text-[8px] font-extrabold text-slate-500 tracking-widest uppercase mb-1 flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              <BarChart2 size={10} className="text-blue-500" />
+              Perbandingan Direct Loss Antar Kota
+            </div>
+            <span className="text-[7px] text-slate-400 font-medium">Klik untuk perbesar</span>
+          </div>
+          <div 
+            className="flex-1 w-full relative cursor-pointer group rounded border border-transparent hover:border-blue-200 hover:bg-slate-50 transition-colors"
+            onClick={() => setZoomedChart({ type: 'city', title: 'Perbandingan Direct Loss Antar Kota', data: cityChartData, xKey: "kota" })}
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={cityChartData} margin={{ top: 5, right: 10, bottom: 20, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis 
+                  dataKey="kota" 
+                  tick={{ fontSize: 6, fill: '#64748b', fontWeight: 700 }} 
+                  axisLine={{ stroke: '#cbd5e1' }}
+                  tickLine={false}
+                  interval={0}
+                  angle={-35}
+                  textAnchor="end"
+                  height={40}
+                />
+                <YAxis 
+                  tickFormatter={(val) => val >= 1e12 ? `Rp${(val / 1e12).toFixed(1)}T` : val >= 1e9 ? `Rp${(val / 1e9).toFixed(0)}M` : `Rp${(val / 1e6).toFixed(0)}Jt`}
+                  tick={{ fontSize: 7, fill: '#94a3b8' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip 
+                  cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }}
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="bg-white/95 backdrop-blur border border-slate-200 p-2 rounded-lg shadow-lg">
+                          <p className="font-bold text-slate-800 text-[9px] mb-1.5 border-b border-slate-100 pb-1">{label}</p>
+                          <div className="flex flex-col gap-1">
+                            {payload.map((entry, index) => (
+                              <div key={index} className="flex items-center justify-between gap-4 text-[8px]">
+                                <div className="flex items-center gap-1.5 text-slate-600">
+                                  <span className="w-2 h-2 rounded-[2px]" style={{ backgroundColor: entry.color }}></span>
+                                  <span>{entry.name}</span>
+                                </div>
+                                <span className="font-bold text-slate-800">{formatRupiah(entry.value)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                {rpsConfig.map((col, idx) => (
+                  <Bar key={col.key} dataKey={col.key} name={col.label} fill={colors[idx % colors.length]} radius={[2, 2, 0, 0]} />
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 backdrop-blur-[1px]">
+              <div className="bg-slate-900/80 text-white rounded-full p-2 shadow-lg transform scale-95 group-hover:scale-100 transition-all">
+                <Maximize2 size={16} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Exposure Comparison Chart */}
+      {exposureChartData.length > 0 && (
+        <div className="w-full h-[180px] bg-white border border-slate-200 rounded-xl p-2 mt-2 shadow-sm relative z-0 flex flex-col">
+          <div className="text-[8px] font-extrabold text-slate-500 tracking-widest uppercase mb-1 flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              <BarChart2 size={10} className="text-orange-500" />
+              Perbandingan Direct Loss Antar Eksposur
+            </div>
+            <span className="text-[7px] text-slate-400 font-medium">Klik untuk perbesar</span>
+          </div>
+          <div 
+            className="flex-1 w-full relative cursor-pointer group rounded border border-transparent hover:border-orange-200 hover:bg-slate-50 transition-colors"
+            onClick={() => setZoomedChart({ type: 'exposure', title: 'Perbandingan Direct Loss Antar Eksposur', data: exposureChartData, xKey: "exposure_name" })}
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={exposureChartData} margin={{ top: 5, right: 10, bottom: 20, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis 
+                  dataKey="exposure_name" 
+                  tick={{ fontSize: 6, fill: '#64748b', fontWeight: 700 }} 
+                  axisLine={{ stroke: '#cbd5e1' }}
+                  tickLine={false}
+                  interval={0}
+                  angle={-25}
+                  textAnchor="end"
+                  height={40}
+                />
+                <YAxis 
+                  tickFormatter={(val) => val >= 1e12 ? `Rp${(val / 1e12).toFixed(1)}T` : val >= 1e9 ? `Rp${(val / 1e9).toFixed(0)}M` : `Rp${(val / 1e6).toFixed(0)}Jt`}
+                  tick={{ fontSize: 7, fill: '#94a3b8' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip 
+                  cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }}
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="bg-white/95 backdrop-blur border border-slate-200 p-2 rounded-lg shadow-lg">
+                          <p className="font-bold text-slate-800 text-[9px] mb-1.5 border-b border-slate-100 pb-1">{label}</p>
+                          <div className="flex flex-col gap-1">
+                            {payload.map((entry, index) => (
+                              <div key={index} className="flex items-center justify-between gap-4 text-[8px]">
+                                <div className="flex items-center gap-1.5 text-slate-600">
+                                  <span className="w-2 h-2 rounded-[2px]" style={{ backgroundColor: entry.color }}></span>
+                                  <span>{entry.name}</span>
+                                </div>
+                                <span className="font-bold text-slate-800">{formatRupiah(entry.value)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                {rpsConfig.map((col, idx) => (
+                  <Bar key={col.key} dataKey={col.key} name={col.label} fill={colors[idx % colors.length]} radius={[2, 2, 0, 0]} />
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 backdrop-blur-[1px]">
+              <div className="bg-slate-900/80 text-white rounded-full p-2 shadow-lg transform scale-95 group-hover:scale-100 transition-all">
+                <Maximize2 size={16} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Zoomed Chart Modal */}
+      {zoomedChart && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 lg:p-12 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100 bg-slate-50/50">
+              <div className="flex items-center gap-3">
+                <div className="bg-blue-100 p-2 rounded-lg">
+                  <BarChart2 size={24} className="text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-800 tracking-tight">{zoomedChart.title}</h3>
+                  <p className="text-sm font-medium text-slate-500">Semua Return Period</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setZoomedChart(null)}
+                className="p-2 hover:bg-slate-200 rounded-full transition-colors group"
+                title="Tutup Modal"
+              >
+                <X size={24} className="text-slate-400 group-hover:text-slate-600" />
+              </button>
+            </div>
+            
+            {/* Modal Content - Expanded Chart */}
+            <div className="flex-1 w-full p-6 relative">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={zoomedChart.data} margin={{ top: 20, right: 30, bottom: 60, left: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis 
+                    dataKey={zoomedChart.xKey} 
+                    tick={{ fontSize: 11, fill: '#475569', fontWeight: 700 }} 
+                    axisLine={{ stroke: '#cbd5e1', strokeWidth: 2 }}
+                    tickLine={false}
+                    interval={0}
+                    angle={-35}
+                    textAnchor="end"
+                    tickMargin={15}
+                  />
+                  <YAxis 
+                    tickFormatter={(val) => val >= 1e12 ? `Rp ${(val / 1e12).toFixed(1)}T` : val >= 1e9 ? `Rp ${(val / 1e9).toFixed(0)}M` : `Rp ${(val / 1e6).toFixed(0)}Jt`}
+                    tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickMargin={10}
+                  />
+                  <Legend 
+                    verticalAlign="top" 
+                    height={36} 
+                    iconType="circle" 
+                    iconSize={8}
+                    wrapperStyle={{ paddingBottom: '12px' }} 
+                    formatter={(value) => <span className="text-slate-600 font-medium text-xs ml-1">{value}</span>}
+                  />
+                  <Tooltip 
+                    cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }}
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="bg-white/95 backdrop-blur border border-slate-200 p-4 rounded-xl shadow-xl">
+                            <p className="font-bold text-slate-800 text-sm mb-3 border-b border-slate-100 pb-2">{label}</p>
+                            <div className="flex flex-col gap-2">
+                              {payload.map((entry, index) => (
+                                <div key={index} className="flex items-center justify-between gap-8 text-xs font-medium">
+                                  <div className="flex items-center gap-2 text-slate-600">
+                                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></span>
+                                    <span>{entry.name}</span>
+                                  </div>
+                                  <span className="font-bold text-slate-800">{formatRupiah(entry.value)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  {rpsConfig.map((col, idx) => (
+                    <Bar 
+                      key={col.key} 
+                      dataKey={col.key} 
+                      name={col.label} 
+                      fill={colors[idx % colors.length]} 
+                      radius={[4, 4, 0, 0]}
+                      maxBarSize={80}
+                      animationDuration={1500}
+                    />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      , document.body)}
+
       <div className="text-[9px] font-bold text-slate-400 tracking-widest uppercase my-3 w-full flex justify-between items-center">
         <span>Distribusi Direct Loss per Eksposur</span>
         {selectedGroup === 'banjir' && (
@@ -281,7 +584,9 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
   );
 }
 
-function AALChartPanel({ boundaryData, selectedCityFeature, rekapData }) {
+function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTable }) {
+  const [zoomedChart, setZoomedChart] = useState(null);
+
   if (!boundaryData?.features?.length) return null;
 
   let totalCount = 0;
@@ -328,8 +633,19 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData }) {
     }
 
     return (
-      <div key={group.exp} className="bg-slate-50 rounded-xl p-3 mb-3 border border-slate-100/50">
-        <div className="text-[10px] font-bold text-slate-700 tracking-wide mb-2 text-center">{group.label}</div>
+      <div key={group.exp} className="bg-slate-50 rounded-xl p-3 mb-3 border border-slate-100/50 relative">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <div className="text-[10px] font-bold text-slate-700 tracking-wide text-center">{group.label}</div>
+          {group.exp !== 'total' && (
+            <button
+              onClick={() => onOpenTable && onOpenTable(group.layerKey)}
+              title="Lihat Data Tabel"
+              className="text-slate-400 hover:text-blue-500 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded p-1 shadow-sm transition-colors"
+            >
+              <TableIcon size={12} strokeWidth={2.5} />
+            </button>
+          )}
+        </div>
         {group.exp !== 'total' && expCount > 0 && (
           <div className="flex justify-between items-center text-[9px] mb-3 px-2 border-b border-slate-200 pb-2">
             <div className="flex flex-col">
@@ -349,8 +665,130 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData }) {
     );
   });
 
+  const cityChartData = React.useMemo(() => {
+    if (selectedCityFeature) return [];
+    if (!boundaryData?.features) return [];
+    return boundaryData.features.map(f => {
+      const item = { kota: f.properties.nama_kota || f.properties.id_kota || 'Unknown' };
+      HAZARD_KEYS.forEach(hk => {
+        item[hk.key] = f.properties[`aal_${hk.key}_total`] || 0;
+      });
+      return item;
+    }).sort((a,b) => a.kota.localeCompare(b.kota));
+  }, [boundaryData, selectedCityFeature]);
+
+  const exposureChartData = React.useMemo(() => {
+    if (!boundaryData?.features) return [];
+    
+    return EXPOSURE_GROUPS.filter(g => g.exp !== 'total').map(group => {
+      const item = { exposure_name: group.label };
+      HAZARD_KEYS.forEach(hk => {
+        let sum = 0;
+        boundaryData.features.forEach(f => {
+          sum += (f.properties[`aal_${hk.key}_${group.exp}`] || 0);
+        });
+        item[hk.key] = sum;
+      });
+      return item;
+    });
+  }, [boundaryData]);
+
   return (
-    <div className="px-4 pb-4 border-t border-slate-100 flex flex-col items-center">
+    <div className="px-4 pb-4 border-t border-slate-100 flex flex-col items-center relative">
+      {/* Zoomed Chart Modal */}
+      {zoomedChart && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 lg:p-12 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100 bg-slate-50/50">
+              <div className="flex items-center gap-3">
+                <div className="bg-blue-100 p-2 rounded-lg">
+                  <BarChart2 size={24} className="text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-800 tracking-tight">{zoomedChart.title}</h3>
+                  <p className="text-sm font-medium text-slate-500">Nilai Average Annual Loss</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setZoomedChart(null)}
+                className="p-2 hover:bg-slate-200 rounded-full transition-colors group"
+                title="Tutup Modal"
+              >
+                <X size={24} className="text-slate-400 group-hover:text-slate-600" />
+              </button>
+            </div>
+            
+            <div className="flex-1 w-full p-6 relative">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={zoomedChart.data} margin={{ top: 20, right: 30, bottom: 60, left: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis 
+                    dataKey={zoomedChart.xKey} 
+                    tick={{ fontSize: 11, fill: '#475569', fontWeight: 700 }} 
+                    axisLine={{ stroke: '#cbd5e1', strokeWidth: 2 }}
+                    tickLine={false}
+                    interval={0}
+                    angle={-35}
+                    textAnchor="end"
+                    tickMargin={15}
+                  />
+                  <YAxis 
+                    tickFormatter={(val) => val >= 1e12 ? `Rp ${(val / 1e12).toFixed(1)}T` : val >= 1e9 ? `Rp ${(val / 1e9).toFixed(0)}M` : `Rp ${(val / 1e6).toFixed(0)}Jt`}
+                    tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickMargin={10}
+                  />
+                  <Legend 
+                    verticalAlign="top" 
+                    height={36} 
+                    iconType="circle" 
+                    iconSize={8}
+                    wrapperStyle={{ paddingBottom: '12px' }} 
+                    formatter={(value) => <span className="text-slate-600 font-medium text-xs ml-1">{value.replace('\\n', ' ')}</span>}
+                  />
+                  <Tooltip 
+                    cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }}
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="bg-white/95 backdrop-blur border border-slate-200 p-4 rounded-xl shadow-xl">
+                            <p className="font-bold text-slate-800 text-sm mb-3 border-b border-slate-100 pb-2">{label}</p>
+                            <div className="flex flex-col gap-2">
+                              {payload.map((entry, index) => (
+                                <div key={index} className="flex items-center justify-between gap-8 text-xs font-medium">
+                                  <div className="flex items-center gap-2 text-slate-600">
+                                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></span>
+                                    <span>{entry.name.replace('\n', ' ')}</span>
+                                  </div>
+                                  <span className="font-bold text-slate-800">{formatRupiah(entry.value)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  {HAZARD_KEYS.map((col) => (
+                    <Bar 
+                      key={col.key} 
+                      dataKey={col.key} 
+                      name={col.label} 
+                      fill={col.color} 
+                      radius={[4, 4, 0, 0]}
+                      maxBarSize={80}
+                      animationDuration={1500}
+                    />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      , document.body)}
+
       {rekapData?.features?.length > 0 && (
         <div className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 mt-3 mb-1 shadow-sm flex justify-between items-center">
           <div className="flex flex-col">
@@ -361,6 +799,148 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData }) {
           <div className="flex flex-col text-right">
             <span className="text-[8px] font-bold text-slate-400 tracking-widest uppercase">Total Nilai Aset</span>
             <span className="text-[12px] font-extrabold text-slate-800">{formatRupiah(totalAsset)}</span>
+          </div>
+        </div>
+      )}
+
+      {/* City Comparison Chart */}
+      {!selectedCityFeature && cityChartData.length > 0 && (
+        <div className="w-full h-[180px] bg-white border border-slate-200 rounded-xl p-2 mt-2 shadow-sm relative z-0 flex flex-col">
+          <div className="text-[8px] font-extrabold text-slate-500 tracking-widest uppercase mb-1 flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              <BarChart2 size={10} className="text-blue-500" />
+              Perbandingan AAL Antar Kota
+            </div>
+            <span className="text-[7px] text-slate-400 font-medium">Klik untuk perbesar</span>
+          </div>
+          <div 
+            className="flex-1 w-full relative cursor-pointer group rounded border border-transparent hover:border-blue-200 hover:bg-slate-50 transition-colors"
+            onClick={() => setZoomedChart({ type: 'city', title: 'Perbandingan AAL Antar Kota', data: cityChartData, xKey: "kota" })}
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={cityChartData} margin={{ top: 5, right: 10, bottom: 20, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis 
+                  dataKey="kota" 
+                  tick={{ fontSize: 6, fill: '#64748b', fontWeight: 700 }} 
+                  axisLine={{ stroke: '#cbd5e1' }}
+                  tickLine={false}
+                  interval={0}
+                  angle={-35}
+                  textAnchor="end"
+                  height={40}
+                />
+                <YAxis 
+                  tickFormatter={(val) => val >= 1e12 ? `Rp${(val / 1e12).toFixed(1)}T` : val >= 1e9 ? `Rp${(val / 1e9).toFixed(0)}M` : `Rp${(val / 1e6).toFixed(0)}Jt`}
+                  tick={{ fontSize: 7, fill: '#94a3b8' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip 
+                  cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }}
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="bg-white/95 backdrop-blur border border-slate-200 p-2 rounded-lg shadow-lg">
+                          <p className="font-bold text-slate-800 text-[9px] mb-1.5 border-b border-slate-100 pb-1">{label}</p>
+                          <div className="flex flex-col gap-1">
+                            {payload.map((entry, index) => (
+                              <div key={index} className="flex items-center justify-between gap-4 text-[8px]">
+                                <div className="flex items-center gap-1.5 text-slate-600">
+                                  <span className="w-2 h-2 rounded-[2px]" style={{ backgroundColor: entry.color }}></span>
+                                  <span>{entry.name.replace('\n', ' ')}</span>
+                                </div>
+                                <span className="font-bold text-slate-800">{formatRupiah(entry.value)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                {HAZARD_KEYS.map((col) => (
+                  <Bar key={col.key} dataKey={col.key} name={col.label} fill={col.color} radius={[2, 2, 0, 0]} />
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 backdrop-blur-[1px]">
+              <div className="bg-slate-900/80 text-white rounded-full p-2 shadow-lg transform scale-95 group-hover:scale-100 transition-all">
+                <Maximize2 size={16} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Exposure Comparison Chart */}
+      {exposureChartData.length > 0 && (
+        <div className="w-full h-[180px] bg-white border border-slate-200 rounded-xl p-2 mt-2 shadow-sm relative z-0 flex flex-col">
+          <div className="text-[8px] font-extrabold text-slate-500 tracking-widest uppercase mb-1 flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              <BarChart2 size={10} className="text-orange-500" />
+              Perbandingan AAL Antar Eksposur
+            </div>
+            <span className="text-[7px] text-slate-400 font-medium">Klik untuk perbesar</span>
+          </div>
+          <div 
+            className="flex-1 w-full relative cursor-pointer group rounded border border-transparent hover:border-orange-200 hover:bg-slate-50 transition-colors"
+            onClick={() => setZoomedChart({ type: 'exposure', title: 'Perbandingan AAL Antar Eksposur', data: exposureChartData, xKey: "exposure_name" })}
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={exposureChartData} margin={{ top: 5, right: 10, bottom: 20, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis 
+                  dataKey="exposure_name" 
+                  tick={{ fontSize: 6, fill: '#64748b', fontWeight: 700 }} 
+                  axisLine={{ stroke: '#cbd5e1' }}
+                  tickLine={false}
+                  interval={0}
+                  angle={-25}
+                  textAnchor="end"
+                  height={40}
+                />
+                <YAxis 
+                  tickFormatter={(val) => val >= 1e12 ? `Rp${(val / 1e12).toFixed(1)}T` : val >= 1e9 ? `Rp${(val / 1e9).toFixed(0)}M` : `Rp${(val / 1e6).toFixed(0)}Jt`}
+                  tick={{ fontSize: 7, fill: '#94a3b8' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip 
+                  cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }}
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="bg-white/95 backdrop-blur border border-slate-200 p-2 rounded-lg shadow-lg">
+                          <p className="font-bold text-slate-800 text-[9px] mb-1.5 border-b border-slate-100 pb-1">{label}</p>
+                          <div className="flex flex-col gap-1">
+                            {payload.map((entry, index) => (
+                              <div key={index} className="flex items-center justify-between gap-4 text-[8px]">
+                                <div className="flex items-center gap-1.5 text-slate-600">
+                                  <span className="w-2 h-2 rounded-[2px]" style={{ backgroundColor: entry.color }}></span>
+                                  <span>{entry.name.replace('\n', ' ')}</span>
+                                </div>
+                                <span className="font-bold text-slate-800">{formatRupiah(entry.value)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                {HAZARD_KEYS.map((col) => (
+                  <Bar key={col.key} dataKey={col.key} name={col.label} fill={col.color} radius={[2, 2, 0, 0]} />
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 backdrop-blur-[1px]">
+              <div className="bg-slate-900/80 text-white rounded-full p-2 shadow-lg transform scale-95 group-hover:scale-100 transition-all">
+                <Maximize2 size={16} />
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -390,11 +970,36 @@ const ReactLegendOverlay = ({
   selectedRpId,
   selectedCityFeature,
   onSelectCity,
-  onClearCity
+  onClearCity,
+  onOpenTable
 }) => {
   const [inputMode, setInputMode] = useState('pick'); // 'pick' or 'manual'
   const [manualIntensity, setManualIntensity] = useState('');
   const [isAalSidebarOpen, setIsAalSidebarOpen] = useState(true);
+  const [sidebarWidth, setSidebarWidth] = useState(320);
+  const isResizingRef = React.useRef(false);
+
+  React.useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isResizingRef.current) return;
+      // Calculate new width: viewport width - mouse X position
+      const newWidth = window.innerWidth - e.clientX;
+      // Clamp width between 280px (minimum) and 800px (maximum)
+      setSidebarWidth(Math.max(280, Math.min(newWidth, 800)));
+    };
+
+    const handleMouseUp = () => {
+      isResizingRef.current = false;
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
 
   const handleModeChange = (mode) => {
     setInputMode(mode);
@@ -703,9 +1308,19 @@ const ReactLegendOverlay = ({
 
         {/* Sidebar Panel */}
         <div 
-          className={`absolute top-0 right-0 z-[2002] h-full bg-white/95 backdrop-blur-sm shadow-[-4px_0_24px_rgb(0,0,0,0.08)] border-l border-slate-200 pointer-events-auto transition-all duration-300 flex flex-col
-          ${isAalSidebarOpen ? 'w-[280px] lg:w-[320px] translate-x-0' : 'w-[280px] lg:w-[320px] translate-x-full'}`}
+          className="absolute top-0 right-0 z-[2002] h-full bg-white/95 backdrop-blur-sm shadow-[-4px_0_24px_rgb(0,0,0,0.08)] border-l border-slate-200 pointer-events-auto flex flex-col transition-transform duration-300"
+          style={{ 
+            width: `${sidebarWidth}px`, 
+            transform: isAalSidebarOpen ? 'translateX(0)' : 'translateX(100%)',
+            transitionProperty: isResizingRef.current ? 'none' : 'transform'
+          }}
         >
+          {/* Drag Handle */}
+          <div 
+            onMouseDown={() => isResizingRef.current = true} 
+            className="absolute top-0 left-0 w-1.5 h-full cursor-col-resize hover:bg-blue-400/50 transition-colors z-[2010]"
+          />
+
           {/* ─── Header ─── */}
           <div className="px-4 py-3 border-b border-slate-100 flex items-start justify-between gap-2">
             <div className="flex-1 pr-1">
@@ -728,34 +1343,34 @@ const ReactLegendOverlay = ({
                 <div className="text-[9px] text-slate-400 mt-1 truncate">Total Semua Kota/Kabupaten</div>
               )}
             </div>
-            <div className="flex-shrink-0">
-            <select
-              className="bg-white border border-slate-200 text-slate-700 text-[10px] font-semibold py-1 pl-2.5 pr-6 rounded-md focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 appearance-none cursor-pointer max-w-[110px] shadow-sm transition-all"
-              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 4px center', backgroundSize: '10px' }}
-              value={selectedCityFeature ? selectedCityFeature.properties.id_kota : ""}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (!val) {
-                  onSelectCity(null);
-                } else {
-                  const feature = activeBoundaryData.features.find(f => f.properties.id_kota === val);
-                  onSelectCity(feature);
-                }
-              }}
-            >
-              <option value="">Pilih Kota...</option>
-              {activeBoundaryData.features
-                .map(f => f.properties.id_kota)
-                .filter(Boolean)
-                .sort()
-                .map(city => (
-                  <option key={city} value={city}>{city}</option>
-              ))}
-            </select>
+            <div className="flex flex-col gap-2 flex-shrink-0 items-end">
+              <select
+                className="bg-white border border-slate-200 text-slate-700 text-[10px] font-semibold py-1 pl-2.5 pr-6 rounded-md focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 appearance-none cursor-pointer w-full shadow-sm transition-all"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 4px center', backgroundSize: '10px' }}
+                value={selectedCityFeature ? selectedCityFeature.properties.id_kota : ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!val) {
+                    onSelectCity(null);
+                  } else {
+                    const feature = activeBoundaryData.features.find(f => f.properties.id_kota === val);
+                    onSelectCity(feature);
+                  }
+                }}
+              >
+                <option value="">Pilih Kota...</option>
+                {activeBoundaryData.features
+                  .map(f => f.properties.id_kota)
+                  .filter(Boolean)
+                  .sort()
+                  .map(city => (
+                    <option key={city} value={city}>{city}</option>
+                ))}
+              </select>
+            </div>
           </div>
-        </div>
 
-        {/* ─── Color Legend ─── */}
+          {/* ─── Color Legend ─── */}
         <div className="px-4 pt-3 pb-2">
           {(() => {
             let hazPrefix = '';
@@ -832,6 +1447,7 @@ const ReactLegendOverlay = ({
               boundaryData={boundaryDataDL}
               selectedCityFeature={selectedCityFeature}
               selectedGroup={selectedGroup}
+              onOpenTable={onOpenTable}
             />
           )}
           {hasAAL && (

@@ -88,6 +88,7 @@ export default function LayerServices({
   setActiveCategory,
   infraLayers,
   setInfraLayers,
+  setInitialExposureTab,
   loading,
   fetchingExposure,
   scriptsReady,
@@ -349,7 +350,15 @@ export default function LayerServices({
                   key={item.id}
                   label={item.label}
                   checked={infraLayers[item.id] || false}
-                  onChange={() => setInfraLayers(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                  onChange={() => {
+                    setInfraLayers(prev => ({
+                      ...prev,
+                      [item.id]: !prev[item.id]
+                    }));
+                    if (setInitialExposureTab && !infraLayers[item.id]) {
+                      setInitialExposureTab(item.id);
+                    }
+                  }}
                 />
               ))}
             </div>

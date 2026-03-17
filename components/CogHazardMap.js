@@ -10,6 +10,7 @@ import ReactLegendOverlay from './ReactLegendOverlay'
 import Modal from './ui/Modal'
 import CrudHSBGN from './CrudHSBGN'
 import CrudBuildings from './CrudBuildings'
+import ExposureTableContent from './ExposureTableContent'
 
 function jenks(data, n_classes) {
   if (!Array.isArray(data) || data.length === 0) return [];
@@ -297,6 +298,8 @@ export default function CogHazardMap() {
   const handleHsbgnPointerDown = (e) => {
     // Only drag on the header area or panel itself, not on interactive elements
     if (e.target.closest('.no-drag')) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (e.clientX > rect.right - 20 && e.clientY > rect.bottom - 20) return;
     setIsHsbgnDragging(true)
     hsbgnDragStartPos.current = { x: e.clientX - hsbgnPanelPos.x, y: e.clientY - hsbgnPanelPos.y }
     e.currentTarget.setPointerCapture(e.pointerId)
@@ -324,6 +327,8 @@ export default function CogHazardMap() {
 
   const handleBangunanPointerDown = (e) => {
     if (e.target.closest('.no-drag')) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (e.clientX > rect.right - 20 && e.clientY > rect.bottom - 20) return;
     setIsBangunanDragging(true)
     bangunanDragStartPos.current = { x: e.clientX - bangunanPanelPos.x, y: e.clientY - bangunanPanelPos.y }
     e.currentTarget.setPointerCapture(e.pointerId)
@@ -342,6 +347,58 @@ export default function CogHazardMap() {
     setIsBangunanDragging(false)
     e.currentTarget.releasePointerCapture(e.pointerId)
   }
+
+  // Exposure Table Floating Panel State
+  const [isExposurePanelOpen, setIsExposurePanelOpen] = useState(false)
+  const [exposurePanelPos, setExposurePanelPos] = useState({ x: 0, y: 0 })
+  const [isExposureDragging, setIsExposureDragging] = useState(false)
+  const [initialExposureTab, setInitialExposureTab] = useState('healthcare')
+  const exposureDragStartPos = useRef({ x: 0, y: 0 })
+
+  const handleExposurePointerDown = (e) => {
+    if (e.target.closest('.no-drag')) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (e.clientX > rect.right - 20 && e.clientY > rect.bottom - 20) return;
+    setIsExposureDragging(true)
+    exposureDragStartPos.current = { x: e.clientX - exposurePanelPos.x, y: e.clientY - exposurePanelPos.y }
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+
+  const handleExposurePointerMove = (e) => {
+    if (isExposureDragging) {
+      setExposurePanelPos({
+        x: e.clientX - exposureDragStartPos.current.x,
+        y: e.clientY - exposureDragStartPos.current.y
+      })
+    }
+  }
+
+  const handleExposurePointerUp = (e) => {
+    setIsExposureDragging(false)
+    e.currentTarget.releasePointerCapture(e.pointerId)
+  }
+
+  // Handle clicking a row in the Exposure Table Panel
+  const handleTableRowClick = useCallback((building) => {
+    if (!mapRef.current) return;
+    const lat = parseFloat(building.lat);
+    const lon = parseFloat(building.lon);
+    if (isNaN(lat) || isNaN(lon)) return;
+
+    mapRef.current.setView([lat, lon], 18, { animate: true });
+
+    setTimeout(() => {
+      L.popup({ autoClose: true, closeOnClick: true })
+        .setLatLng([lat, lon])
+        .setContent(`
+            <div style="font-family: inherit; min-width: 200px;">
+              <div style="font-weight: 700; color: #1f2937; margin-bottom: 4px;">${building.nama_gedung || 'Tanpa Nama'}</div>
+              <div style="font-size: 11px; color: #6b7280; font-style: italic; margin-bottom: 8px;">ID: ${building.id_bangunan || '-'}</div>
+            </div>
+          `)
+        .openOn(mapRef.current)
+    }, 500);
+  }, []);
 
   const isExposureActive = useMemo(() => {
     return Object.keys(infraLayers).some(k => k !== 'boundaries' && infraLayers[k])
@@ -574,6 +631,11 @@ export default function CogHazardMap() {
         if (!pCity.includes(kotaFilter.toUpperCase())) return
       }
 
+      // Filter by City Selection (both from Dropdown or Map click)
+      if (selectedCityFeature && f.properties.kota !== selectedCityFeature.properties.id_kota) {
+        return;
+      }
+
       const id = (f.properties.id_bangunan || '').toUpperCase()
       let type = null
       if (id.startsWith('FS') && infraLayers.healthcare) type = 'healthcare'
@@ -704,7 +766,7 @@ export default function CogHazardMap() {
       }
     })
     markers.forEach(m => exposureCluster.current.addLayer(m))
-  }, [infraLayers, scriptsReady, exposureData, kotaFilter, isBangunanPanelOpen])
+  }, [infraLayers, scriptsReady, exposureData, kotaFilter, isBangunanPanelOpen, selectedCityFeature])
 
   // ── Effect to update Panel Buildings Zoom Bounds ─────────────────────────────
   useEffect(() => {
@@ -1302,6 +1364,10 @@ export default function CogHazardMap() {
   const handleCityDropdownSelect = useCallback((feature) => {
     setSelectedCityFeature(feature);
 
+    if (feature) {
+      setInfraLayers(prev => ({ ...prev, boundaries: true }));
+    }
+
     if (!feature) {
       // Clear selection
       if (highlightedBoundaryRef.current && boundaryLayer.current) {
@@ -1400,6 +1466,7 @@ export default function CogHazardMap() {
           setSelectedRpId={setSelectedRpId}
           infraLayers={infraLayers}
           setInfraLayers={setInfraLayers}
+          setInitialExposureTab={setInitialExposureTab}
           loading={loading || fetchingMeta}
           fetchingExposure={fetchingExposure}
           scriptsReady={scriptsReady}
@@ -1523,6 +1590,16 @@ export default function CogHazardMap() {
             selectedCityFeature={selectedCityFeature}
             onSelectCity={handleCityDropdownSelect}
             onClearCity={() => handleCityDropdownSelect(null)}
+            onOpenTable={(tab) => {
+              setInitialExposureTab(tab || 'healthcare');
+              setInfraLayers(prev => ({
+                ...prev,
+                [tab || 'healthcare']: true
+              }));
+              // Reset position if re-opened
+              setExposurePanelPos({ x: 0, y: 0 });
+              setIsExposurePanelOpen(true);
+            }}
           />
 
           {error && (
@@ -1543,7 +1620,7 @@ export default function CogHazardMap() {
           {/* Draggable HSBGN Floating Panel */}
           {isHSBGNPanelOpen && (
             <div
-              className="absolute top-[88px] left-[290px] z-[2000] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl w-[310px] border border-gray-100 animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col overflow-hidden"
+              className="absolute top-[88px] left-[290px] z-[2000] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl min-w-[310px] w-[310px] min-h-[400px] h-[450px] resize overflow-hidden border border-gray-100 animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col"
               style={{ transform: `translate(${hsbgnPanelPos.x}px, ${hsbgnPanelPos.y}px)` }}
               onPointerDown={handleHsbgnPointerDown}
               onPointerMove={handleHsbgnPointerMove}
@@ -1569,7 +1646,7 @@ export default function CogHazardMap() {
                 </button>
               </div>
 
-              <div className="no-drag p-2 max-h-[55vh] overflow-y-auto w-full scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
+              <div className="no-drag p-2 flex-1 overflow-hidden w-full flex flex-col">
                 <CrudHSBGN onDataChanged={refreshAALData} />
               </div>
             </div>
@@ -1578,7 +1655,7 @@ export default function CogHazardMap() {
           {/* Draggable Bangunan Floating Panel */}
           {isBangunanPanelOpen && (
             <div
-              className="absolute top-[88px] left-[320px] z-[2000] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl w-[310px] border border-gray-100 animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col overflow-hidden"
+              className="absolute top-[88px] left-[320px] z-[2000] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl min-w-[310px] w-[310px] min-h-[400px] h-[450px] resize overflow-hidden border border-gray-100 animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col"
               style={{ transform: `translate(${bangunanPanelPos.x}px, ${bangunanPanelPos.y}px)` }}
               onPointerDown={handleBangunanPointerDown}
               onPointerMove={handleBangunanPointerMove}
@@ -1602,7 +1679,7 @@ export default function CogHazardMap() {
                 </button>
               </div>
 
-              <div className="no-drag p-0 max-h-[42vh] overflow-y-auto w-full scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent flex justify-center">
+              <div className="no-drag p-0 flex-1 overflow-hidden w-full flex flex-col justify-center">
                 <CrudBuildings
                   onDataChanged={refreshAALData}
                   kotaFilter={kotaFilter}
@@ -1628,6 +1705,55 @@ export default function CogHazardMap() {
                           `)
                         .openOn(mapRef.current)
                     }, 500);
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Draggable Exposure Table Floating Panel */}
+          {isExposurePanelOpen && (
+            <div
+              className="absolute top-[88px] left-[350px] z-[2000] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl min-w-[380px] w-[380px] min-h-[400px] h-[450px] resize overflow-hidden border border-gray-100 animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col"
+              style={{ transform: `translate(${exposurePanelPos.x}px, ${exposurePanelPos.y}px)` }}
+              onPointerDown={handleExposurePointerDown}
+              onPointerMove={handleExposurePointerMove}
+              onPointerUp={handleExposurePointerUp}
+              onPointerCancel={handleExposurePointerUp}
+            >
+              <div className="flex justify-between items-center bg-transparent border-b border-gray-100 px-4 py-3 cursor-grab active:cursor-grabbing">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
+                    <Layers size={14} />
+                  </div>
+                  <h3 className="text-[10px] font-bold text-gray-800 tracking-[0.1em] uppercase">Data Direct Loss</h3>
+                </div>
+                <button
+                  onClick={() => setIsExposurePanelOpen(false)}
+                  className="no-drag text-gray-400 hover:text-gray-800 transition-colors p-1 bg-gray-50 hover:bg-gray-100 rounded-full"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="no-drag p-0 flex-1 overflow-hidden w-full flex flex-col">
+                <ExposureTableContent
+                  exposureData={exposureData}
+                  selectedGroup={selectedGroup}
+                  selectedCityFeature={selectedCityFeature}
+                  initialTab={initialExposureTab}
+                  onRowClick={handleTableRowClick}
+                  onTabChange={(tab) => {
+                    setInfraLayers(prev => ({
+                      ...prev,
+                      healthcare: tab === 'healthcare',
+                      educational: tab === 'educational',
+                      electricity: tab === 'electricity',
+                      airport: tab === 'airport',
+                      hotel: tab === 'hotel'
+                    }));
                   }}
                 />
               </div>

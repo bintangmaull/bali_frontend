@@ -66,7 +66,7 @@ export default function CrudHSBGN({ onDataChanged }) {
   const theadBg = 'bg-gray-100 text-gray-700 font-bold uppercase tracking-wider'
 
   return (
-    <div className={`flex flex-col gap-2 transition-colors duration-300 w-full`}>
+    <div className={`flex flex-col gap-2 transition-colors duration-300 w-full h-full`}>
       {/* Filters */}
       <div className="flex flex-col gap-1.5 w-full min-w-0 shrink-0">
         <input

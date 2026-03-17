@@ -639,7 +639,7 @@ export default function CrudBuildings({
                   type: (b.id_bangunan || '').split('_')[0]
                 })}
               >
-                <td className={`py-0.5 px-0.5 ${rowText} truncate max-w-[140px]`} title={b.nama_gedung}>{b.nama_gedung}</td>
+                <td className={`py-0.5 px-0.5 ${rowText} truncate min-w-[140px]`} title={b.nama_gedung}>{b.nama_gedung}</td>
                 <td className="py-0.5 px-1 w-[20px] text-center" title="Kategori">
                   <div className="flex justify-center items-center w-full h-full">
                     {getCategoryIcon(b.id_bangunan, b.taxonomy)}
