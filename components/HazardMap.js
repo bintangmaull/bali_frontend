@@ -25,6 +25,9 @@ const icons = {
 
 export default function HazardMap({ provinsi, kota, setProvinsi, setKota }) {
   const [selectedBuilding, setSelectedBuilding] = React.useState('')
+  const [dataVersion, setDataVersion] = React.useState(0)
+  const refreshMapData = React.useCallback(() => setDataVersion(v => v + 1), [])
+
   const mapEl = useRef(null)
   const mapRef = useRef(null)
   const buildingCluster = useRef(null)
@@ -117,9 +120,11 @@ export default function HazardMap({ provinsi, kota, setProvinsi, setKota }) {
     cluster.clearLayers()
     markers.current = []
 
-    if (!kota) return
+    const fetchUrl = kota
+      ? `/api/gedung?kota=${encodeURIComponent(kota)}${dataVersion > 0 ? `&_v=${dataVersion}` : ''}`
+      : `/api/gedung?limit=50${dataVersion > 0 ? `&_v=${dataVersion}` : ''}`;
 
-    fetch(`/api/gedung?kota=${encodeURIComponent(kota)}`)
+    fetch(fetchUrl)
       .then(r => r.json())
       .then(data => {
         const markersList = data.features.map(f => {
@@ -163,7 +168,19 @@ export default function HazardMap({ provinsi, kota, setProvinsi, setKota }) {
           boundaryLayer.current = null
         }
 
-        fetch(`/api/kota-boundary?kota=${encodeURIComponent(kota)}`)
+        if (!kota) {
+             // Fall back ke cluster bounds tanpa fetch admin boundary
+             const bounds = cluster.getBounds()
+             if (bounds.isValid()) {
+               map.fitBounds(bounds, {
+                 padding: [50, 50],
+                 maxZoom: 14
+               })
+             }
+             return;
+        }
+
+        fetch(`/api/kota-boundary?kota=${encodeURIComponent(kota)}${dataVersion > 0 ? `&_v=${dataVersion}` : ''}`)
           .then(res => res.json())
           .then(geoJsonData => {
             if (geoJsonData && geoJsonData.features && geoJsonData.features.length > 0) {
@@ -230,7 +247,7 @@ export default function HazardMap({ provinsi, kota, setProvinsi, setKota }) {
       }
       markers.current = []
     }
-  }, [provinsi, kota])
+  }, [provinsi, kota, dataVersion])
   return (
     <div className="flex flex-col md:flex-row gap-4 items-start h-[480px]">
       <style>
@@ -271,6 +288,7 @@ export default function HazardMap({ provinsi, kota, setProvinsi, setKota }) {
           onSearchBuilding={handleSearchBuilding}
           externalSearch={selectedBuilding}
           setExternalSearch={setSelectedBuilding}
+          onDataChanged={refreshMapData}
         />
       </div>
       <div className="w-full md:w-1/2 h-[480px] rounded-xl overflow-hidden mt-4 md:mt-0">

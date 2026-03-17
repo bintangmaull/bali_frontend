@@ -15,6 +15,7 @@ import {
   updateBuilding,
   deleteBuilding,
   recalc as recalcApi,
+  recalcKota,
   getKota,
   getKotaAll
 } from '../src/lib/api'
@@ -75,15 +76,25 @@ function MiniMap({ lat, lon, onLatLonChange, onLocationSelect, kode_bangunan }) 
   }, [lat, lon, kode_bangunan])
 
   const handleSearch = async (e) => {
-    e.preventDefault()
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
     if (!search.trim()) return
     setIsSearching(true)
     setResults([])
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(search)}&format=json&limit=5`)
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(search)}&format=json&limit=5&addressdetails=1&extratags=1`)
       const data = await res.json()
-      setResults(data)
+      if (data && data.length > 0) {
+        setResults(data)
+      } else {
+        alert('Lokasi tidak ditemukan')
+        setResults([])
+      }
     } catch (err) {
+      console.error(err)
+      alert('Gagal mencari lokasi. Coba lagi.')
       setResults([])
     } finally {
       setIsSearching(false)
@@ -106,20 +117,36 @@ function MiniMap({ lat, lon, onLatLonChange, onLocationSelect, kode_bangunan }) 
 
   return (
     <div>
-      <form onSubmit={handleSearch} className="mb-2 flex gap-2">
+      <div className="mb-2 flex gap-2 relative z-[9500]">
         <input
           type="text"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Cari lokasi (misal: Taman Mini Indonesia Indah)"
-          className={`border p-2 rounded-lg w-full ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'}`}
+          onKeyDown={(e) => { 
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              e.stopPropagation();
+              handleSearch(e); 
+            }
+          }}
+          placeholder="Cari lokasi (Taman Mini...)"
+          className={`border p-1 px-2 text-xs rounded w-full bg-white text-gray-900 border-gray-300`}
         />
-        <button type="submit" className="bg-blue-500 text-white px-3 rounded-lg" disabled={isSearching}>
+        <button 
+          type="button" 
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleSearch(e);
+          }} 
+          className="bg-blue-500 text-white px-3 py-1 text-xs rounded transition-colors hover:bg-blue-600" 
+          disabled={isSearching}
+        >
           Cari
         </button>
-      </form>
+      </div>
       {results.length > 0 && (
-        <div className="bg-white border rounded-lg shadow max-h-40 overflow-y-auto mb-2 z-10 relative">
+        <div className="absolute bg-white border rounded shadow-lg max-h-40 overflow-y-auto z-[9000] w-full left-0 mt-[32px]">
           {results.map((r, i) => (
             <div
               key={r.place_id}
@@ -131,7 +158,7 @@ function MiniMap({ lat, lon, onLatLonChange, onLocationSelect, kode_bangunan }) 
           ))}
         </div>
       )}
-      <div ref={mapEl} style={{ height: '200px', width: '100%', marginTop: '10px' }} />
+      <div ref={mapEl} style={{ height: '180px', width: '100%' }} className="rounded z-0 border border-gray-300" />
     </div>
   )
 }
@@ -144,15 +171,80 @@ const buildingNameToCode = {
   'Airport': 'AIRPORT',
 }
 
+// ── Icons for Building Categories ────────────────────────────────────────────────
+const CategoryIcons = {
+  hotel: (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-[#d11141]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" title="Hotel">
+      <path d="M3 21h18"></path>
+      <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path>
+      <path d="M9 21v-4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4"></path>
+      <path d="M10 9h.01"></path>
+      <path d="M14 9h.01"></path>
+      <path d="M10 13h.01"></path>
+      <path d="M14 13h.01"></path>
+    </svg>
+  ),
+  electricity: (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-[#ffc425]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" title="Electricity">
+      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+    </svg>
+  ),
+  educational: (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-[#00aedb]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" title="Educational">
+      <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+      <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+    </svg>
+  ),
+  healthcare: (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-[#f37735]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" title="Healthcare">
+      <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"></path>
+      <path d="M12 8v8"></path>
+      <path d="M8 12h8"></path>
+    </svg>
+  ),
+  airport: (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-[#8c52ff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" title="Airport">
+      <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21.5 4c0 0-2 .5-3.5 2L14.5 9.5 6 7l-2 2 5.3 4.2L6 16.5l-2.5-1-1.5 1.5 3.5 2 2 3.5 1.5-1-2.5 3.3-3.3 4.2 5.3 2-2L11 16l8.2-1.8c1.5-1.5 2-3.5 2-3.5z"></path>
+    </svg>
+  ),
+  default: (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" title="Bangunan">
+      <path d="M3 21h18"></path>
+      <path d="M9 8h1"></path>
+      <path d="M9 12h1"></path>
+      <path d="M9 16h1"></path>
+      <path d="M14 8h1"></path>
+      <path d="M14 12h1"></path>
+      <path d="M14 16h1"></path>
+      <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path>
+    </svg>
+  )
+}
+
+function getCategoryIcon(id_bangunan, taxonomy) {
+  const tax = (id_bangunan || taxonomy || '').toLowerCase()
+  if (tax.includes('hotel')) return CategoryIcons.hotel
+  if (tax.includes('electricity') || tax.includes('listrik')) return CategoryIcons.electricity
+  if (tax.includes('education') || tax.includes('sekolah') || tax.includes('kampus') || tax.startsWith('fd')) return CategoryIcons.educational
+  if (tax.includes('health') || tax.includes('rs') || tax.includes('puskesmas') || tax.includes('hospital') || tax.startsWith('fs')) return CategoryIcons.healthcare
+  if (tax.includes('airport') || tax.includes('bandara')) return CategoryIcons.airport
+  return CategoryIcons.default
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────
+
 export default function CrudBuildings({
   provFilter,
   setProvFilter,
   kotaFilter,
   setKotaFilter,
+  infraLayers = {},
   onSearchBuilding = () => { },
+  onFilteredBuildings = () => { },
   recalc = recalcApi,
   externalSearch = undefined,
-  setExternalSearch = undefined
+  setExternalSearch = undefined,
+  onDataChanged = () => {}
 }) {
   const { darkMode } = useTheme()
 
@@ -165,6 +257,11 @@ export default function CrudBuildings({
   const [internalSearch, setInternalSearch] = useState('')
   const search = externalSearch !== undefined ? externalSearch : internalSearch
   const doSetSearch = setExternalSearch || setInternalSearch
+  
+  const [internalKotaFilter, setInternalKotaFilter] = useState('')
+  const activeKotaFilter = kotaFilter !== undefined ? kotaFilter : internalKotaFilter
+  const doSetKotaFilter = setKotaFilter || setInternalKotaFilter
+  
   const [sortOrder, setSortOrder] = useState('asc')
   const [modalMode, setModalMode] = useState('')
   const [editing, setEditing] = useState(null)
@@ -182,17 +279,37 @@ export default function CrudBuildings({
   // Load semua kota langsung saat mount (untuk filter bar) dari master list HSBGN
   useEffect(() => { getKotaAll().then(setKotaList) }, [])
 
+  const apiCache = useRef({})
+
   function refreshTable() {
-    if (kotaFilter) {
-      return getBuildings({ kota: kotaFilter, nama: search }).then(res => {
+    const cacheKey = `${activeKotaFilter || ''}_${search || ''}`;
+    if (apiCache.current[cacheKey]) {
+      const res = apiCache.current[cacheKey];
+      setRows(res);
+      onFilteredBuildings(res);
+      return Promise.resolve(res);
+    }
+
+    if (activeKotaFilter || search) {
+      return getBuildings({ kota: activeKotaFilter, nama: search }).then(res => {
+        apiCache.current[cacheKey] = res;
         setRows(res)
+        onFilteredBuildings(res)
       })
     }
-    setRows([])
-    return Promise.resolve()
+    return getBuildings({ limit: 50 }).then(res => {
+        apiCache.current[cacheKey] = res;
+        setRows(res)
+        onFilteredBuildings(res)
+    })
   }
 
-  useEffect(() => { refreshTable() }, [kotaFilter, search])
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      refreshTable()
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [activeKotaFilter, search])
 
   async function onUpload() {
     if (!file) return
@@ -285,8 +402,20 @@ export default function CrudBuildings({
       // Create new File object
       const newFile = new File([csvStr], file.name || 'uploaded.csv', { type: 'text/csv' })
 
-      await uploadBuildingsCSV(newFile)
-      await recalc()
+      const uploadResult = await uploadBuildingsCSV(newFile)
+      
+      const affectedCities = uploadResult?.affected_cities || []
+      
+      if (affectedCities.length > 0) {
+        // Hitung ulang hanya kota-kota yang terdampak
+        for (const city of affectedCities) {
+          await recalcKota(city)
+        }
+      } else {
+        // Fallback jika karena alasan tertentu respons affected_cities kosong
+        await recalc()
+      }
+
       setFile(null)
       if (fileInputRef.current) fileInputRef.current.value = ''
 
@@ -306,6 +435,7 @@ export default function CrudBuildings({
       } else {
         await refreshTable()
       }
+      if (onDataChanged) onDataChanged()
 
       setModalMode('')
       setPreviewData(null)
@@ -334,6 +464,7 @@ export default function CrudBuildings({
       await updateBuilding(editing.id_bangunan, data)
       await recalc(editing.id_bangunan)
       await refreshTable()
+      if (onDataChanged) onDataChanged()
       setModalMode('')
       setEditing(null)
     } catch (e) { console.error(e) }
@@ -348,9 +479,10 @@ export default function CrudBuildings({
       const { id_bangunan } = await getNewBuildingId(buildingCode)
       await addBuilding({ ...data, id_bangunan })
       await recalc(id_bangunan)
-      setProvFilter(data.provinsi)
-      setKotaFilter(data.kota)
+      if (setProvFilter) setProvFilter(data.provinsi)
+      if (setKotaFilter) setKotaFilter(data.kota)
       await refreshTable()
+      if (onDataChanged) onDataChanged()
       setModalMode('')
     } catch (e) {
       console.error(e)
@@ -366,6 +498,7 @@ export default function CrudBuildings({
     try {
       await deleteBuilding(deleteTarget.id_bangunan, deleteTarget.kota)
       await refreshTable()
+      if (onDataChanged) onDataChanged()
       setDeleteTarget(null)
     } catch (e) {
       console.error(e)
@@ -374,120 +507,131 @@ export default function CrudBuildings({
   }
 
   // Sort client-side
-  const displayedRows = [...rows].sort((a, b) => {
-    const valA = a.nama_gedung || ''
-    const valB = b.nama_gedung || ''
+  let displayableRows = rows;
+  const isAnyExposureActive = infraLayers.hotel || infraLayers.electricity || infraLayers.educational || infraLayers.healthcare || infraLayers.airport;
+  
+  if (isAnyExposureActive) {
+    // Only filter if at least one exposure category is specifically active
+    displayableRows = displayableRows.filter(b => {
+      const tax = (b.id_bangunan || b.taxonomy || '').toLowerCase();
+      if (tax.includes('hotel') && infraLayers.hotel) return true;
+      if ((tax.includes('electricity') || tax.includes('listrik')) && infraLayers.electricity) return true;
+      if ((tax.includes('education') || tax.includes('sekolah') || tax.includes('kampus') || tax.startsWith('fd')) && infraLayers.educational) return true;
+      if ((tax.includes('health') || tax.includes('rs') || tax.includes('puskesmas') || tax.includes('hospital') || tax.startsWith('fs')) && infraLayers.healthcare) return true;
+      if ((tax.includes('airport') || tax.includes('bandara')) && infraLayers.airport) return true;
+      return false;
+    });
+  }
+
+  const displayedRows = [...displayableRows].sort((a, b) => {
+    const valA = (a.nama_gedung || '').trim()
+    const valB = (b.nama_gedung || '').trim()
+    
+    if (!valA && valB) return 1;
+    if (valA && !valB) return -1;
+    
     return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA)
   })
 
   // Classes berdasarkan mode
-  const cardBg = darkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
-  const infoBg = darkMode ? 'bg-gray-600 text-white' : 'bg-gray-100 text-gray-700'
-  const theadBg = darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-700'
-  const rowText = darkMode ? 'text-white' : 'text-gray-800'
-  const rowHover = darkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-50'
-  const inputCls = darkMode ? 'border p-1.5 md:p-2 text-xs md:text-sm rounded-lg flex-1 text-white bg-gray-700 border-gray-600' : 'border p-1.5 md:p-2 text-xs md:text-sm rounded-lg flex-1 text-gray-900 bg-white border-gray-300'
+  const cardBg = 'bg-white border-0'
+  const infoBg = 'bg-gray-50 text-gray-700'
+  const theadBg = 'bg-gray-100 text-gray-700 font-bold uppercase tracking-wider'
+  const rowText = 'text-gray-800'
+  const rowHover = 'hover:bg-gray-50'
+  const inputCls = 'border p-1 text-[8px] rounded text-gray-900 bg-white border-gray-300 shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 min-w-0'
 
   return (
-    <div className={`${cardBg} p-3 md:p-5 md:rounded-2xl shadow flex flex-col h-[480px] transition-colors duration-300 relative`}>
+    <div className={`${cardBg} p-2 flex flex-col h-full transition-colors duration-300 relative w-full min-w-0 overflow-hidden`}>
 
       {/* Notifikasi Modal Upload */}
       {uploadSuccessMsg && (
-        <div className="absolute top-4 right-4 bg-emerald-500 text-white px-4 py-3 rounded-lg shadow-xl z-[9999] flex items-center space-x-2 animate-in fade-in slide-in-from-top-4 duration-300">
-          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-          <span className="text-sm font-medium">{uploadSuccessMsg}</span>
+        <div className="absolute top-2 right-2 bg-emerald-500 text-white px-2 py-1.5 rounded shadow-xl z-[9999] flex items-center space-x-1 animate-in fade-in slide-in-from-top-4 duration-300 text-[8px]">
+          <span className="font-medium">{uploadSuccessMsg}</span>
         </div>
       )}
       {uploadErrorMsg && (
-        <div className="absolute top-4 right-4 bg-red-500 text-white px-4 py-3 rounded-lg shadow-xl z-[9999] flex items-center space-x-2 animate-in fade-in slide-in-from-top-4 duration-300">
-          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-          <span className="text-sm font-medium">{uploadErrorMsg}</span>
+        <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1.5 rounded shadow-xl z-[9999] flex items-center space-x-1 animate-in fade-in slide-in-from-top-4 duration-300 text-[8px]">
+          <span className="font-medium">{uploadErrorMsg}</span>
         </div>
       )}
 
-      {/* Upload Section with Hover Instructions */}
-      <div className="relative group mb-3">
-        <div className="flex flex-col md:flex-row gap-2 items-stretch md:items-center">
-          <div className="flex-1 flex flex-col sm:flex-row gap-2">
-            <input
-              type="file"
-              accept=".csv"
-              ref={fileInputRef}
-              onChange={e => setFile(e.target.files[0])}
-              className={`${inputCls} w-full`}
-            />
-            <Button
-              onClick={onUpload}
-              disabled={!file || isUploading}
-              className="bg-[#22D3EE] text-black rounded-4xl hover:bg-[#3B82F6] hover:text-white px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm transition whitespace-nowrap text-center sm:w-auto w-full"
-            >
-              {isUploading && <LoadingSpinner />} Unggah Data
-            </Button>
-          </div>
+      {/* Upload & Filter Section (Ultra Compact) */}
+      <div className="flex flex-col gap-1.5 w-full min-w-0 shrink-0">
+        
+        {/* Row 1: File Upload */}
+        <div className="flex gap-1 items-center w-full min-w-0">
+          <input
+            type="file"
+            accept=".csv"
+            ref={fileInputRef}
+            onChange={e => setFile(e.target.files[0])}
+            className={`${inputCls} w-2/5 text-[7px] h-[22px] !py-1 overflow-hidden`}
+          />
+          <Button
+            onClick={onUpload}
+            disabled={!file || isUploading}
+            className="bg-[#22D3EE] text-black rounded text-[8px] px-1.5 font-medium flex-1 h-[22px] flex items-center justify-center whitespace-nowrap overflow-hidden min-w-0"
+          >
+            {isUploading && <LoadingSpinner />} Unggah
+          </Button>
           <a
             href="/sample_bangunan.csv"
             download="template_data_bangunan.csv"
-            className="px-3 py-1.5 md:px-4 md:py-2 bg-[#C6FF00] text-black rounded-4xl hover:bg-[#A8D600] transition text-xs md:text-sm font-semibold whitespace-nowrap shadow-sm text-center md:w-auto w-full"
+            className="bg-[#C6FF00] text-black rounded text-[8px] px-1.5 font-semibold flex-1 h-[22px] flex items-center justify-center whitespace-nowrap overflow-hidden min-w-0 shadow-sm"
           >
-            Unduh Template CSV
+            Template CSV
           </a>
         </div>
 
-        {/* Hover Tooltip Instructions */}
-        <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block w-full max-w-md z-[1001]">
-          <div className={`${infoBg} p-3 rounded-xl shadow-xl border ${darkMode ? 'border-gray-600' : 'border-gray-200'} text-xs animate-in fade-in slide-in-from-bottom-2 duration-200`}>
-            <p className="font-semibold mb-1">💡 Petunjuk Unggah:</p>
-            <p>Pastikan mengikuti template pengisian data dengan baik agar perhitungan AAL dan Direct Loss akurat. Silakan unduh template CSV di samping jika belum memilikinya.</p>
+        {/* Row 2: Filter & Search */}
+        <div className="flex gap-1 items-center w-full min-w-0">
+          <div className="w-[35%] min-w-0">
+            <Select id="kotaFilter" value={activeKotaFilter} onChange={(val) => doSetKotaFilter(val)} options={kotaList} placeholder="Kota" className="w-full text-[8px] !p-1 h-[22px] rounded !leading-tight text-ellipsis overflow-hidden" />
           </div>
-        </div>
-      </div>
-
-      <div className="space-y-2 md:space-y-4 flex flex-col">
-        <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end w-full">
-          <div className="w-full sm:w-48">
-            <Select id="kotaFilter" value={kotaFilter} onChange={setKotaFilter} options={['', ...kotaList]} placeholder="Pilih Kota" className="w-full" />
+          <div className="flex-1 min-w-0">
+            <input
+              type="text"
+              placeholder="Cari..."
+              value={search}
+              onChange={e => doSetSearch(e.target.value)}
+              className={`${inputCls} w-full h-[22px]`}
+            />
           </div>
-          <input
-            type="text"
-            placeholder="Cari Nama Gedung"
-            disabled={!kotaFilter}
-            value={search}
-            onChange={e => doSetSearch(e.target.value)}
-            className={`${inputCls} w-full sm:flex-1`}
-          />
           <Button
             onClick={() => setModalMode('add')}
-            className="text-black px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm bg-[#C084FC] rounded-4xl hover:bg-cyan-700 hover:text-white text-center w-full sm:w-auto"
+            className="text-black px-2 text-[8px] font-medium bg-[#C084FC] rounded text-center h-[22px] flex items-center shrink-0"
           >
             Tambah
           </Button>
         </div>
+        
       </div>
 
-      <div className="flex-1 overflow-x-auto overflow-y-auto mt-4 h-[480px] rounded-lg">
-        <table className="w-full text-xs text-left whitespace-nowrap">
-          <thead className={`${theadBg} sticky top-0 transition-colors duration-300`}>
+      <div className="flex-1 overflow-auto mt-2 rounded shadow-sm border border-gray-200 min-w-0 min-h-0 w-full relative custom-scrollbar pb-1 bg-white">
+        <table className="w-max min-w-full text-[7px] leading-tight text-left whitespace-nowrap">
+          <thead className={`${theadBg} sticky top-0 z-10 transition-colors duration-300 outline outline-1 outline-gray-200`}>
             <tr>
               <th
-                className="p-2 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                className="py-0.5 px-0.5 cursor-pointer hover:bg-gray-200 transition-colors whitespace-nowrap"
                 onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
               >
                 Nama Gedung {sortOrder === 'asc' ? '▲' : '▼'}
               </th>
-              <th className="p-2">Alamat</th>
-              <th className="p-2">Kota</th>
-              <th className="p-2">Lon</th>
-              <th className="p-2">Lat</th>
-              <th className="p-2">Lantai</th>
-              <th className="p-2">Taxonomy</th>
-              <th className="p-2">Aksi</th>
+              <th className="py-0.5 px-0.5 w-[20px] text-center" title="Kategori"></th>
+              <th className="py-0.5 px-0.5">Kota</th>
+              <th className="py-0.5 px-0.5">Lon</th>
+              <th className="py-0.5 px-0.5">Lat</th>
+              <th className="py-0.5 px-0.5">Lantai</th>
+              <th className="py-0.5 px-0.5">Taxonomy</th>
+              <th className="py-0.5 px-0.5 text-center">Aksi</th>
             </tr>
           </thead>
           <tbody>
             {displayedRows.map(b => (
               <tr
                 key={b.id_bangunan}
-                className={`${rowHover} cursor-pointer transition-colors duration-150`}
+                className={`${rowHover} cursor-pointer transition-colors duration-150 border-b border-gray-100 last:border-0`}
                 onClick={() => onSearchBuilding({
                   lat: parseFloat(b.lat),
                   lon: parseFloat(b.lon),
@@ -495,38 +639,48 @@ export default function CrudBuildings({
                   type: (b.id_bangunan || '').split('_')[0]
                 })}
               >
-                <td className={`p-2 ${rowText} truncate max-w-[200px]`} title={b.nama_gedung}>{b.nama_gedung}</td>
-                <td className={`p-2 ${rowText} truncate max-w-[200px]`} title={b.alamat}>{b.alamat}</td>
-                <td className={`p-2 ${rowText}`}>{b.kota}</td>
-                <td className={`p-2 ${rowText}`}>{parseFloat(b.lon).toFixed(6)}</td>
-                <td className={`p-2 ${rowText}`}>{parseFloat(b.lat).toFixed(6)}</td>
-                <td className={`p-2 ${rowText}`}>{b.jumlah_lantai}</td>
-                <td className={`p-2 ${rowText}`}>{b.taxonomy}</td>
-                <td className="p-2 space-x-2">
-                  <button onClick={e => { e.stopPropagation(); openEdit(b.id_bangunan) }} className="text-blue-400 hover:text-blue-300">✏️</button>
-                  <button onClick={e => { e.stopPropagation(); onDeleteClick(b) }} className="text-red-400 hover:text-red-300">🗑️</button>
+                <td className={`py-0.5 px-0.5 ${rowText} truncate max-w-[140px]`} title={b.nama_gedung}>{b.nama_gedung}</td>
+                <td className="py-0.5 px-1 w-[20px] text-center" title="Kategori">
+                  <div className="flex justify-center items-center w-full h-full">
+                    {getCategoryIcon(b.id_bangunan, b.taxonomy)}
+                  </div>
                 </td>
-              </tr>
+                <td className={`py-0.5 px-0.5 ${rowText}`}>{b.kota}</td>
+                <td className={`py-0.5 px-0.5 ${rowText}`}>{parseFloat(b.lon).toFixed(6)}</td>
+                <td className={`py-0.5 px-0.5 ${rowText}`}>{parseFloat(b.lat).toFixed(6)}</td>
+                <td className={`py-0.5 px-0.5 ${rowText}`}>{b.jumlah_lantai}</td>
+                <td className={`py-0.5 px-0.5 ${rowText}`}>{b.taxonomy}</td>
+                  <td className={`py-0.5 px-0.5 ${rowText} text-center hidden md:table-cell`}>
+                    <div className="flex justify-center gap-2">
+                      <button onClick={(e) => { e.stopPropagation(); setEditing(b); setModalMode('edit') }} className="text-blue-500 hover:text-blue-700 transition-colors" title="Edit">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); onDeleteClick(b) }} className="text-red-500 hover:text-red-700 transition-colors" title="Hapus">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
             ))}
           </tbody>
         </table>
       </div>
 
 
-      <Modal isOpen={modalMode === 'add'} onClose={() => setModalMode('')}>
-        <AddForm onSave={onAdd} isSavingAdd={isSavingAdd} darkMode={darkMode} />
+      <Modal isOpen={modalMode === 'add'} onClose={() => setModalMode('')} forceLightMode={true} maxWidth="max-w-[325px]">
+        <AddForm onSave={onAdd} isSavingAdd={isSavingAdd} />
       </Modal>
-      <Modal isOpen={modalMode === 'edit'} onClose={() => setModalMode('')}>
-        <EditForm initial={editing} onSave={onSaveEdit} isSavingEdit={isSavingEdit} darkMode={darkMode} />
+      <Modal isOpen={modalMode === 'edit'} onClose={() => setModalMode('')} forceLightMode={true} maxWidth="max-w-[325px]">
+        <EditForm initial={editing} onSave={onSaveEdit} isSavingEdit={isSavingEdit} />
       </Modal>
-      <Modal isOpen={!!deleteTarget} onClose={() => !isDeleting && setDeleteTarget(null)}>
-        <h3 className="text-lg font-bold mb-4">Hapus Bangunan</h3>
-        <p>Yakin ingin menghapus bangunan <strong>{deleteTarget?.nama_gedung}</strong>?</p>
-        <div className="flex justify-end gap-4 mt-6">
-          <Button onClick={() => setDeleteTarget(null)} disabled={isDeleting} className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-lg">
+      <Modal isOpen={!!deleteTarget} onClose={() => !isDeleting && setDeleteTarget(null)} forceLightMode={true} maxWidth="max-w-[400px]">
+        <h3 className="text-lg font-bold mb-3 text-gray-900">Hapus Bangunan</h3>
+        <p className="text-sm text-gray-700">Yakin ingin menghapus bangunan <strong className="text-gray-900">{deleteTarget?.nama_gedung || 'Tanpa Nama'}</strong>?</p>
+        <div className="flex justify-end gap-3 mt-6">
+          <Button onClick={() => setDeleteTarget(null)} disabled={isDeleting} className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-lg text-sm transition-colors border border-gray-300">
             Batal
           </Button>
-          <Button onClick={confirmDelete} disabled={isDeleting} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center">
+          <Button onClick={confirmDelete} disabled={isDeleting} className="bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg flex items-center text-sm shadow-sm transition-colors">
             {isDeleting && <LoadingSpinner />}
             Hapus
           </Button>
@@ -534,12 +688,12 @@ export default function CrudBuildings({
       </Modal>
 
       {/* MODAL PREVIEW CSV */}
-      <Modal isOpen={modalMode === 'preview'} onClose={() => setModalMode('')} maxWidth="max-w-6xl">
-        <h3 className="text-lg font-bold mb-4">Pratinjau Data CSV</h3>
-        <p className="text-sm text-gray-500 mb-4">
+      <Modal isOpen={modalMode === 'preview'} onClose={() => setModalMode('')} maxWidth="max-w-6xl" forceLightMode={true}>
+        <h3 className="text-lg font-bold mb-4 text-gray-900">Pratinjau Data CSV</h3>
+        <p className="text-sm text-gray-600 mb-4">
           Anda dapat menyunting (edit) detail bangunan di bawah ini sebelum data disimpan.
           <br />
-          <span className="text-red-500 font-semibold">
+          <span className="text-red-600 font-semibold">
             Pastikan seluruh kolom telah terisi. Data dengan kolom yang kosong tidak dapat dilanjutkan perhitungannya.
           </span>
         </p>
@@ -556,16 +710,16 @@ export default function CrudBuildings({
                 <th className="whitespace-nowrap px-4 py-3 text-left font-semibold uppercase tracking-wider text-xs">AKSI</th>
               </tr>
             </thead>
-            <tbody className={`divide-y divide-gray-200 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <tbody className="divide-y divide-gray-200 bg-white">
               {previewData?.map(row => (
                 <tr key={row._id} className="hover:bg-gray-50 transition-colors">
                   {previewHeaders.map((h, i) => (
-                    <td key={i} className={`whitespace-nowrap px-4 py-2 ${darkMode ? 'text-white' : 'text-gray-700'}`}>
+                    <td key={i} className="whitespace-nowrap px-4 py-2 text-gray-700">
                       {h === 'kode_bangunan' ? (
                         <select
                           value={row[h]}
                           onChange={(e) => handlePreviewChange(row._id, h, e.target.value)}
-                          className={`border rounded p-1 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                          className={`border rounded p-1 bg-white border-gray-300 text-gray-900`}
                         >
                           <option value="FS">FS (Healthcare Facilities)</option>
                           <option value="FD">FD (Educational Facilities)</option>
@@ -577,7 +731,7 @@ export default function CrudBuildings({
                         <select
                           value={row[h]}
                           onChange={(e) => handlePreviewChange(row._id, h, e.target.value)}
-                          className={`border rounded p-1 ${row[h]?.trim() ? (darkMode ? 'border-gray-600' : 'border-gray-300') : 'border-red-500 bg-red-50 text-black'} ${darkMode ? 'bg-gray-700 text-white' : 'bg-white text-gray-900'}`}
+                          className={`border rounded p-1 ${row[h]?.trim() ? 'border-gray-300' : 'border-red-500 bg-red-50 text-black'} bg-white text-gray-900`}
                         >
                           <option value="CR">CR</option>
                           <option value="MCF">MCF</option>
@@ -586,7 +740,7 @@ export default function CrudBuildings({
                         <select
                           value={row[h]}
                           onChange={(e) => handlePreviewChange(row._id, h, e.target.value)}
-                          className={`border rounded p-1 ${row[h]?.trim() ? (darkMode ? 'border-gray-600' : 'border-gray-300') : 'border-red-500 bg-red-50 text-black'} ${darkMode ? 'bg-gray-700 text-white' : 'bg-white text-gray-900'}`}
+                          className={`border rounded p-1 ${row[h]?.trim() ? 'border-gray-300' : 'border-red-500 bg-red-50 text-black'} bg-white text-gray-900`}
                         >
                           <option value="">- Pilih Kota -</option>
                           {kotaList.map((k, idx) => (
@@ -599,7 +753,7 @@ export default function CrudBuildings({
                             type={['lon', 'lat', 'luas', 'jumlah_lantai'].includes(h) ? 'number' : 'text'}
                             value={row[h]}
                             onChange={(e) => handlePreviewChange(row._id, h, e.target.value)}
-                            className={`border rounded p-1 max-w-[200px] ${row[h]?.toString().trim() ? (darkMode ? 'border-gray-600' : 'border-gray-300') : 'border-red-500 bg-red-50 text-black'} ${darkMode ? 'bg-gray-700 text-white' : 'bg-white text-gray-900'}`}
+                            className={`border rounded p-1 max-w-[200px] ${row[h]?.toString().trim() ? 'border-gray-300' : 'border-red-500 bg-red-50 text-black'} bg-white text-gray-900`}
                           />
                           {h === 'lat' && (
                             <button
@@ -675,13 +829,21 @@ export default function CrudBuildings({
         )}
         <div className="mt-6 flex justify-end gap-3">
           <Button
-            onClick={() => setModalMode('preview')}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setModalMode('preview');
+            }}
             className="bg-gray-400 text-white rounded-lg px-4 py-2"
           >
             Kembali
           </Button>
           <Button
-            onClick={() => handleMapLocationSelect(mapPickerContext.lat, mapPickerContext.lon, null)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleMapLocationSelect(mapPickerContext.lat, mapPickerContext.lon, null);
+            }}
             className="bg-blue-600 text-white rounded-lg px-4 py-2"
           >
             Gunakan Koordinat Ini
@@ -701,25 +863,21 @@ function AddForm({ onSave, isSavingAdd, darkMode }) {
 
   // Load daftar kota Bali saat mount dari master list HSBGN
   useEffect(() => {
-    getKota('BALI').then(kl => setLocalKotaList(kl))
+    getKotaAll().then(kl => setLocalKotaList(kl))
   }, [])
 
   const handleLatLonChange = (lat, lon) => {
     setData(d => ({ ...d, lat: lat.toString(), lon: lon.toString() }))
   }
 
-  const inputCls = `border p-2 w-full rounded-lg ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'}`;
+  const inputCls = `border p-1 px-1.5 h-6 text-[10px] w-full rounded bg-white text-gray-900 border-gray-300`;
 
   const isValid = () => {
-    const luas = parseFloat(data.luas);
-    const isValidLuas = !isNaN(luas) && luas > 0;
-    const lantaiStr = String(data.jumlah_lantai).trim();
-    const isValidLantai = /^[1-9]\d*$/.test(lantaiStr); 
+    const l = String(data.luas || '').trim();
+    const jl = String(data.jumlah_lantai || '').trim();
 
     return (
-      data.nama_gedung.trim() !== '' &&
-      isValidLuas &&
-      isValidLantai &&
+      l !== '' && jl !== '' &&
       data.kota !== '' &&
       data.taxonomy !== '' &&
       data.kode_bangunan !== ''
@@ -728,10 +886,10 @@ function AddForm({ onSave, isSavingAdd, darkMode }) {
 
   return (
     <>
-      <h3 className="text-lg font-bold mb-4">Tambah Bangunan</h3>
+      <h3 className="text-sm font-bold mb-2 text-gray-900">Tambah Bangunan</h3>
       {['nama_gedung', 'alamat', 'luas', 'jumlah_lantai'].map(fld => (
-        <div key={fld} className="mb-2">
-          <label className="block text-sm font-semibold">
+        <div key={fld} className="mb-1">
+          <label className="block text-[9px] font-bold text-gray-900 mb-0.5">
             {fld === 'jumlah_lantai' ? 'JUMLAH LANTAI' : fld.replace('_', ' ').toUpperCase()}
           </label>
           <input
@@ -745,33 +903,43 @@ function AddForm({ onSave, isSavingAdd, darkMode }) {
         </div>
       ))}
       <div className="mb-2">
-        <label className="block text-sm font-semibold mb-1">KOTA</label>
-        <Select id="addKota" options={['', ...localKotaList]} value={data.kota} onChange={v => setData(d => ({ ...d, kota: v }))} placeholder="- Pilih -" className="w-full" />
+        <label className="block text-[9px] font-bold text-gray-900 mb-0.5 mt-2">KOTA</label>
+        <Select id="addKota" options={localKotaList} value={data.kota} onChange={(v) => setData(d => ({ ...d, kota: v }))} placeholder="- Pilih -" className="w-full text-[10px]" />
       </div>
       <div className="grid grid-cols-2 gap-2 mb-2">
         <div>
-          <label className="block text-sm font-semibold">Longitude</label>
+          <label className="block text-[9px] font-bold text-gray-900 mb-0.5 mt-2">LONGITUDE</label>
           <input type="number" step="any" value={data.lon} onChange={e => setData(d => ({ ...d, lon: e.target.value }))} className={inputCls} />
         </div>
         <div>
-          <label className="block text-sm font-semibold">Latitude</label>
+          <label className="block text-[9px] font-bold text-gray-900 mb-0.5 mt-2">LATITUDE</label>
           <input type="number" step="any" value={data.lat} onChange={e => setData(d => ({ ...d, lat: e.target.value }))} className={inputCls} />
         </div>
       </div>
       <MiniMap lat={parseFloat(data.lat)} lon={parseFloat(data.lon)} onLatLonChange={handleLatLonChange} kode_bangunan={data.kode_bangunan} />
       <div className="mb-1">
-        <label className="block text-sm font-semibold mb-1">JENIS BANGUNAN</label>
-        <Select id="addKodeBangunan" options={['Healthcare Facilities', 'Educational Facilities', 'Electricity', 'Hotel', 'Airport']} value={data.kode_bangunan} onChange={v => setData(d => ({ ...d, kode_bangunan: v }))} className="w-full mb-2" />
+        <label className="block text-[9px] font-bold text-gray-900 mb-0.5 mt-2">JENIS BANGUNAN</label>
+        <Select id="addKodeBangunan" options={['Healthcare Facilities', 'Educational Facilities', 'Electricity', 'Hotel', 'Airport']} value={data.kode_bangunan} onChange={(v) => setData(d => ({ ...d, kode_bangunan: v }))} className="w-full mb-2 text-[10px]" />
       </div>
-      <div className="mb-4">
-        <label className="block text-sm font-semibold mb-1">TAKSONOMI BANGUNAN</label>
-        <Select id="addTaxonomy" options={['CR', 'MCF']} value={data.taxonomy} onChange={v => setData(d => ({ ...d, taxonomy: v }))} className="w-full" />
+      <div className="mb-2">
+        <label className="block text-[10px] font-semibold mb-0.5 text-gray-900">TAKSONOMI BANGUNAN</label>
+        <Select id="addTaxonomy" options={['CR', 'MCF']} value={data.taxonomy} onChange={(v) => setData(d => ({ ...d, taxonomy: v }))} className="w-full text-xs" />
       </div>
-      <div className="flex justify-end">
+      <div className="flex justify-end mt-2">
         <Button
-          onClick={() => onSave({ ...data, luas: parseFloat(data.luas), jumlah_lantai: parseInt(data.jumlah_lantai, 10) })}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onSave({ 
+              ...data, 
+              lon: parseFloat(String(data.lon).replace(',', '.')),
+              lat: parseFloat(String(data.lat).replace(',', '.')),
+              luas: parseFloat(String(data.luas).replace(',', '.')), 
+              jumlah_lantai: parseInt(data.jumlah_lantai, 10) 
+            });
+          }}
           disabled={isSavingAdd || !isValid()}
-          className={`px-4 py-2 rounded-lg ${(!isValid() || isSavingAdd) ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+          className={`px-3 py-1.5 text-xs rounded-md ${(!isValid() || isSavingAdd) ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
         >
           {isSavingAdd ? 'Menyimpan...' : 'Tambah'}
         </Button>
@@ -788,28 +956,23 @@ function EditForm({ initial, onSave, isSavingEdit, darkMode }) {
     setData(d => ({ ...d, lat: lat.toString(), lon: lon.toString() }))
   }
 
-  const inputCls = `border p-2 w-full rounded-lg ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'}`;
+  const inputCls = `border p-1 px-1.5 h-6 text-[10px] w-full rounded bg-white text-gray-900 border-gray-300`;
 
   const isValid = () => {
-    const luas = parseFloat(data.luas);
-    const isValidLuas = !isNaN(luas) && luas > 0;
-    const lantaiStr = String(data.jumlah_lantai || '').trim();
-    const isValidLantai = /^[1-9]\d*$/.test(lantaiStr);
-
+    const l = String(data.luas || '').trim();
+    const jl = String(data.jumlah_lantai || '').trim();
     return (
-      (data.nama_gedung || '').trim() !== '' &&
-      isValidLuas &&
-      isValidLantai &&
+      l !== '' && jl !== '' &&
       (data.taxonomy || '') !== ''
     );
   };
 
   return (
     <>
-      <h3 className="text-lg font-bold mb-4">Edit Bangunan</h3>
+      <h3 className="text-sm font-bold mb-2 text-gray-900">Edit Bangunan</h3>
       {['nama_gedung', 'alamat', 'lon', 'lat', 'luas', 'jumlah_lantai'].map(fld => (
-        <div key={fld} className="mb-2">
-          <label className="block text-sm font-semibold">
+        <div key={fld} className="mb-1">
+          <label className="block text-[9px] font-bold text-gray-900 mb-0.5">
             {fld === 'jumlah_lantai' ? 'JUMLAH LANTAI' : fld.replace('_', ' ').toUpperCase()}
           </label>
           <input
@@ -818,7 +981,7 @@ function EditForm({ initial, onSave, isSavingEdit, darkMode }) {
             value={data[fld] ?? ''}
             onChange={e => setData(d => ({ ...d, [fld]: e.target.value }))}
             className={inputCls}
-            placeholder={fld === 'luas' ? 'Harus angka > 0' : fld === 'jumlah_lantai' ? 'Bulat positif (contoh: 2)' : ''}
+            placeholder={fld === 'luas' ? 'Harus angka > 0' : fld === 'jumlah_lantai' ? 'Bulat genap positif (contoh: 2)' : ''}
           />
         </div>
       ))}
@@ -828,30 +991,32 @@ function EditForm({ initial, onSave, isSavingEdit, darkMode }) {
         onLatLonChange={handleLatLonChange}
         kode_bangunan={data.kode_bangunan || (data.id_bangunan ? data.id_bangunan.split('_')[0] : 'BMN')}
       />
-      <div className="mb-4">
-        <label className="block text-sm font-semibold">Taxonomy</label>
+      <div className="mb-1 mt-1">
+        <label className="block text-[9px] font-bold text-gray-900 mb-0.5 mt-2">TAKSONOMI BANGUNAN</label>
         <select
           value={data.taxonomy || ''}
           onChange={e => setData(d => ({ ...d, taxonomy: e.target.value }))}
-          className={inputCls}
+          className={`${inputCls} py-0`}
         >
           <option value="">- Pilih Taksonomi -</option>
           <option value="CR">CR</option>
           <option value="MCF">MCF</option>
-          <option value="MUR">MUR</option>
-          <option value="LightWood">LightWood</option>
         </select>
       </div>
-      <div className="flex justify-end gap-4">
+      <div className="flex justify-end gap-2 mt-2">
         <Button
-          onClick={() => onSave({
-            nama_gedung: data.nama_gedung, alamat: data.alamat,
-            lon: parseFloat(data.lon), lat: parseFloat(data.lat),
-            luas: parseFloat(data.luas), jumlah_lantai: parseInt(data.jumlah_lantai, 10),
-            taxonomy: data.taxonomy
-          })}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onSave({
+              nama_gedung: data.nama_gedung, alamat: data.alamat,
+              lon: parseFloat(String(data.lon).replace(',', '.')), lat: parseFloat(String(data.lat).replace(',', '.')),
+              luas: parseFloat(String(data.luas).replace(',', '.')), jumlah_lantai: parseInt(data.jumlah_lantai, 10),
+              taxonomy: data.taxonomy
+            });
+          }}
           disabled={isSavingEdit || !isValid()}
-          className={`px-4 py-2 rounded-lg ${(!isValid() || isSavingEdit) ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+          className={`px-3 py-1 text-[10px] rounded ${(!isValid() || isSavingEdit) ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
         >
           {isSavingEdit ? 'Menyimpan...' : 'Simpan'}
         </Button>

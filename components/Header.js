@@ -13,18 +13,20 @@ export default function Header() {
 
   return (
     <header className="bg-[#1E2023] dark:bg-[#1E2023] light:bg-white text-white fixed top-0 left-0 w-full z-[2000] transition-colors duration-300">
-      <div className="max-w-screen-2xl mx-auto flex items-center justify-between py-3 px-4">
+      <div className="max-w-screen-2xl mx-auto flex items-center justify-between py-1.5 px-4">
         <div className="flex items-center space-x-3 md:pl-7">
-          <div>
-            <h1 className="text-2xl font-bold font-[space grotesk] text-[#C6FF00]">CardinAAL</h1>
-            <p className="text-gray-400 dark:text-gray-400 text-sm font-[space grotesk]">Calculation for Direct and Average Annual Loss</p>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold font-[space grotesk] text-[#C6FF00]">CardinAAL</h1>
+            <p className="text-gray-400 dark:text-gray-400 text-xs font-[space grotesk] hidden lg:block border-l border-gray-700 pl-2">
+              Calculation for Direct and Average Annual Loss
+            </p>
           </div>
         </div>
         <nav className="hidden md:flex items-center space-x-4">
           <button
             onClick={() => router.push('/')}
             className={`
-              px-4 py-2 rounded-4xl transition
+              px-3 py-1 rounded-4xl transition text-sm
               ${isActive('/')
                 ? 'bg-[#C6FF00] text-black'
                 : 'text-gray-200 hover:bg-[#C6FF00] hover:text-black'}
@@ -34,36 +36,37 @@ export default function Header() {
           </button>
           <button
             onClick={() => router.push('/calculation')}
-            className={`
-              px-4 py-2 rounded-4xl transition
-              ${isActive('/calculation')
-                ? 'bg-[#C6FF00] text-black'
-                : 'text-gray-200 hover:bg-[#C6FF00] hover:text-black'}
-            `}
+            className="hidden"
           >
             Hasil Kalkulasi
           </button>
           <button
-            onClick={() => router.push('/data')}
+            onClick={() => router.push('/peta')}
             className={`
-              px-4 py-2 rounded-4xl transition
-              ${isActive('/data')
+              px-3 py-1 rounded-4xl transition text-sm
+              ${isActive('/peta')
                 ? 'bg-[#C6FF00] text-black'
                 : 'text-gray-200 hover:bg-[#C6FF00] hover:text-black'}
             `}
+          >
+            Our Product
+          </button>
+          <button
+            onClick={() => router.push('/data')}
+            className="hidden"
           >
             Model dan Data
           </button>
           <button
             onClick={() => router.push('/about')}
             className={`
-              px-4 py-2 rounded-4xl transition
+              px-3 py-1 rounded-4xl transition text-sm
               ${isActive('/about')
                 ? 'bg-[#C6FF00] text-black'
                 : 'text-gray-200 hover:bg-[#C6FF00] hover:text-black'}
             `}
           >
-            Tentang kami
+            About Us
           </button>
 
           {/* Tombol Toggle Dark / Light Mode */}
@@ -110,19 +113,22 @@ export default function Header() {
             </button>
             <button
               onClick={() => { router.push('/calculation'); setIsMobileMenuOpen(false); }}
-              className={`
-                px-4 py-3 rounded-xl transition text-left font-medium
-                ${isActive('/calculation') ? 'bg-[#C6FF00] text-black' : 'text-gray-200 hover:bg-[#333538]'}
-              `}
+              className="hidden"
             >
               Hasil Kalkulasi
             </button>
             <button
-              onClick={() => { router.push('/data'); setIsMobileMenuOpen(false); }}
+              onClick={() => { router.push('/peta'); setIsMobileMenuOpen(false); }}
               className={`
                 px-4 py-3 rounded-xl transition text-left font-medium
-                ${isActive('/data') ? 'bg-[#C6FF00] text-black' : 'text-gray-200 hover:bg-[#333538]'}
+                ${isActive('/peta') ? 'bg-[#C6FF00] text-black' : 'text-gray-200 hover:bg-[#333538]'}
               `}
+            >
+              Our Product
+            </button>
+            <button
+              onClick={() => { router.push('/data'); setIsMobileMenuOpen(false); }}
+              className="hidden"
             >
               Model dan Data
             </button>
@@ -133,7 +139,7 @@ export default function Header() {
                 ${isActive('/about') ? 'bg-[#C6FF00] text-black' : 'text-gray-200 hover:bg-[#333538]'}
               `}
             >
-              Tentang kami
+              About Us
             </button>
           </div>
         </div>

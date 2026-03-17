@@ -59,7 +59,7 @@ export default function LegendAAL({ geojson, hazard, period, model }) {
   const titleCls = darkMode ? 'text-gray-200' : 'text-gray-700';
   const textCls = darkMode ? 'text-gray-300' : 'text-gray-700';
 
-  if (!hazard || !period || !model) return null;
+  if (!hazard || !model) return null;
   if (!geojson || !geojson.features || geojson.features.length === 0) {
     return (
       <div className="absolute top-2 left-2 z-50 opacity-75 pointer-events-none">
@@ -76,7 +76,8 @@ export default function LegendAAL({ geojson, hazard, period, model }) {
     );
   }
 
-  const metric = `aal_${hazard}_${period}_${model === 'total' ? 'total' : model}`;
+  const actModel = model === 'total' ? 'total' : model;
+  const metric = period ? `aal_${hazard}_${period}_${actModel}` : `aal_${hazard}_${actModel}`;
   const vals = geojson.features.map(f => f.properties[metric] || 0).filter(v => typeof v === 'number' && !isNaN(v));
 
   // Pilih jumlah kelas (5 atau 6)

@@ -12,7 +12,7 @@ export default function Select({
   <div className="relative">  
     <select
       id={id}
-      className={`w-full px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm rounded-4xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black appearance-none ${
+      className={`w-full px-2 py-1 md:px-3 md:py-1.5 text-[10px] md:text-[11px] font-medium rounded-3xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black appearance-none ${
         disabled ? 'bg-[#C6FF00] cursor-not-allowed' : 'bg-[#C6FF00]'
       } ${className}`}
       value={value}

@@ -1,16 +1,13 @@
 // components/CrudHSBGN.js
 import { useState, useEffect } from 'react'
 import Modal from './ui/Modal'
-import Button from './ui/Button'
-import { useTheme } from '../context/ThemeContext'
 import {
   getHSBGN,
   updateHSBGN,
   recalcHSBGN
 } from '../src/lib/api'
 
-export default function CrudHSBGN() {
-  const { darkMode } = useTheme()
+export default function CrudHSBGN({ onDataChanged }) {
   const [rows, setRows] = useState([])
   const [searchCity, setSearchCity] = useState('')
   const [editing, setEditing] = useState(null)
@@ -52,6 +49,7 @@ export default function CrudHSBGN() {
       setShowSuccess(true)
 
       reloadTable()
+      if (onDataChanged) onDataChanged()
       setEditing(null)
     } catch (err) {
       console.error(err)
@@ -61,22 +59,19 @@ export default function CrudHSBGN() {
     }
   }
 
-  // Classes berdasarkan mode
-  const cardBg = darkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
-  const inputCls = darkMode
-    ? 'p-2 rounded-lg text-white border-gray-600 bg-gray-700'
-    : 'p-2 rounded-lg text-gray-900 border-gray-300 bg-gray-50 border'
-  const rowText = darkMode ? 'text-white' : 'text-gray-800'
-  const rowHover = darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
-  const borderCls = darkMode ? 'border-gray-700' : 'border-gray-200'
+  // Force light mode aesthetically to match map panel overlays
+  const inputCls = 'border p-1 text-[8px] rounded text-gray-900 bg-white border-gray-300 shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 min-w-0'
+  const rowText = 'text-gray-800'
+  const rowHover = 'hover:bg-gray-50'
+  const theadBg = 'bg-gray-100 text-gray-700 font-bold uppercase tracking-wider'
 
   return (
-    <div className={`${cardBg} p-3 rounded-lg shadow flex flex-col gap-4 transition-colors duration-300`}>
+    <div className={`flex flex-col gap-2 transition-colors duration-300 w-full`}>
       {/* Filters */}
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1.5 w-full min-w-0 shrink-0">
         <input
           type="text"
-          className={inputCls}
+          className={`${inputCls} w-full h-[22px]`}
           placeholder="Cari Kota..."
           value={searchCity}
           onChange={e => setSearchCity(e.target.value)}
@@ -84,29 +79,32 @@ export default function CrudHSBGN() {
       </div>
 
       {/* Table */}
-      <div className="overflow-auto max-h-[400px]">
-        <table className="w-full text-sm mt-2">
-          <thead className="bg-[#0a2c68] text-white rounded-lg">
+      <div className="flex-1 overflow-auto mt-2 rounded shadow-sm border border-gray-200 min-w-0 min-h-0 w-full relative custom-scrollbar pb-1 bg-white">
+        <table className="w-full text-[7px] leading-tight text-left whitespace-nowrap">
+          <thead className={`${theadBg} sticky top-0 z-10 transition-colors duration-300 outline outline-1 outline-gray-200`}>
             <tr>
-              <th className="p-2 text-justify">Kota</th>
-              <th className="p-2 text-center whitespace-nowrap">HSBGN Sederhana</th>
-              <th className="p-2 text-center whitespace-nowrap">HSBGN Tidak Sederhana</th>
-              <th className="p-2 text-center">Aksi</th>
+              <th className="py-0.5 px-0.5 whitespace-nowrap">Kota</th>
+              <th className="py-0.5 px-0.5 text-right whitespace-nowrap leading-tight">Sederhana<br/><span className="text-[6px] normal-case font-normal">(Rp)</span></th>
+              <th className="py-0.5 px-0.5 text-right whitespace-nowrap leading-tight">Non-Sederhana<br/><span className="text-[6px] normal-case font-normal">(Rp)</span></th>
+              <th className="py-0.5 px-0.5 text-center whitespace-nowrap">Aksi</th>
             </tr>
           </thead>
           <tbody>
             {filteredRows.map(r => (
-              <tr key={r.id_kota} className={`border-t ${borderCls} ${rowHover} transition-colors duration-150`}>
-                <td className={`p-2 ${rowText}`}>{r.kota}</td>
-                <td className={`p-2 ${rowText} text-center`}>Rp {Number(r.hsbgn_sederhana).toLocaleString('id-ID')}</td>
-                <td className={`p-2 ${rowText} text-center`}>Rp {Number(r.hsbgn_tidaksederhana).toLocaleString('id-ID')}</td>
-                <td className={`p-2 ${rowText} text-right`}>
-                  <Button
-                    onClick={() => onEditClick(r)}
-                    className="text-blue-600 hover:underline p-0"
-                  >
-                    ✏️ Edit
-                  </Button>
+              <tr key={r.id_kota} className={`${rowHover} cursor-pointer transition-colors duration-150 border-b border-gray-100 last:border-0`}>
+                <td className={`py-0.5 px-0.5 ${rowText} truncate max-w-[80px]`} title={r.kota}>{r.kota}</td>
+                <td className={`py-0.5 px-0.5 ${rowText} text-right tabular-nums`}>{Number(r.hsbgn_sederhana).toLocaleString('id-ID')}</td>
+                <td className={`py-0.5 px-0.5 ${rowText} text-right tabular-nums`}>{Number(r.hsbgn_tidaksederhana).toLocaleString('id-ID')}</td>
+                <td className={`py-0.5 px-0.5 ${rowText} text-center`}>
+                  <div className="flex justify-center gap-2">
+                    <button
+                      onClick={() => onEditClick(r)}
+                      className="text-blue-500 hover:text-blue-700 transition-colors"
+                      title="Edit HSBGN"
+                    >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -115,54 +113,54 @@ export default function CrudHSBGN() {
       </div>
 
       {/* Edit Modal */}
-      <Modal isOpen={!!editing} onClose={() => setEditing(null)}>
-        <h3 className="text-lg font-bold mb-4">Edit HSBGN</h3>
-        <form onSubmit={e => { e.preventDefault(); onSave() }} className="flex flex-col gap-4">
+      <Modal isOpen={!!editing} onClose={() => setEditing(null)} forceLightMode>
+        <h3 className="text-sm font-bold mb-3 text-gray-800 border-b pb-2">Edit HSBGN</h3>
+        <form onSubmit={e => { e.preventDefault(); onSave() }} className="flex flex-col gap-3">
           <div>
-            <label className="text-sm font-semibold">Kota</label>
+            <label className="text-[11px] font-semibold text-gray-600 mb-1 block">Kota</label>
             <input
               type="text"
-              className="border p-2 w-full rounded-lg"
+              className="border p-2 w-full rounded-md text-xs bg-gray-50 text-gray-500 cursor-not-allowed"
               value={editing?.kota || ''}
               readOnly
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-3">
             <div>
-              <label className="text-sm font-semibold">HSBGN Sederhana (Rp)</label>
+              <label className="text-[11px] font-semibold text-gray-600 mb-1 block">HSBGN Sederhana (Rp)</label>
               <input
                 type="number"
-                className="border p-2 w-full rounded-lg"
+                className="border p-2 w-full rounded-md text-xs outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
                 value={hsbgnSederhana}
                 onChange={e => setHsbgnSederhana(e.target.value)}
                 required
               />
             </div>
             <div>
-              <label className="text-sm font-semibold">HSBGN Tidak Sederhana (Rp)</label>
+              <label className="text-[11px] font-semibold text-gray-600 mb-1 block">HSBGN Tidak Sederhana (Rp)</label>
               <input
                 type="number"
-                className="border p-2 w-full rounded-lg"
+                className="border p-2 w-full rounded-md text-xs outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
                 value={hsbgnTidakSederhana}
                 onChange={e => setHsbgnTidakSederhana(e.target.value)}
                 required
               />
             </div>
           </div>
-          <div className="flex justify-end gap-4 mt-4">
-            <Button
+          <div className="flex justify-end gap-2 mt-2 pt-2 border-t">
+            <button
               type="button"
               onClick={() => setEditing(null)}
-              className="bg-gray-400 hover:bg-gray-500 text-white"
+              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors"
               disabled={isSaving}
             >
               Batal
-            </Button>
-            <Button
+            </button>
+            <button
               type="submit"
               disabled={isSaving}
-              className={`bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-xs font-semibold flex items-center justify-center transition-colors ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {isSaving && (
                 <svg
@@ -186,25 +184,25 @@ export default function CrudHSBGN() {
                   />
                 </svg>
               )}
-              {isSaving ? 'Menyimpan…' : 'Simpan Perubahan'}
-            </Button>
+              {isSaving ? 'Menyimpan…' : 'Simpan'}
+            </button>
           </div>
         </form>
       </Modal>
 
       {/* Success Modal */}
-      <Modal isOpen={showSuccess} onClose={() => setShowSuccess(false)}>
-        <div className="text-center p-4">
-          <div className="text-5xl mb-4">✅</div>
-          <h3 className="text-xl font-bold mb-2">Berhasil!</h3>
-          <p className={rowText}>{successMsg}</p>
-          <div className="mt-6">
-            <Button
+      <Modal isOpen={showSuccess} onClose={() => setShowSuccess(false)} forceLightMode>
+        <div className="text-center p-2">
+          <div className="text-4xl mb-2">✅</div>
+          <h3 className="text-base font-bold mb-1">Berhasil!</h3>
+          <p className={`text-xs ${rowText}`}>{successMsg}</p>
+          <div className="mt-4">
+            <button
               onClick={() => setShowSuccess(false)}
-              className="bg-green-600 hover:bg-green-700 text-white px-8"
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-1.5 rounded-md text-xs font-semibold transition-colors"
             >
               Tutup
-            </Button>
+            </button>
           </div>
         </div>
       </Modal>

@@ -138,6 +138,16 @@ export async function recalc(bangunanId) {
   }
 }
 
+// Recalculate per-kota
+export async function recalcKota(kota) {
+  try {
+    return await fetchJSON(`/api/bangunan/kota/${encodeURIComponent(kota)}/recalc`, { method: 'POST' })
+  } catch (err) {
+    console.warn(`⚠️ recalcKota error for ${kota}:`, err)
+    return null
+  }
+}
+
 // Alias yang jelas: global recalc setelah CSV upload
 export async function recalcAll() {
   try {
