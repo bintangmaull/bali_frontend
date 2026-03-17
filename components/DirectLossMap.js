@@ -1,9 +1,6 @@
 import { useRef, useEffect } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import 'leaflet.markercluster/dist/MarkerCluster.css'
-import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
-import 'leaflet.markercluster'
 import { getKotaBoundary } from '../src/lib/api'
 
 const icons = {
@@ -150,13 +147,7 @@ export default function DirectLossMap({ geojson, filters, search, selectedKota }
       opacity: 0.7
     }).addTo(mapRef.current)
 
-    clusterRef.current = L.markerClusterGroup({
-      maxClusterRadius: 60,
-      spiderfyOnMaxZoom: true,
-      showCoverageOnHover: false,
-      chunkedLoading: true,
-      chunkInterval: 200
-    })
+    clusterRef.current = L.layerGroup()
     mapRef.current.addLayer(clusterRef.current)
   }, [])
 
@@ -369,62 +360,27 @@ export default function DirectLossMap({ geojson, filters, search, selectedKota }
         cluster.addLayer(marker)
       })
 
-    const jenksBreaks = getJenksBreaks(allDirectLossValues, 3)
 
-    cluster.options.iconCreateFunction = function (cluster) {
-      const markers = cluster.getAllChildMarkers()
-      const avgDirectLoss = markers.reduce((acc, m) => acc + (m.options.directLossValue || 0), 0) / markers.length
-
-      let color = '#ffeb3b'
-      if (avgDirectLoss > jenksBreaks[2]) color = '#f44336'
-      else if (avgDirectLoss > jenksBreaks[1]) color = '#ff9800'
-
-      const count = cluster.getChildCount()
-      const html = `
-        <div style="background-color: ${color}; border-radius: 50%; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; color: black; font-weight: bold; opacity: 0.8;">
-          ${count}
-        </div>
-      `
-      return L.divIcon({ html, className: 'custom-cluster-icon', iconSize: L.point(40, 40) })
-    }
-
-    cluster.refreshClusters()
 
     const legend = L.control({ position: 'bottomright' })
     legend.onAdd = () => {
       const div = L.DomUtil.create('div', 'info legend')
-      const colors = ['#ffeb3b', '#ff9800', '#f44336']
-
-      if (jenksBreaks.length < 4) {
-        div.innerHTML = ''
-        return div
-      }
-
-      const labels = [
-        `Kurang dari Rp. ${formatNumberWithUnit(jenksBreaks[1])}`,
-        `Rp. ${formatNumberWithUnit(jenksBreaks[1])} - Rp. ${formatNumberWithUnit(jenksBreaks[2])}`,
-        `Lebih dari Rp. ${formatNumberWithUnit(jenksBreaks[2])}`
-      ]
-
-      div.style.background = '#ffffff'
-      div.style.padding = '8px 12px'
-      div.style.borderRadius = '4px'
-      div.style.color = 'black'
-      div.style.opacity = '0.95'
-      div.style.fontSize = '0.7rem'
-      div.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)'
-      div.style.border = '1px solid #ddd'
-      
-      let html = '<h4 style="font-weight:bold; margin-bottom:6px; font-size:0.75rem;">Kerugian (Rp)</h4>'
-      labels.forEach((label, i) => {
-        html += `<div style="display:flex; align-items:center; margin-bottom:3px;">` +
-                `<i style="background:${colors[i]}; width:14px; height:10px; display:inline-block; margin-right:6px;"></i>` +
-                `<span>${label}</span></div>`
-      })
-
-      html += '<hr style="margin:6px 0; border:none; border-top:1px solid #eee;"/>'
-      html += '<h4 style="margin-bottom:4px; font-size:0.75rem;">Jenis Gedung</h4>'
-      html += `
+      const html = `
+        <h4 style="font-weight:bold; margin-bottom:6px; font-size:0.75rem;">Kerugian (Rp)</h4>
+        <div style="display:flex; align-items:center; margin-bottom:3px;">
+          <i style="background:#ffeb3b; width:14px; height:10px; display:inline-block; margin-right:6px;"></i>
+          <span>Rendah</span>
+        </div>
+        <div style="display:flex; align-items:center; margin-bottom:3px;">
+          <i style="background:#ff9800; width:14px; height:10px; display:inline-block; margin-right:6px;"></i>
+          <span>Sedang</span>
+        </div>
+        <div style="display:flex; align-items:center; margin-bottom:3px;">
+          <i style="background:#f44336; width:14px; height:10px; display:inline-block; margin-right:6px;"></i>
+          <span>Tinggi</span>
+        </div>
+        <hr style="margin:6px 0; border:none; border-top:1px solid #eee;"/>
+        <h4 style="margin-bottom:4px; font-size:0.75rem;">Jenis Gedung</h4>
         <div style="display:flex; align-items:center; margin-bottom:3px;">
           <img src="icons/healthcare.svg" style="width:16px; height:16px; margin-right:6px;"/>
           <span>Healthcare Facilities</span>

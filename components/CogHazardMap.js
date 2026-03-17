@@ -13,7 +13,7 @@ import CrudBuildings from './CrudBuildings'
 
 function jenks(data, n_classes) {
   if (!Array.isArray(data) || data.length === 0) return [];
-  if (data.length <= n_classes) return [...new Set(data)].sort((a,b)=>a-b);
+  if (data.length <= n_classes) return [...new Set(data)].sort((a, b) => a - b);
   data = data.slice().sort((a, b) => a - b);
   const matrices = Array(data.length + 1).fill(0).map(() => Array(n_classes + 1).fill(0));
   const variances = Array(data.length + 1).fill(0).map(() => Array(n_classes + 1).fill(0));
@@ -243,7 +243,7 @@ export default function CogHazardMap() {
   const dragStartPos = useRef({ x: 0, y: 0 })
 
   const [panelBuildings, setPanelBuildings] = useState([])
-  
+
   const [kotaFilter, setKotaFilter] = useState('')
 
   const handlePointerDown = (e) => {
@@ -509,14 +509,14 @@ export default function CogHazardMap() {
 
       try {
         const cache = await caches.open(cacheName)
-        
+
         // --- 1. Fetch AAL ---
         let resAal = await cache.match(urlAal)
         if (resAal) {
           const dataAal = await resAal.json()
           setBoundaryDataAAL(dataAal)
         }
-        
+
         let headAal = await fetch(urlAal, { method: 'HEAD' }).catch(() => null)
         let serverModAal = headAal ? headAal.headers.get('last-modified') : null
         let cacheModAal = resAal ? resAal.headers.get('last-modified') : null
@@ -544,7 +544,7 @@ export default function CogHazardMap() {
             setBoundaryDataDL(await resDl.json())
           }
         }
-        
+
       } catch (e) {
         console.error('Boundary fetch failed:', e)
       }
@@ -698,7 +698,7 @@ export default function CogHazardMap() {
           setPanelPos({ x: 0, y: 0 })
           setSelectedBuildingHtml(popupHtml)
         })
-        
+
         markers.push(marker)
       }
     })
@@ -740,7 +740,7 @@ export default function CogHazardMap() {
 
   useEffect(() => {
     if (!mapRef.current) return
-    
+
     // Choose which boundary data to use based on toggles
     let activeBoundaryData = null;
     if (infraLayers.aal) activeBoundaryData = boundaryDataAAL;
@@ -788,7 +788,7 @@ export default function CogHazardMap() {
             hazPrefix = 'inundansi';
             activeMetric = `dl_sum_${hazPrefix}`;
           }
-        } 
+        }
         else if (infraLayers.aal) {
           if (selectedGroup === 'banjir') hazPrefix = (selectedRpId && selectedRpId.includes('comp')) ? 'rc' : 'r';
           else if (selectedGroup === 'earthquake') hazPrefix = 'pga';
@@ -843,7 +843,7 @@ export default function CogHazardMap() {
             const val = activeMetric ? (feature.properties[activeMetric] || 0) : null;
             let tooltipLabel = "AAL";
             if (infraLayers.directLoss) tooltipLabel = "Direct Loss";
-            
+
             const tooltipContent = activeMetric && val > 0
               ? `<strong>${feature.properties.id_kota}</strong><br/>${tooltipLabel}: ${fmtPopup(val)}`
               : `<strong>${feature.properties.id_kota}</strong>`;
@@ -1485,7 +1485,7 @@ export default function CogHazardMap() {
 
           {/* Building Detail Overlay */}
           {selectedBuildingHtml && (
-            <div 
+            <div
               className="absolute top-24 left-[280px] z-[2000] bg-white/95 backdrop-blur-md rounded-xl shadow-2xl p-4 w-[240px] border border-gray-100 animate-in fade-in slide-in-from-left-4 duration-300 pointer-events-auto cursor-grab active:cursor-grabbing"
               style={{ transform: `translate(${panelPos.x}px, ${panelPos.y}px)` }}
               onPointerDown={handlePointerDown}
@@ -1567,7 +1567,7 @@ export default function CogHazardMap() {
                   </svg>
                 </button>
               </div>
-              
+
               <div className="no-drag p-2 max-h-[55vh] overflow-y-auto w-full scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
                 <CrudHSBGN onDataChanged={refreshAALData} />
               </div>
@@ -1600,35 +1600,35 @@ export default function CogHazardMap() {
                   </svg>
                 </button>
               </div>
-              
+
               <div className="no-drag p-0 max-h-[42vh] overflow-y-auto w-full scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent flex justify-center">
-                  <CrudBuildings 
-                    onDataChanged={refreshAALData} 
-                    kotaFilter={kotaFilter}
-                    setKotaFilter={setKotaFilter}
-                    infraLayers={infraLayers}
-                    onFilteredBuildings={setPanelBuildings}
-                    onSearchBuilding={(b) => {
-                      if (!mapRef.current) return;
-                      const lat = parseFloat(b.lat);
-                      const lon = parseFloat(b.lon);
-                      if (isNaN(lat) || isNaN(lon)) return;
-                      
-                      mapRef.current.setView([lat, lon], 18, { animate: true });
-                      
-                      setTimeout(() => {
-                        L.popup({ autoClose: true, closeOnClick: true })
-                          .setLatLng([lat, lon])
-                          .setContent(`
+                <CrudBuildings
+                  onDataChanged={refreshAALData}
+                  kotaFilter={kotaFilter}
+                  setKotaFilter={setKotaFilter}
+                  infraLayers={infraLayers}
+                  onFilteredBuildings={setPanelBuildings}
+                  onSearchBuilding={(b) => {
+                    if (!mapRef.current) return;
+                    const lat = parseFloat(b.lat);
+                    const lon = parseFloat(b.lon);
+                    if (isNaN(lat) || isNaN(lon)) return;
+
+                    mapRef.current.setView([lat, lon], 18, { animate: true });
+
+                    setTimeout(() => {
+                      L.popup({ autoClose: true, closeOnClick: true })
+                        .setLatLng([lat, lon])
+                        .setContent(`
                             <div style="font-family: inherit; min-width: 200px;">
                               <div style="font-weight: 700; color: #1f2937; margin-bottom: 4px;">${b.name || 'Tanpa Nama'}</div>
                               <div style="font-size: 11px; color: #6b7280; font-style: italic; margin-bottom: 8px;">Tipe: ${b.type || '-'}</div>
                             </div>
                           `)
-                          .openOn(mapRef.current)
-                      }, 500);
-                    }}
-                  />
+                        .openOn(mapRef.current)
+                    }, 500);
+                  }}
+                />
               </div>
             </div>
           )}
