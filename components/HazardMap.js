@@ -1,9 +1,6 @@
 import React, { useRef, useEffect } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import 'leaflet.markercluster'
-import 'leaflet.markercluster/dist/MarkerCluster.css'
-import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 import CrudBuildings from './CrudBuildings'
 
 const icons = {
@@ -79,18 +76,7 @@ export default function HazardMap({ provinsi, kota, setProvinsi, setKota }) {
     }
     legend.addTo(map)
 
-    buildingCluster.current = L.markerClusterGroup({
-      maxClusterRadius: 60,
-      spiderfyOnMaxZoom: true,
-      showCoverageOnHover: false,
-      chunkedLoading: true,
-      chunkInterval: 100,
-      disableClusteringAtZoom: 18,
-      zoomToBoundsOnClick: true,
-      removeOutsideVisibleBounds: true,
-      animateAddingMarkers: false,
-      spiderfyDistanceMultiplier: 1,
-    })
+    buildingCluster.current = L.layerGroup()
     map.addLayer(buildingCluster.current)
 
     // Set batas zoom maksimum untuk peta
@@ -159,8 +145,7 @@ export default function HazardMap({ provinsi, kota, setProvinsi, setKota }) {
         })
 
         markers.current = markersList
-        cluster.addLayers(markers.current)
-        cluster.refreshClusters()
+        markers.current.forEach(m => m.addTo(cluster))
 
         // Ambil batas kota menggunakan API yang sudah ada
         if (boundaryLayer.current) {
