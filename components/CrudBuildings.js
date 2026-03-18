@@ -539,7 +539,7 @@ export default function CrudBuildings({
   const theadBg = 'bg-gray-100 text-gray-700 font-bold uppercase tracking-wider'
   const rowText = 'text-gray-800'
   const rowHover = 'hover:bg-gray-50'
-  const inputCls = 'border p-1 text-[8px] rounded text-gray-900 bg-white border-gray-300 shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 min-w-0'
+  const inputCls = 'border p-1 text-[10px] rounded text-gray-900 bg-white border-gray-300 shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 min-w-0'
 
   return (
     <div className={`${cardBg} p-2 flex flex-col h-full transition-colors duration-300 relative w-full min-w-0 overflow-hidden`}>
@@ -566,19 +566,19 @@ export default function CrudBuildings({
             accept=".csv"
             ref={fileInputRef}
             onChange={e => setFile(e.target.files[0])}
-            className={`${inputCls} w-2/5 text-[7px] h-[22px] !py-1 overflow-hidden`}
+            className={`${inputCls} w-2/5 text-[10px] h-[26px] !py-1 overflow-hidden`}
           />
           <Button
             onClick={onUpload}
             disabled={!file || isUploading}
-            className="bg-[#22D3EE] text-black rounded text-[8px] px-1.5 font-medium flex-1 h-[22px] flex items-center justify-center whitespace-nowrap overflow-hidden min-w-0"
+            className="bg-[#22D3EE] text-black rounded text-[10px] px-1.5 font-medium flex-1 h-[26px] flex items-center justify-center whitespace-nowrap overflow-hidden min-w-0"
           >
             {isUploading && <LoadingSpinner />} Unggah
           </Button>
           <a
             href="/sample_bangunan.csv"
             download="template_data_bangunan.csv"
-            className="bg-[#C6FF00] text-black rounded text-[8px] px-1.5 font-semibold flex-1 h-[22px] flex items-center justify-center whitespace-nowrap overflow-hidden min-w-0 shadow-sm"
+            className="bg-[#C6FF00] text-black rounded text-[10px] px-1.5 font-semibold flex-1 h-[26px] flex items-center justify-center whitespace-nowrap overflow-hidden min-w-0 shadow-sm"
           >
             Template CSV
           </a>
@@ -587,7 +587,7 @@ export default function CrudBuildings({
         {/* Row 2: Filter & Search */}
         <div className="flex gap-1 items-center w-full min-w-0">
           <div className="w-[35%] min-w-0">
-            <Select id="kotaFilter" value={activeKotaFilter} onChange={(val) => doSetKotaFilter(val)} options={kotaList} placeholder="Kota" className="w-full text-[8px] !p-1 h-[22px] rounded !leading-tight text-ellipsis overflow-hidden" />
+            <Select id="kotaFilter" value={activeKotaFilter} onChange={(val) => doSetKotaFilter(val)} options={kotaList} placeholder="Kota" className="w-full text-[10px] !p-1 h-[26px] rounded !leading-tight text-ellipsis overflow-hidden" />
           </div>
           <div className="flex-1 min-w-0">
             <input
@@ -595,12 +595,12 @@ export default function CrudBuildings({
               placeholder="Cari..."
               value={search}
               onChange={e => doSetSearch(e.target.value)}
-              className={`${inputCls} w-full h-[22px]`}
+              className={`${inputCls} w-full h-[26px]`}
             />
           </div>
           <Button
             onClick={() => setModalMode('add')}
-            className="text-black px-2 text-[8px] font-medium bg-[#C084FC] rounded text-center h-[22px] flex items-center shrink-0"
+            className="text-black px-2 text-[10px] font-medium bg-[#C084FC] rounded text-center h-[26px] flex items-center shrink-0"
           >
             Tambah
           </Button>

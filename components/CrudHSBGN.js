@@ -60,7 +60,7 @@ export default function CrudHSBGN({ onDataChanged }) {
   }
 
   // Force light mode aesthetically to match map panel overlays
-  const inputCls = 'border p-1 text-[8px] rounded text-gray-900 bg-white border-gray-300 shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 min-w-0'
+  const inputCls = 'border p-1 text-[10px] rounded text-gray-900 bg-white border-gray-300 shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 min-w-0'
   const rowText = 'text-gray-800'
   const rowHover = 'hover:bg-gray-50'
   const theadBg = 'bg-gray-100 text-gray-700 font-bold uppercase tracking-wider'
@@ -71,7 +71,7 @@ export default function CrudHSBGN({ onDataChanged }) {
       <div className="flex flex-col gap-1.5 w-full min-w-0 shrink-0">
         <input
           type="text"
-          className={`${inputCls} w-full h-[22px]`}
+          className={`${inputCls} w-full h-[26px]`}
           placeholder="Cari Kota..."
           value={searchCity}
           onChange={e => setSearchCity(e.target.value)}

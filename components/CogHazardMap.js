@@ -106,7 +106,7 @@ const HAZARD_INFO = {
     unit: 'g',
   },
   flood: {
-    label: 'Banjir (Normal)',
+    label: 'Banjir (Rainfall)',
     icon: '🌊',
     colorStops: [
       [0.0, '#EFF6FF'], [0.2, '#93C5FD'], [0.45, '#3B82F6'],
@@ -115,7 +115,7 @@ const HAZARD_INFO = {
     unit: 'm',
   },
   flood_comp: {
-    label: 'Banjir Kompensasi',
+    label: 'Banjir (Rainfall-Change)',
     icon: '💧',
     colorStops: [
       [0.0, '#ECFDF5'], [0.2, '#6EE7B7'], [0.5, '#10B981'],
@@ -202,13 +202,15 @@ export default function CogHazardMap() {
   const baseTiledLayer = useRef(null)
   const exposureCluster = useRef(null)
   const boundaryLayer = useRef(null)
+  const proportionalLayer = useRef(null)
   const pickMarkerRef = useRef(null)
 
   // track which CDN scripts are loaded
   const [georasterReady, setGeoRasterReady] = useState(false)
   const [geoLayerReady, setGeoLayerReady] = useState(false)
   const [geoblazeReady, setGeoblazeReady] = useState(false)
-  const scriptsReady = georasterReady && geoLayerReady && geoblazeReady
+  const [turfReady, setTurfReady] = useState(false)
+  const scriptsReady = georasterReady && geoLayerReady && geoblazeReady && turfReady
   const geoCache = useRef(new Map()) // Memory cache for parsed georasters
   const [curveData, setCurveData] = useState(DEFAULT_CURVES)
 
@@ -401,7 +403,9 @@ export default function CogHazardMap() {
   }, []);
 
   const isExposureActive = useMemo(() => {
-    return Object.keys(infraLayers).some(k => k !== 'boundaries' && infraLayers[k])
+    // Check if any of the specific exposure layers are active
+    const exposureKeys = ['healthcare', 'educational', 'electricity', 'airport', 'hotel']
+    return exposureKeys.some(k => infraLayers[k])
   }, [infraLayers])
 
   // ── Handle Base Layer Change ───────────────────────────────────────────────
@@ -430,10 +434,10 @@ export default function CogHazardMap() {
     })
 
     // Create specific panes for Z-Index ordering
-    map.createPane('boundaryPane') // Below rasters
-    map.getPane('boundaryPane').style.zIndex = 300
+    map.createPane('boundaryPane') // Above rasters
+    map.getPane('boundaryPane').style.zIndex = 450
 
-    map.createPane('rasterPane')   // Above boundary but below UI/Markers
+    map.createPane('rasterPane')   // Below boundary but below UI/Markers
     map.getPane('rasterPane').style.zIndex = 400
 
     map.createPane('markerPane')   // Above everything
@@ -815,12 +819,20 @@ export default function CogHazardMap() {
         mapRef.current.removeLayer(boundaryLayer.current)
         boundaryLayer.current = null
       }
+      if (proportionalLayer.current) {
+        mapRef.current.removeLayer(proportionalLayer.current)
+        proportionalLayer.current = null
+      }
       return;
     }
 
     if (boundaryLayer.current) {
       mapRef.current.removeLayer(boundaryLayer.current)
       boundaryLayer.current = null
+    }
+    if (proportionalLayer.current) {
+      mapRef.current.removeLayer(proportionalLayer.current)
+      proportionalLayer.current = null
     }
 
     if (infraLayers.boundaries || infraLayers.aal || infraLayers.directLoss) {
@@ -877,8 +889,21 @@ export default function CogHazardMap() {
         return aalColors[aalColors.length - 1] || aalColors[aalColors.length - 2];
       };
 
+      const isProportional = infraLayers.modelHazard && activeMetric;
+
       const defaultStyle = (feature) => {
         const val = activeMetric ? (feature.properties[activeMetric] || 0) : 0;
+        if (isProportional) {
+          // Transparent polygon with visible border to see hazard map underneath
+          return {
+            color: '#64748b', // more visible slate border
+            weight: 1.5,
+            opacity: opacityAAL > 0 ? 0.8 : 0,
+            fillOpacity: 0,
+            fillColor: 'transparent',
+            dashArray: '4'
+          };
+        }
         return {
           color: activeMetric ? '#ffffff' : '#f97316',
           weight: activeMetric ? 1 : 1.5,
@@ -890,6 +915,9 @@ export default function CogHazardMap() {
       };
 
       const highlightStyle = (feature) => {
+        if (isProportional) {
+          return { weight: 2, color: '#f97316', fillOpacity: 0.1, dashArray: '' };
+        }
         if (activeMetric) {
           return { weight: 2, color: '#64748b', fillOpacity: opacityAAL, dashArray: '' };
         }
@@ -897,6 +925,12 @@ export default function CogHazardMap() {
       };
 
       const fmtPopup = n => n.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 });
+
+      let maxMetricValue = 0;
+      if (isProportional && activeMetric) {
+        maxMetricValue = Math.max(...activeBoundaryData.features.map(f => f.properties[activeMetric] || 0).filter(v => typeof v === 'number' && !isNaN(v)));
+        proportionalLayer.current = L.layerGroup().addTo(mapRef.current);
+      }
 
       boundaryLayer.current = L.geoJSON(activeBoundaryData, {
         pane: 'boundaryPane',
@@ -915,6 +949,51 @@ export default function CogHazardMap() {
               sticky: true,
               className: 'boundary-tooltip'
             });
+
+            // Add proportional marker if active Metric and value > 0
+            if (isProportional && activeMetric && val > 0 && maxMetricValue > 0) {
+              const maxRadius = 30; // Max radius in pixels
+              const minRadius = 5;
+              let center = layer.getBounds().getCenter()
+              
+              // Try to find a visually appealing center inside the polygon using Turf.js
+              if (window.turf && feature && feature.geometry) {
+                try {
+                  const centerFeature = window.turf.pointOnFeature(feature)
+                  if (centerFeature && centerFeature.geometry && centerFeature.geometry.coordinates) {
+                    const [lng, lat] = centerFeature.geometry.coordinates
+                    center = L.latLng(lat, lng)
+                  }
+                } catch (e) {
+                  console.warn("Turf centroid calculation failed, falling back to bounds center", e)
+                }
+              }
+
+              let radius = Math.sqrt(val / maxMetricValue) * maxRadius
+              radius = Math.max(radius, minRadius) // Ensure it's not too small
+              
+              const circle = L.circleMarker(center, {
+                radius: radius,
+                fillColor: getFillColor(val),
+                color: '#ffffff',
+                weight: 1.5,
+                opacity: opacityAAL > 0 ? 1 : 0,
+                fillOpacity: opacityAAL * 0.9,
+                pane: 'markerPane'
+              });
+              
+              circle.bindTooltip(tooltipContent, {
+                sticky: true,
+                className: 'boundary-tooltip'
+              });
+              
+              circle.on('click', (e) => {
+                 // Trigger the feature click
+                 layer.fireEvent('click', e);
+              });
+              
+              proportionalLayer.current.addLayer(circle);
+            }
 
             layer.on('click', (e) => {
               if (highlightedBoundaryRef.current) {
@@ -946,7 +1025,7 @@ export default function CogHazardMap() {
         }
       }).addTo(mapRef.current);
     }
-  }, [infraLayers.boundaries, infraLayers.aal, infraLayers.directLoss, selectedGroup, selectedRpId, boundaryDataAAL, boundaryDataDL, opacityAAL, activeAalExposure])
+  }, [infraLayers.boundaries, infraLayers.aal, infraLayers.directLoss, infraLayers.modelHazard, selectedGroup, selectedRpId, boundaryDataAAL, boundaryDataDL, opacityAAL, activeAalExposure])
 
   // ── Grouped Derived Data ────────────────────────────────────────────────────────
   const hazardGroupFiles = useMemo(() => {
@@ -965,8 +1044,8 @@ export default function CogHazardMap() {
           combined.push({
             ...f,
             uniqueId: `${f.type}_${f.rp || 'default'}`,
-            displayLabel: k === 'flood_comp' ? `${f.rp} Tahun (Kompensasi)`
-              : k === 'flood' ? `${f.rp} Tahun (Normal)`
+            displayLabel: k === 'flood_comp' ? `${f.rp} Tahun (Rainfall-Change)`
+              : k === 'flood' ? `${f.rp} Tahun (Rainfall)`
                 : k === 'drought_gpm' ? `GPM ${f.rp} Tahun`
                   : k === 'drought_mme' ? `MME ${f.rp} Tahun`
                     : f.rp ? `${f.rp} Tahun` : 'Default'
@@ -1413,9 +1492,11 @@ export default function CogHazardMap() {
 
   return (
     <>
+      {/* Load External Scripts */}
       <Script id="georaster" src="https://cdn.jsdelivr.net/npm/georaster@1.6.0/dist/georaster.browser.bundle.min.js" strategy="afterInteractive" onLoad={() => setGeoRasterReady(true)} />
       <Script id="georaster-layer" src="https://cdn.jsdelivr.net/npm/georaster-layer-for-leaflet@3.10.0/dist/georaster-layer-for-leaflet.min.js" strategy="afterInteractive" onLoad={() => setGeoLayerReady(true)} />
       <Script id="geoblaze" src="https://cdn.jsdelivr.net/npm/geoblaze@2.7.0/dist/geoblaze.browser.bundle.min.js" strategy="afterInteractive" onLoad={() => setGeoblazeReady(true)} />
+      <Script id="turf" src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js" strategy="afterInteractive" onLoad={() => setTurfReady(true)} />
 
       <style jsx global>{`
         .exposure-icon {
@@ -1620,7 +1701,7 @@ export default function CogHazardMap() {
           {/* Draggable HSBGN Floating Panel */}
           {isHSBGNPanelOpen && (
             <div
-              className="absolute top-[88px] left-[290px] z-[2000] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl min-w-[310px] w-[310px] min-h-[400px] h-[450px] resize overflow-hidden border border-gray-100 animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col"
+              className="absolute top-[88px] left-[290px] z-[2000] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl min-w-[310px] w-[310px] min-h-[200px] h-[300px] resize overflow-hidden border border-gray-100 animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col"
               style={{ transform: `translate(${hsbgnPanelPos.x}px, ${hsbgnPanelPos.y}px)` }}
               onPointerDown={handleHsbgnPointerDown}
               onPointerMove={handleHsbgnPointerMove}

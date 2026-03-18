@@ -1438,6 +1438,14 @@ const ReactLegendOverlay = ({
               </div>
             );
           })()}
+          
+          {/* Proportional Map Note */}
+          {infraLayers?.modelHazard && (hasDirectLoss || hasAAL) && (
+            <div className="mt-3 text-[8px] text-slate-500 bg-orange-50/50 p-2 rounded border border-orange-100/50 flex items-start gap-1.5 leading-relaxed">
+              <Info size={10} className="text-orange-400 mt-[1px] shrink-0" />
+              <span>Area kotak batas diubah menjadi transparan. Warna dan ukuran <strong>lingkaran di tengah batas</strong> merepresentasikan besaran nilai AAL/Direct Loss secara proporsional.</span>
+            </div>
+          )}
         </div>
 
         {/* ─── Bar Charts ─── */}

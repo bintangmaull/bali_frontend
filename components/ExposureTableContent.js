@@ -116,7 +116,7 @@ export default function ExposureTableContent({
         {/* Context Title */}
         <div className="text-[10px] font-extrabold text-slate-700 tracking-widest uppercase mb-1 flex items-center gap-1.5">
           <Layers size={12} className="text-blue-500" />
-          <span>DATA DIRECT LOSS - {tabs.find(t => t.id === activeTab)?.label} - {selectedCityFeature?.properties?.nama_kota || 'Semua Kota'}</span>
+          <span>DATA DIRECT LOSS - {tabs.find(t => t.id === activeTab)?.label} - {selectedCityFeature?.properties?.id_kota || selectedCityFeature?.properties?.kota || 'Semua Kota'}</span>
         </div>
 
         {/* Tabs */}
