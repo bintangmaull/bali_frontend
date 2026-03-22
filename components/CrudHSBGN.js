@@ -1,5 +1,6 @@
 // components/CrudHSBGN.js
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/router'
 import Modal from './ui/Modal'
 import {
   getHSBGN,
@@ -8,6 +9,8 @@ import {
 } from '../src/lib/api'
 
 export default function CrudHSBGN({ onDataChanged }) {
+  const router = useRouter()
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [rows, setRows] = useState([])
   const [searchCity, setSearchCity] = useState('')
   const [editing, setEditing] = useState(null)
@@ -18,12 +21,36 @@ export default function CrudHSBGN({ onDataChanged }) {
   const [successMsg, setSuccessMsg] = useState('')
 
   useEffect(() => {
-    reloadTable()
+    const token = localStorage.getItem('token')
+    setIsAuthenticated(!!token)
   }, [])
 
   function reloadTable() {
     getHSBGN().then(setRows).catch(console.error)
   }
+
+  useEffect(() => {
+    if (isAuthenticated) reloadTable()
+  }, [isAuthenticated])
+
+  // Tampilkan login prompt jika belum login
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 gap-3 text-center">
+        <div className="text-3xl">🔒</div>
+        <p className="text-sm font-semibold text-gray-700">Fitur ini memerlukan login</p>
+        <p className="text-xs text-gray-500">Silakan masuk ke akun Anda untuk mengelola data HSBGN.</p>
+        <button
+          onClick={() => router.push('/login')}
+          className="mt-2 px-5 py-2 bg-[#C6FF00] text-black text-sm font-semibold rounded-full hover:bg-[#d4ff33] transition"
+        >
+          Masuk
+        </button>
+      </div>
+    )
+  }
+
+
 
   const filteredRows = rows.filter(r => {
     const matchCity = !searchCity || r.kota.toLowerCase().includes(searchCity.toLowerCase())

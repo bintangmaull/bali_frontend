@@ -1,13 +1,41 @@
 /**
  * Fetch JSON from a relative `/api/...` path.
- * Errors if status is not OK.
+ * Otomatis menyertakan JWT Bearer token dari localStorage jika tersedia.
+ * Jika menerima status 401, hapus token dan arahkan ke halaman /login.
  */
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
+function getAuthHeaders() {
+  // typeof window check untuk keamanan di lingkungan SSR Next.js
+  if (typeof window === 'undefined') return {}
+  const token = localStorage.getItem('token')
+  return token ? { 'Authorization': `Bearer ${token}` } : {}
+}
 
 async function fetchJSON(path, opts = {}) {
-  const res = await fetch(BASE_URL + path, opts)
+  const authHeaders = getAuthHeaders()
+
+  const mergedOpts = {
+    ...opts,
+    headers: {
+      ...authHeaders,
+      ...(opts.headers || {}),
+    },
+  }
+
+  const res = await fetch(BASE_URL + path, mergedOpts)
+
+  // Jika token tidak valid atau kedaluwarsa, arahkan ke login
+  if (res.status === 401) {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      window.location.href = '/login'
+    }
+    throw new Error('Sesi berakhir. Silakan login kembali.')
+  }
+
   if (!res.ok) {
     throw new Error(`Failed to load ${path} (status ${res.status})`)
   }

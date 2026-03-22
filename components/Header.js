@@ -1,15 +1,37 @@
 // components/Header.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { Sun, Moon, Menu, X } from 'lucide-react';
+import { Sun, Moon, Menu, X, LogOut, User } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 export default function Header() {
   const router = useRouter();
   const { darkMode, toggleTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('user');
+      if (stored) setCurrentUser(JSON.parse(stored));
+    } catch { /* ignore */ }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setCurrentUser(null);
+    router.push('/');
+  };
 
   const isActive = (path) => router.pathname === path;
+
+  const navBtnCls = (path) => `
+    px-3 py-1 rounded-4xl transition text-sm
+    ${isActive(path)
+      ? 'bg-[#C6FF00] text-black'
+      : 'text-gray-200 hover:bg-[#C6FF00] hover:text-black'}
+  `;
 
   return (
     <header className="bg-[#1E2023] dark:bg-[#1E2023] light:bg-white text-white fixed top-0 left-0 w-full z-[2000] transition-colors duration-300">
@@ -23,51 +45,9 @@ export default function Header() {
           </div>
         </div>
         <nav className="hidden md:flex items-center space-x-4">
-          <button
-            onClick={() => router.push('/')}
-            className={`
-              px-3 py-1 rounded-4xl transition text-sm
-              ${isActive('/')
-                ? 'bg-[#C6FF00] text-black'
-                : 'text-gray-200 hover:bg-[#C6FF00] hover:text-black'}
-            `}
-          >
-            Home
-          </button>
-          <button
-            onClick={() => router.push('/calculation')}
-            className="hidden"
-          >
-            Hasil Kalkulasi
-          </button>
-          <button
-            onClick={() => router.push('/peta')}
-            className={`
-              px-3 py-1 rounded-4xl transition text-sm
-              ${isActive('/peta')
-                ? 'bg-[#C6FF00] text-black'
-                : 'text-gray-200 hover:bg-[#C6FF00] hover:text-black'}
-            `}
-          >
-            Our Product
-          </button>
-          <button
-            onClick={() => router.push('/data')}
-            className="hidden"
-          >
-            Model dan Data
-          </button>
-          <button
-            onClick={() => router.push('/about')}
-            className={`
-              px-3 py-1 rounded-4xl transition text-sm
-              ${isActive('/about')
-                ? 'bg-[#C6FF00] text-black'
-                : 'text-gray-200 hover:bg-[#C6FF00] hover:text-black'}
-            `}
-          >
-            About Us
-          </button>
+          <button onClick={() => router.push('/')} className={navBtnCls('/')}>Home</button>
+          <button onClick={() => router.push('/peta')} className={navBtnCls('/peta')}>Our Product</button>
+          <button onClick={() => router.push('/about')} className={navBtnCls('/about')}>About Us</button>
 
           {/* Tombol Toggle Dark / Light Mode */}
           <button
@@ -78,6 +58,30 @@ export default function Header() {
           >
             {darkMode ? <Sun size={20} /> : <Moon size={20} />}
           </button>
+
+          {/* Auth Section */}
+          {currentUser ? (
+            <div className="flex items-center gap-2 ml-2 border-l border-gray-700 pl-4">
+              <div className="flex items-center gap-1.5 text-xs text-gray-300">
+                <User size={14} className="text-[#C6FF00]" />
+                <span>{currentUser.nama}</span>
+              </div>
+              <button
+                onClick={handleLogout}
+                title="Logout"
+                className="p-2 rounded-full bg-white/10 hover:bg-red-500/30 hover:text-red-400 text-gray-200 transition-all duration-300"
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => router.push('/login')}
+              className="ml-2 px-4 py-1.5 rounded-full bg-[#C6FF00] text-black text-sm font-semibold hover:bg-[#d4ff33] transition"
+            >
+              Masuk
+            </button>
+          )}
         </nav>
 
         {/* Mobile menu toggle */}
@@ -104,43 +108,42 @@ export default function Header() {
           <div className="flex flex-col px-4 pt-2 space-y-2">
             <button
               onClick={() => { router.push('/'); setIsMobileMenuOpen(false); }}
-              className={`
-                px-4 py-3 rounded-xl transition text-left font-medium
-                ${isActive('/') ? 'bg-[#C6FF00] text-black' : 'text-gray-200 hover:bg-[#333538]'}
-              `}
+              className={`px-4 py-3 rounded-xl transition text-left font-medium ${isActive('/') ? 'bg-[#C6FF00] text-black' : 'text-gray-200 hover:bg-[#333538]'}`}
             >
               Home
             </button>
             <button
-              onClick={() => { router.push('/calculation'); setIsMobileMenuOpen(false); }}
-              className="hidden"
-            >
-              Hasil Kalkulasi
-            </button>
-            <button
               onClick={() => { router.push('/peta'); setIsMobileMenuOpen(false); }}
-              className={`
-                px-4 py-3 rounded-xl transition text-left font-medium
-                ${isActive('/peta') ? 'bg-[#C6FF00] text-black' : 'text-gray-200 hover:bg-[#333538]'}
-              `}
+              className={`px-4 py-3 rounded-xl transition text-left font-medium ${isActive('/peta') ? 'bg-[#C6FF00] text-black' : 'text-gray-200 hover:bg-[#333538]'}`}
             >
               Our Product
             </button>
             <button
-              onClick={() => { router.push('/data'); setIsMobileMenuOpen(false); }}
-              className="hidden"
-            >
-              Model dan Data
-            </button>
-            <button
               onClick={() => { router.push('/about'); setIsMobileMenuOpen(false); }}
-              className={`
-                px-4 py-3 rounded-xl transition text-left font-medium
-                ${isActive('/about') ? 'bg-[#C6FF00] text-black' : 'text-gray-200 hover:bg-[#333538]'}
-              `}
+              className={`px-4 py-3 rounded-xl transition text-left font-medium ${isActive('/about') ? 'bg-[#C6FF00] text-black' : 'text-gray-200 hover:bg-[#333538]'}`}
             >
               About Us
             </button>
+            {currentUser ? (
+              <>
+                <div className="px-4 py-2 text-xs text-gray-400 border-t border-gray-700">
+                  Login sebagai: <span className="text-[#C6FF00] font-medium">{currentUser.nama}</span>
+                </div>
+                <button
+                  onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
+                  className="px-4 py-3 rounded-xl transition text-left font-medium text-red-400 hover:bg-red-500/10"
+                >
+                  Keluar
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => { router.push('/login'); setIsMobileMenuOpen(false); }}
+                className="px-4 py-3 rounded-xl bg-[#C6FF00] text-black font-semibold transition text-left"
+              >
+                Masuk
+              </button>
+            )}
           </div>
         </div>
       )}

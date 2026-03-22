@@ -1,5 +1,6 @@
 // components/CrudBuildings.js
 import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/router'
 import Select from './ui/Select'
 import Button from './ui/Button'
 import Modal from './ui/Modal'
@@ -246,7 +247,14 @@ export default function CrudBuildings({
   setExternalSearch = undefined,
   onDataChanged = () => {}
 }) {
+  const router = useRouter()
   const { darkMode } = useTheme()
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    setIsAuthenticated(!!token)
+  }, [])
 
   const [file, setFile] = useState(null)
   const fileInputRef = useRef(null)
@@ -540,6 +548,23 @@ export default function CrudBuildings({
   const rowText = 'text-gray-800'
   const rowHover = 'hover:bg-gray-50'
   const inputCls = 'border p-1 text-[10px] rounded text-gray-900 bg-white border-gray-300 shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 min-w-0'
+
+  // Tampilkan login prompt jika belum login
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full py-10 gap-3 text-center bg-white">
+        <div className="text-4xl">🔒</div>
+        <p className="text-sm font-semibold text-gray-700">Fitur ini memerlukan login</p>
+        <p className="text-xs text-gray-500">Silakan masuk ke akun Anda untuk mengelola data bangunan.</p>
+        <button
+          onClick={() => router.push('/login')}
+          className="mt-2 px-5 py-2 bg-[#C6FF00] text-black text-sm font-semibold rounded-full hover:bg-[#d4ff33] transition"
+        >
+          Masuk
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className={`${cardBg} p-2 flex flex-col h-full transition-colors duration-300 relative w-full min-w-0 overflow-hidden`}>
