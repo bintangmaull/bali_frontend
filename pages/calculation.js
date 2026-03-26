@@ -115,6 +115,7 @@ export default function Calculation() {
             <div className="h-[350px] md:h-[480px] bg-gray-700 rounded-lg overflow-hidden">
               <DirectLossMap
                 geojson={dlGeojson}
+                cityGeojson={aalGeojson}
                 filters={filters}
                 search={search}
                 selectedKota={selectedKota}

@@ -10,6 +10,7 @@ export default function ExposureTableContent({
   exposureData,
   selectedGroup,
   selectedCityFeature,
+  cityGeojson,
   initialTab = 'healthcare',
   onRowClick,
   onTabChange
@@ -56,13 +57,14 @@ export default function ExposureTableContent({
       ];
     } else if (selectedGroup === 'earthquake') {
       return [
-        { key: 'direct_loss_pga_100', label: 'PGA 100' },
-        { key: 'direct_loss_pga_200', label: 'PGA 200' },
-        { key: 'direct_loss_pga_250', label: 'PGA 250' },
-        { key: 'direct_loss_pga_500', label: 'PGA 500' },
-        { key: 'direct_loss_pga_1000', label: 'PGA 1000' }
+        { key: 'pga_100', label: 'Ratio 100th' },
+        { key: 'pga_200', label: 'Ratio 200th' },
+        { key: 'pga_250', label: 'Ratio 250th' },
+        { key: 'pga_500', label: 'Ratio 500th' },
+        { key: 'pga_1000', label: 'Ratio 1000th' }
       ];
-    } else if (selectedGroup === 'tsunami') {
+    }
+ else if (selectedGroup === 'tsunami') {
       return [
         { key: 'direct_loss_inundansi', label: 'Inundansi' }
       ];
@@ -193,10 +195,42 @@ export default function ExposureTableContent({
                           <td className="px-2 py-2 text-gray-600 text-[9px] pl-4 whitespace-nowrap">{row.kota || '-'}</td>
                           <td className="px-2 py-2 text-right font-semibold text-emerald-700 whitespace-nowrap">{assetValue > 0 ? formatRupiah(assetValue) : '-'}</td>
                           {columns.map(col => {
-                            const val = row[col.key];
+                            let displayVal = '-';
+                            
+                            if (selectedGroup === 'earthquake') {
+                              // Identify which city ratios to use: 
+                              // Use selectedCityFeature if provided, else lookup by row.kota
+                              let dlExp = selectedCityFeature?.properties?.dl_exposure;
+                              
+                              if (!dlExp && row.kota && cityGeojson?.features) {
+                                const cityRow = cityGeojson.features.find(f => 
+                                  (f.properties.nama_kota || f.properties.id_kota || '').toUpperCase() === row.kota.toUpperCase()
+                                );
+                                dlExp = cityRow?.properties?.dl_exposure;
+                              }
+                              
+                              // Fallback to provincial aggregate if still no city match
+                              if (!dlExp && cityGeojson?.provincial_gempa_loss_ratios) {
+                                dlExp = cityGeojson.provincial_gempa_loss_ratios;
+                              }
+
+                              if (dlExp) {
+                                const catData = dlExp[activeTab] || {};
+                                const rpSuffix = col.key; // e.g. "pga_100"
+                                const ratio = catData[rpSuffix];
+                                
+                                if (ratio != null && ratio !== '') {
+                                  displayVal = (parseFloat(ratio) * 100).toFixed(6) + '%';
+                                }
+                              }
+                            } else {
+                              const val = row[col.key];
+                              displayVal = val && val > 0 ? formatRupiah(val) : '-';
+                            }
+
                             return (
                               <td key={col.key} className="px-2 py-2 text-right text-gray-700 border-l border-blue-50 font-medium whitespace-nowrap">
-                                {val && val > 0 ? formatRupiah(val) : '-'}
+                                {displayVal}
                               </td>
                             );
                           })}

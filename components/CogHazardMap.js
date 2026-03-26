@@ -7,6 +7,7 @@ import 'leaflet/dist/leaflet.css'
 // Note: markercluster CSS and JS will be handled via CDN for simplicity or if normally installed
 import LayerServices from './LayerServices'
 import ReactLegendOverlay from './ReactLegendOverlay'
+import { DROUGHT_CURVE } from '../src/lib/drought_curve'
 import Modal from './ui/Modal'
 import CrudHSBGN from './CrudHSBGN'
 import CrudBuildings from './CrudBuildings'
@@ -77,13 +78,16 @@ const EXPOSURE_COLORS = {
   educational: '#3b82f6', // Blue
   electricity: '#f59e0b', // Yellow
   airport: '#8b5cf6',     // Purple
-  hotel: '#ec4899'        // Pink
+  hotel: '#ec4899',        // Pink
+  bmn: '#10b981',          // Emerald
+  residential: '#6366f1'   // Indigo
 }
 
 const DEFAULT_CURVES = {
   'banjir': {
     '1.0': { x: [0, 0.5, 1, 2, 3, 5], y: [0, 0.1, 0.35, 0.6, 0.8, 0.95] },
-    '2.0': { x: [0, 1, 2, 3, 5], y: [0, 0, 0.1, 0.3, 0.6] }
+    '2.0': { x: [0, 1, 2, 3, 5], y: [0, 0, 0.1, 0.3, 0.6] },
+    'sawah': { x: [0.15, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.2], y: [0, 0.1, 0.3, 0.42, 0.51, 0.58, 0.63, 0.71, 0.78, 0.83, 0.88, 0.91, 0.95, 0.99, 1] }
   },
   'gempa': {
     'cr': { x: [0, 0.1, 0.3, 0.5, 0.7, 1.0, 1.2], y: [0, 0, 0.1, 0.45, 0.75, 0.95, 1.0] },
@@ -133,22 +137,22 @@ const HAZARD_INFO = {
     unit: 'm',
   },
   drought_gpm: {
-    label: 'Kekeringan (GPM)',
+    label: 'Kekeringan (non climate change)',
     icon: '☀️',
     colorStops: [
       [0.0, '#14532D'], [0.25, '#86EFAC'], [0.5, '#FDE68A'],
       [0.75, '#F97316'], [1.0, '#7F1D1D'],
     ],
-    unit: '',
+    unit: 'Index',
   },
   drought_mme: {
-    label: 'Kekeringan (MME)',
+    label: 'Kekeringan (climate change)',
     icon: '🏜️',
     colorStops: [
       [0.0, '#14532D'], [0.25, '#86EFAC'], [0.5, '#FDE68A'],
       [0.75, '#F97316'], [1.0, '#7F1D1D'],
     ],
-    unit: '',
+    unit: 'Index',
   },
 }
 
@@ -199,6 +203,7 @@ export default function CogHazardMap() {
   const mapEl = useRef(null)
   const mapRef = useRef(null)
   const layerRef = useRef(null)
+  const sawahLayerRef = useRef(null)   // Separate ref for sawah raster layer
   const baseTiledLayer = useRef(null)
   const exposureCluster = useRef(null)
   const boundaryLayer = useRef(null)
@@ -212,7 +217,22 @@ export default function CogHazardMap() {
   const [turfReady, setTurfReady] = useState(false)
   const scriptsReady = georasterReady && geoLayerReady && geoblazeReady && turfReady
   const geoCache = useRef(new Map()) // Memory cache for parsed georasters
+
+  // ── Sawah Raster States ───────────────────────────────────────────────────────
+  const [sawahMetadata, setSawahMetadata] = useState([])  // [{ year, public_url }]
+  const [selectedSawahYear, setSelectedSawahYear] = useState('')  // '' = unloaded
+  const [loadingSawah, setLoadingSawah] = useState(false)
+  const [opacitySawah, setOpacitySawah] = useState(0.8)
   const [curveData, setCurveData] = useState(DEFAULT_CURVES)
+
+  // ── Drought Direct Loss States ────────────────────────────────────────────────
+  const [droughtSawahData, setDroughtSawahData] = useState(null) // from /api/drought-sawah-loss
+  const [droughtLossYear, setDroughtLossYear] = useState('loss_2022') // 'loss_2022' | 'loss_2025' | 'loss_2028'
+
+  // ── Flood Sawah Direct Loss States ───────────────────────────────────────────
+  const [floodSawahData, setFloodSawahData] = useState(null)  // from /api/flood-sawah-loss
+  const [floodView, setFloodView] = useState('building')      // 'building' | 'sawah'
+  const [floodSawahYear, setFloodSawahYear] = useState('loss_2022')
 
   // Click/Selection State for Legend
   const [selectedData, setSelectedData] = useState({ intensity: null, damageRatio: null })
@@ -224,6 +244,7 @@ export default function CogHazardMap() {
   const [opacityBasemap, setOpacityBasemap] = useState(1.0)
   const [infraLayers, setInfraLayers] = useState({
     healthcare: false, educational: false, electricity: false, airport: false, hotel: false,
+    bmn: false, residential: false,
     boundaries: false, aal: false, directLoss: false, modelHazard: false
   })
 
@@ -404,7 +425,7 @@ export default function CogHazardMap() {
 
   const isExposureActive = useMemo(() => {
     // Check if any of the specific exposure layers are active
-    const exposureKeys = ['healthcare', 'educational', 'electricity', 'airport', 'hotel']
+    const exposureKeys = ['healthcare', 'educational', 'electricity', 'airport', 'hotel', 'bmn', 'residential']
     return exposureKeys.some(k => infraLayers[k])
   }, [infraLayers])
 
@@ -489,10 +510,23 @@ export default function CogHazardMap() {
       })
       .then(rows => {
         const grouped = {}
+        const sawahEntries = []
+
         rows.forEach(({ filename, public_url }) => {
           if (filename.toLowerCase().includes('drought')) {
             console.log('DROUGHT FILE FOUND:', filename);
           }
+
+          // ── Extract sawah entries (exposure raster) ──────────────────────────
+          if (filename.toLowerCase().includes('sawah')) {
+            // Extract year from filename: sawah_2022.tif → 2022
+            const yearMatch = filename.match(/(\d{4})/)
+            if (yearMatch) {
+              sawahEntries.push({ year: yearMatch[1], filename, public_url })
+            }
+            return  // Don't treat as hazard
+          }
+
           const hazard = detectHazard(filename)
           if (!hazard) return
           if (!grouped[hazard]) grouped[hazard] = []
@@ -502,9 +536,29 @@ export default function CogHazardMap() {
           arr.sort((a, b) => (a.rp || 0) - (b.rp || 0))
         )
         setMetadata(grouped)
+
+        // Sort sawah entries by year ascending
+        sawahEntries.sort((a, b) => parseInt(a.year) - parseInt(b.year))
+        setSawahMetadata(sawahEntries)
       })
       .catch(e => setError('Gagal memuat metadata: ' + e.message))
       .finally(() => setFetchingMeta(false))
+  }, [])
+
+  // ── Fetch Drought Sawah Loss Data ─────────────────────────────────────────────
+  useEffect(() => {
+    fetch(`${BACKEND_URL}/api/drought-sawah-loss`)
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
+      .then(data => setDroughtSawahData(data))
+      .catch(e => console.warn('Drought sawah loss fetch failed:', e.message))
+  }, [])
+
+  // ── Fetch Flood Sawah Loss Data ───────────────────────────────────────────────
+  useEffect(() => {
+    fetch(`${BACKEND_URL}/api/flood-sawah-loss`)
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
+      .then(data => setFloodSawahData(data))
+      .catch(e => console.warn('Flood sawah loss fetch failed:', e.message))
   }, [])
 
   // ── Fetch Disaster Curves ────────────────────────────────────────────────────
@@ -514,7 +568,13 @@ export default function CogHazardMap() {
         const res = await fetch(`${BACKEND_URL}/api/disaster-curves`)
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data = await res.json()
-        setCurveData(prev => ({ ...prev, ...data }))
+        setCurveData(prev => {
+          const merged = { ...prev }
+          Object.keys(data).forEach(haz => {
+            merged[haz] = { ...(prev[haz] || {}), ...data[haz] }
+          })
+          return merged
+        })
       } catch (err) {
         console.warn('Disaster curves unavailable:', err.message)
       }
@@ -541,11 +601,12 @@ export default function CogHazardMap() {
         }
 
         // Freshness check in background
-        const head = await fetch(url, { method: 'HEAD' })
-        const serverModified = head.headers.get('last-modified')
+        const head = await fetch(url, { method: 'HEAD' }).catch(() => null)
+        const serverModified = head ? head.headers.get('last-modified') : null
         const cacheModified = cachedResponse?.headers.get('last-modified')
 
-        if (!cachedResponse || (serverModified && cacheModified && serverModified !== cacheModified)) {
+        // If the backend doesn't support last-modified, or it's different, or it's not cached yet, fetch it.
+        if (!cachedResponse || !serverModified || (serverModified !== cacheModified)) {
           const response = await fetch(url)
           if (response.ok) {
             await cache.put(url, response.clone())
@@ -592,7 +653,7 @@ export default function CogHazardMap() {
         }
 
         // --- 2. Fetch Direct Loss ---
-        const urlDlFresh = `${urlDl}?t=${Date.now()}`
+        const urlDlFresh = urlDl.includes('?') ? `${urlDl}&t=${Date.now()}` : `${urlDl}?t=${Date.now()}`
         try {
           const respDl = await fetch(urlDlFresh)
           if (respDl.ok) {
@@ -647,6 +708,8 @@ export default function CogHazardMap() {
       else if (id.startsWith('ELECTRICITY') && infraLayers.electricity) type = 'electricity'
       else if (id.startsWith('AIRPORT') && infraLayers.airport) type = 'airport'
       else if (id.startsWith('HOTEL') && infraLayers.hotel) type = 'hotel'
+      else if (id.startsWith('BMN') && infraLayers.bmn) type = 'bmn'
+      else if (id.startsWith('RESIDENTIAL') && infraLayers.residential) type = 'residential'
 
       if (type) {
         const [lon, lat] = f.geometry.coordinates
@@ -669,7 +732,8 @@ export default function CogHazardMap() {
 
         const luasVal = parseFloat(p.luas) || 0;
         const hsbgnVal = parseFloat(p.hsbgn) || 0;
-        const assetValue = luasVal * hsbgnVal;
+        // Prioritize stored nilai_aset if available, otherwise use calculation
+        const assetValue = p.nilai_aset != null ? parseFloat(p.nilai_aset) : (luasVal * hsbgnVal);
 
         const formatNumberWithUnit = (value) => {
           if (value == null || isNaN(value)) return '0'
@@ -689,6 +753,7 @@ export default function CogHazardMap() {
         }
 
         const assetStr = assetValue > 0 ? formatNumberWithUnit(assetValue) : '-';
+        const isBMNRes = id.startsWith('BMN') || id.startsWith('RESIDENTIAL');
 
         const popupHtml = `
           <div class="flex flex-col gap-2 font-[SF Pro] text-left">
@@ -705,20 +770,37 @@ export default function CogHazardMap() {
               <div class="text-gray-500 flex flex-col leading-tight"><span>Nilai Aset</span><span class="font-semibold text-gray-700">Rp ${assetStr}</span></div>
             </div>
 
-            <!-- Hazards -->
-            <div class="space-y-1.5 mt-1 border-t border-gray-100 pt-1.5">
+            <!-- Hazards - Hidden for BMN/Residential as they don't have calculations yet -->
+            <div class="space-y-1.5 mt-1 border-t border-gray-100 pt-1.5 ${isBMNRes ? 'hidden' : ''}">
               
-              <!-- Gempa -->
-              <div class="border-l-2 border-blue-500 pl-1.5">
-                <div class="text-[10px] font-bold text-blue-600 leading-none mb-1">Gempa (PGA)</div>
-                <div class="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[9px] text-gray-600">
-                  <div>1000th: <b>${formatNumberWithUnit(p.direct_loss_pga_1000 || 0)}</b> ${formatPercent(p.direct_loss_pga_1000, assetValue)}</div>
-                  <div>500th: <b>${formatNumberWithUnit(p.direct_loss_pga_500 || 0)}</b> ${formatPercent(p.direct_loss_pga_500, assetValue)}</div>
-                  <div>250th: <b>${formatNumberWithUnit(p.direct_loss_pga_250 || 0)}</b> ${formatPercent(p.direct_loss_pga_250, assetValue)}</div>
-                  <div>200th: <b>${formatNumberWithUnit(p.direct_loss_pga_200 || 0)}</b> ${formatPercent(p.direct_loss_pga_200, assetValue)}</div>
-                  <div class="col-span-2">100th: <b>${formatNumberWithUnit(p.direct_loss_pga_100 || 0)}</b> ${formatPercent(p.direct_loss_pga_100, assetValue)}</div>
-                </div>
+            <!-- Gempa Bumi -->
+            <div class="border-l-2 border-blue-500 pl-1.5">
+              <div class="text-[10px] font-bold text-blue-600 leading-none mb-1">Gempa (PGA)</div>
+              <div class="grid grid-cols-1 gap-y-0.5 text-[9px] text-gray-600">
+                ${['1000', '500', '250', '200', '100'].map(rp => {
+                  const cityFeature = (boundaryDataDL?.features || []).find(f => 
+                    (f.properties.nama_kota || f.properties.id_kota || '').toUpperCase() === (p.kota || '').toUpperCase()
+                  );
+                  const dlExp = cityFeature?.properties?.dl_exposure || {};
+                  
+                  // Map building type to ratio category
+                  const id = (p.id_bangunan || '').toUpperCase();
+                  let category = 'bmn';
+                  if (id.startsWith('FS')) category = 'healthcare';
+                  else if (id.startsWith('FD')) category = 'educational';
+                  else if (id.startsWith('ELECTRICITY')) category = 'electricity';
+                  else if (id.startsWith('AIRPORT')) category = 'airport';
+                  else if (id.startsWith('HOTEL')) category = 'hotel';
+                  else if (id.startsWith('RESIDENTIAL')) category = 'residential';
+                  
+                  const catData = dlExp[category] || {};
+                  const ratio = catData[`pga_${rp}`];
+                  const ratioStr = ratio != null ? (parseFloat(ratio) * 100).toFixed(6) + '%' : '-';
+                  
+                  return `<div>${rp}th: <b class="text-blue-700">${ratioStr}</b> (Loss Ratio)</div>`;
+                }).join('')}
               </div>
+            </div>
 
               <!-- Banjir R -->
               <div class="border-l-2 border-green-500 pl-1.5">
@@ -856,23 +938,42 @@ export default function CogHazardMap() {
             if (rp) activeMetric = `dl_sum_${hazPrefix}_${rp}`;
           }
           else if (selectedGroup === 'earthquake') {
-            hazPrefix = 'pga';
-            if (rp) activeMetric = `dl_sum_${hazPrefix}_${rp}`;
+            if (rp) activeMetric = `pga_${rp}`; // Eq direct loss is stored simply as pga_{rp} in dl_exposure
           }
           else if (selectedGroup === 'tsunami') {
             hazPrefix = 'inundansi';
             activeMetric = `dl_sum_${hazPrefix}`;
+          }
+          else if (selectedGroup === 'kekeringan') {
+            // Drought handled separately via droughtSawahData — skip standard metric
+            activeMetric = null;
           }
         }
         else if (infraLayers.aal) {
           if (selectedGroup === 'banjir') hazPrefix = (selectedRpId && selectedRpId.includes('comp')) ? 'rc' : 'r';
           else if (selectedGroup === 'earthquake') hazPrefix = 'pga';
           else if (selectedGroup === 'tsunami') hazPrefix = 'inundansi';
-          activeMetric = `aal_${hazPrefix}_${activeAalExposure || 'total'}`;
+          else if (selectedGroup === 'kekeringan') hazPrefix = 'drought';
+          if (hazPrefix) activeMetric = `aal_${hazPrefix}_${activeAalExposure || 'total'}`;
         }
 
         if (activeMetric) {
-          const vals = activeBoundaryData.features.map(f => f.properties[activeMetric] || 0).filter(v => typeof v === 'number' && !isNaN(v));
+          const isEarthquake = selectedGroup === 'earthquake' && infraLayers.directLoss;
+          
+          const vals = activeBoundaryData.features.map(f => {
+            if (isEarthquake) {
+              let dlExp = f.properties.dl_exposure || {};
+              if (typeof dlExp === 'string') { try { dlExp = JSON.parse(dlExp); } catch { dlExp = {}; } }
+              const activeLayer = Object.keys(infraLayers).find(l => infraLayers[l] && !['modelHazard', 'directLoss', 'aal'].includes(l)) || 'total';
+              // Map layer IDs to exposure keys used in dl_exposure for Earthquake
+              const layerToCat = { 'healthcare': 'fs', 'educational': 'fd' };
+              const categoryKey = layerToCat[activeLayer] || activeLayer;
+              const catData = dlExp[categoryKey] || {};
+              return (catData[activeMetric] || 0) * 100; // Return as percentage 0-100
+            }
+            return f.properties[activeMetric] || 0;
+          }).filter(v => typeof v === 'number' && !isNaN(v));
+
           if (vals.length > 0) {
             const nClasses = vals.length > 30 ? 6 : 5;
             grades = jenks(vals, nClasses).sort((a, b) => a - b);
@@ -892,7 +993,22 @@ export default function CogHazardMap() {
       const isProportional = infraLayers.modelHazard && activeMetric;
 
       const defaultStyle = (feature) => {
-        const val = activeMetric ? (feature.properties[activeMetric] || 0) : 0;
+        const isEarthquake = selectedGroup === 'earthquake' && infraLayers.directLoss;
+        let val = 0;
+        if (activeMetric) {
+          if (isEarthquake) {
+            let dlExp = feature.properties.dl_exposure || {};
+            if (typeof dlExp === 'string') { try { dlExp = JSON.parse(dlExp); } catch { dlExp = {}; } }
+            const activeLayer = Object.keys(infraLayers).find(l => infraLayers[l] && !['modelHazard', 'directLoss', 'aal'].includes(l)) || 'total';
+            const layerToCat = { 'healthcare': 'fs', 'educational': 'fd' };
+            const categoryKey = layerToCat[activeLayer] || activeLayer;
+            const catData = dlExp[categoryKey] || {};
+            val = (catData[activeMetric] || 0) * 100;
+          } else {
+            val = feature.properties[activeMetric] || 0;
+          }
+        }
+
         if (isProportional) {
           // Transparent polygon with visible border to see hazard map underneath
           return {
@@ -924,11 +1040,26 @@ export default function CogHazardMap() {
         return { color: '#ea580c', weight: 3, opacity: 1, fillOpacity: 0, fillColor: 'transparent', dashArray: '' };
       };
 
-      const fmtPopup = n => n.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 });
+      const fmtPopup = (n, isEarthquake = false) => {
+        if (isEarthquake) return n.toFixed(4) + '%';
+        return n.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 });
+      };
 
       let maxMetricValue = 0;
       if (isProportional && activeMetric) {
-        maxMetricValue = Math.max(...activeBoundaryData.features.map(f => f.properties[activeMetric] || 0).filter(v => typeof v === 'number' && !isNaN(v)));
+        const isEarthquake = selectedGroup === 'earthquake' && infraLayers.directLoss;
+        maxMetricValue = Math.max(...activeBoundaryData.features.map(f => {
+          if (isEarthquake) {
+            let dlExp = f.properties.dl_exposure || {};
+            if (typeof dlExp === 'string') { try { dlExp = JSON.parse(dlExp); } catch { dlExp = {}; } }
+            const activeLayer = Object.keys(infraLayers).find(l => infraLayers[l] && !['modelHazard', 'directLoss', 'aal'].includes(l)) || 'total';
+            const layerToCat = { 'healthcare': 'fs', 'educational': 'fd' };
+            const categoryKey = layerToCat[activeLayer] || activeLayer;
+            const catData = dlExp[categoryKey] || {};
+            return (catData[activeMetric] || 0) * 100;
+          }
+          return f.properties[activeMetric] || 0;
+        }).filter(v => typeof v === 'number' && !isNaN(v)));
         proportionalLayer.current = L.layerGroup().addTo(mapRef.current);
       }
 
@@ -937,12 +1068,27 @@ export default function CogHazardMap() {
         style: defaultStyle,
         onEachFeature: (feature, layer) => {
           if (feature.properties && feature.properties.id_kota) {
-            const val = activeMetric ? (feature.properties[activeMetric] || 0) : null;
+            const isEarthquake = selectedGroup === 'earthquake' && infraLayers.directLoss;
+            let val = null;
+            if (activeMetric) {
+              if (isEarthquake) {
+                let dlExp = feature.properties.dl_exposure || {};
+                if (typeof dlExp === 'string') { try { dlExp = JSON.parse(dlExp); } catch { dlExp = {}; } }
+                const activeLayer = Object.keys(infraLayers).find(l => infraLayers[l] && !['modelHazard', 'directLoss', 'aal'].includes(l)) || 'total';
+                const layerToCat = { 'healthcare': 'fs', 'educational': 'fd' };
+                const categoryKey = layerToCat[activeLayer] || activeLayer;
+                const catData = dlExp[categoryKey] || {};
+                val = (catData[activeMetric] || 0) * 100;
+              } else {
+                val = feature.properties[activeMetric] || 0;
+              }
+            }
+
             let tooltipLabel = "AAL";
-            if (infraLayers.directLoss) tooltipLabel = "Direct Loss";
+            if (infraLayers.directLoss) tooltipLabel = isEarthquake ? "Loss Ratio" : "Direct Loss";
 
             const tooltipContent = activeMetric && val > 0
-              ? `<strong>${feature.properties.id_kota}</strong><br/>${tooltipLabel}: ${fmtPopup(val)}`
+              ? `<strong>${feature.properties.id_kota}</strong><br/>${tooltipLabel}: ${fmtPopup(val, isEarthquake)}`
               : `<strong>${feature.properties.id_kota}</strong>`;
 
             layer.bindTooltip(tooltipContent, {
@@ -1027,6 +1173,124 @@ export default function CogHazardMap() {
     }
   }, [infraLayers.boundaries, infraLayers.aal, infraLayers.directLoss, infraLayers.modelHazard, selectedGroup, selectedRpId, boundaryDataAAL, boundaryDataDL, opacityAAL, activeAalExposure])
 
+  // ── Drought Direct Loss Boundary Coloring ────────────────────────────────────
+  // When kekeringan + directLoss, color boundaries using droughtSawahData
+  useEffect(() => {
+    if (!mapRef.current || !boundaryLayer.current) return
+    if (!infraLayers.directLoss || selectedGroup !== 'kekeringan' || !droughtSawahData) return
+
+    // Determine RP from selectedRpId (e.g. "drought_gpm_25" → "25")
+    const rpPart = selectedRpId ? selectedRpId.split('_').pop() : null
+    const isCC = selectedRpId && selectedRpId.includes('mme')
+    const ccKey = isCC ? 'mme' : 'gpm'
+    const rpKey = rpPart && rpPart !== 'default' ? rpPart : (droughtSawahData.return_periods?.[0]?.toString() || '25')
+
+    // Build city→loss map from droughtSawahData using selected year
+    const rowsForRp = (droughtSawahData[ccKey]?.[rpKey] || [])
+    const cityLossMap = {}
+    rowsForRp.forEach(row => {
+      cityLossMap[row.kota.toUpperCase()] = row[droughtLossYear] || 0
+    })
+
+    // Compute jenks breaks
+    const vals = Object.values(cityLossMap).filter(v => v > 0)
+    const aalColors = ['#1a9850', '#d9ef8b', '#fee08b', '#fc8d59', '#d73027', '#7f0000']
+    let grades = []
+    if (vals.length > 0) {
+      grades = jenks(vals, Math.min(6, vals.length)).sort((a, b) => a - b)
+    }
+
+    const getFill = (val) => {
+      if (grades.length === 0 || val === 0) return aalColors[0]
+      for (let i = 0; i < grades.length - 1; i++) {
+        if (val >= grades[i] && val < grades[i + 1]) return aalColors[i]
+      }
+      return aalColors[aalColors.length - 1]
+    }
+
+    const fmtRupiah = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
+    const yearLabel = droughtLossYear.replace('loss_', '')
+
+    boundaryLayer.current.eachLayer(layer => {
+      const feat = layer.feature
+      if (!feat?.properties?.id_kota) return
+      const cityKey = (feat.properties.nama_kota || feat.properties.id_kota || '').toUpperCase()
+      const val = cityLossMap[cityKey] || 0
+      layer.setStyle({
+        fillColor: getFill(val),
+        fillOpacity: opacityAAL * 0.8,
+        color: '#ffffff',
+        weight: 1,
+        opacity: opacityAAL
+      })
+      const tooltipHtml = val > 0
+        ? `<strong>${feat.properties.id_kota}</strong><br/>Direct Loss Sawah ${yearLabel} (RP ${rpKey}TH): ${fmtRupiah(val)}`
+        : `<strong>${feat.properties.id_kota}</strong>`
+      layer.unbindTooltip()
+      layer.bindTooltip(tooltipHtml, { sticky: true, className: 'boundary-tooltip' })
+    })
+  }, [infraLayers.directLoss, selectedGroup, selectedRpId, droughtSawahData, droughtLossYear, opacityAAL, boundaryLayer.current])
+
+  // ── Flood Sawah Direct Loss Boundary Coloring ─────────────────────────────────
+  // When banjir + directLoss + floodView === 'sawah', recolor boundaries using floodSawahData
+  useEffect(() => {
+    if (!mapRef.current || !boundaryLayer.current) return
+    if (!infraLayers.directLoss || selectedGroup !== 'banjir' || floodView !== 'sawah' || !floodSawahData) return
+
+    // Parse RP and CC from selectedRpId:
+    //  e.g. "flood_25" → rp=25, cc=r  OR  "flood_comp_25" → rp=25, cc=rc
+    const isCC = selectedRpId && selectedRpId.includes('comp')
+    const ccKey = isCC ? 'rc' : 'r'
+    const rpMatch = selectedRpId ? selectedRpId.match(/(\d+)/) : null
+    const rpKey = rpMatch ? rpMatch[1] : (floodSawahData.return_periods?.[0]?.toString() || '2')
+
+    // Build city → loss map
+    const rowsForRp = (floodSawahData[ccKey]?.[rpKey] || [])
+    const cityLossMap = {}
+    rowsForRp.forEach(row => {
+      cityLossMap[row.kota.toUpperCase()] = row[floodSawahYear] || 0
+    })
+
+    // Jenks colour breaks
+    const vals = Object.values(cityLossMap).filter(v => v > 0)
+    const sawahColors = ['#1a9850', '#d9ef8b', '#fee08b', '#fc8d59', '#d73027', '#7f0000']
+    let grades = []
+    if (vals.length > 0) {
+      grades = jenks(vals, Math.min(6, vals.length)).sort((a, b) => a - b)
+    }
+
+    const getFill = (val) => {
+      if (grades.length === 0 || val === 0) return sawahColors[0]
+      for (let i = 0; i < grades.length - 1; i++) {
+        if (val >= grades[i] && val < grades[i + 1]) return sawahColors[i]
+      }
+      return sawahColors[sawahColors.length - 1]
+    }
+
+    const fmtRupiah = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
+    const yearLabel = floodSawahYear.replace('loss_', '')
+
+    boundaryLayer.current.eachLayer(layer => {
+      const feat = layer.feature
+      if (!feat?.properties?.id_kota) return
+      const cityKey = (feat.properties.nama_kota || feat.properties.id_kota || '').toUpperCase()
+      const val = cityLossMap[cityKey] || 0
+      layer.setStyle({
+        fillColor: getFill(val),
+        fillOpacity: opacityAAL * 0.8,
+        color: '#ffffff',
+        weight: 1,
+        opacity: opacityAAL
+      })
+      const ccLabel = isCC ? 'CC' : 'Non-CC'
+      const tooltipHtml = val > 0
+        ? `<strong>${feat.properties.id_kota}</strong><br/>Sawah ${yearLabel} (RP${rpKey}TH ${ccLabel}): ${fmtRupiah(val)}`
+        : `<strong>${feat.properties.id_kota}</strong>`
+      layer.unbindTooltip()
+      layer.bindTooltip(tooltipHtml, { sticky: true, className: 'boundary-tooltip' })
+    })
+  }, [infraLayers.directLoss, selectedGroup, selectedRpId, floodSawahData, floodSawahYear, floodView, opacityAAL, boundaryLayer.current])
+
   // ── Grouped Derived Data ────────────────────────────────────────────────────────
   const hazardGroupFiles = useMemo(() => {
     if (!selectedGroup) return []
@@ -1046,8 +1310,8 @@ export default function CogHazardMap() {
             uniqueId: `${f.type}_${f.rp || 'default'}`,
             displayLabel: k === 'flood_comp' ? `${f.rp} Tahun (Rainfall-Change)`
               : k === 'flood' ? `${f.rp} Tahun (Rainfall)`
-                : k === 'drought_gpm' ? `GPM ${f.rp} Tahun`
-                  : k === 'drought_mme' ? `MME ${f.rp} Tahun`
+                : k === 'drought_gpm' ? `${f.rp} Tahun (non climate change)`
+                  : k === 'drought_mme' ? `${f.rp} Tahun (climate change)`
                     : f.rp ? `${f.rp} Tahun` : 'Default'
           })
         })
@@ -1064,6 +1328,7 @@ export default function CogHazardMap() {
   // Reset selection when group changes
   useEffect(() => {
     setSelectedRpId('')
+    setFloodView('building')  // reset sawah/building toggle
     if (selectedGroup === null) {
       if (layerRef.current && mapRef.current) {
         mapRef.current.removeLayer(layerRef.current)
@@ -1081,7 +1346,7 @@ export default function CogHazardMap() {
 
     let processedIntensity = intensity
     const curves = curveData[curveKey]
-    const taxos = (curveKey === 'gempa' || curveKey === 'tsunami') ? ['cr', 'mcf'] : ['1.0', '2.0']
+    const taxos = (curveKey === 'gempa' || curveKey === 'tsunami') ? ['cr', 'mcf'] : (curveKey === 'banjir' ? ['1.0', '2.0', 'sawah'] : ['1.0', '2.0'])
 
     if (intensity <= 0) {
       const results = {}
@@ -1107,6 +1372,24 @@ export default function CogHazardMap() {
         }
         console.log(`Converted PGA ${intensity}g to MMI ${processedIntensity.toFixed(2)}`)
       }
+    }
+
+    // ── Drought Curve Logic (Hardcoded GPM Index) ─────────────────────────────
+    if (curveKey === 'drought_gpm' || curveKey === 'drought_mme' || curveKey === 'kekeringan') {
+      const xInput = processedIntensity
+      if (xInput <= DROUGHT_CURVE[0].x) return { 'sawah': DROUGHT_CURVE[0].y }
+      if (xInput >= DROUGHT_CURVE[DROUGHT_CURVE.length - 1].x) return { 'sawah': DROUGHT_CURVE[DROUGHT_CURVE.length - 1].y }
+      
+      for (let i = 1; i < DROUGHT_CURVE.length; i++) {
+        const x1 = DROUGHT_CURVE[i - 1].x, y1 = DROUGHT_CURVE[i - 1].y
+        const x2 = DROUGHT_CURVE[i].x, y2 = DROUGHT_CURVE[i].y
+        if (xInput >= x1 && xInput <= x2) {
+          const t = (xInput - x1) / (x2 - x1)
+          const damage = y1 + (y2 - y1) * t
+          return { 'sawah': damage }
+        }
+      }
+      return { 'sawah': 0 }
     }
 
     const results = {}
@@ -1189,7 +1472,7 @@ export default function CogHazardMap() {
           intensity = 0
         }
 
-        const curveMap = { flood: 'banjir', flood_comp: 'banjir', earthquake: 'gempa', tsunami: 'tsunami' }
+        const curveMap = { flood: 'banjir', flood_comp: 'banjir', earthquake: 'gempa', tsunami: 'tsunami', drought_gpm: 'drought_gpm', drought_mme: 'drought_mme' }
         const currentHazardKey = rasterStats?.hazardKey || layerRef.current.options.hazardKey
         const curveKey = curveMap[currentHazardKey]
         console.log('Calculated Hazard Key:', { currentHazardKey, curveKey, intensity });
@@ -1283,6 +1566,93 @@ export default function CogHazardMap() {
     }, 500)
   }, [])
 
+  // ── Load Sawah COG layer ────────────────────────────────────────────────────
+  const loadSawahCOG = useCallback(async (publicUrl) => {
+    const parseGeoraster = window.parseGeoraster
+    const GeoRasterLayer = window.GeoRasterLayer
+    if (!parseGeoraster || !GeoRasterLayer) return
+
+    setLoadingSawah(true)
+    try {
+      // Check memory cache
+      let georaster = null
+      if (geoCache.current.has('sawah_' + publicUrl)) {
+        georaster = geoCache.current.get('sawah_' + publicUrl)
+      } else {
+        const cacheName = 'cog-cache-v2'
+        const cache = await caches.open(cacheName)
+        const cachedResponse = await cache.match(publicUrl)
+        if (cachedResponse) {
+          const arrayBuffer = await cachedResponse.clone().arrayBuffer()
+          georaster = await parseGeoraster(arrayBuffer)
+        } else {
+          const response = await fetch(publicUrl)
+          if (!response.ok) throw new Error(`HTTP ${response.status}`)
+          await cache.put(publicUrl, response.clone())
+          const arrayBuffer = await response.arrayBuffer()
+          georaster = await parseGeoraster(arrayBuffer)
+        }
+        geoCache.current.set('sawah_' + publicUrl, georaster)
+      }
+
+      // Remove previous sawah layer
+      if (sawahLayerRef.current && mapRef.current) {
+        mapRef.current.removeLayer(sawahLayerRef.current)
+        sawahLayerRef.current = null
+      }
+
+      const noData = georaster.noDataValue
+      const layer = new GeoRasterLayer({
+        georaster,
+        opacity: opacitySawah,
+        resolution: 256,
+        pane: 'rasterPane',
+        // Only show pixels with value exactly 1 (sawah class)
+        pixelValuesToColorFn: (values) => {
+          const v = values[0]
+          if (v == null || isNaN(v) || v === noData) return null
+          if (Math.round(v) !== 1) return null   // Only render sawah pixels (value = 1)
+          return '#4ade80'  // Solid green (alpha handled by layer opacity)
+        },
+      })
+      console.log('Sawah Raster Loaded:', {
+        url: publicUrl,
+        mins: georaster.mins,
+        maxs: georaster.maxs,
+        noData,
+        pixelWidth: georaster.pixelWidth,
+        pixelHeight: georaster.pixelHeight
+      })
+      layer.addTo(mapRef.current)
+      sawahLayerRef.current = layer
+    } catch (e) {
+      console.error('Sawah COG load error:', e)
+    } finally {
+      setLoadingSawah(false)
+    }
+  }, [opacitySawah])
+
+  // ── Effect: load/unload sawah layer when year changes ───────────────────────
+  useEffect(() => {
+    if (!scriptsReady || !mapRef.current) return
+    if (!selectedSawahYear) {
+      if (sawahLayerRef.current && mapRef.current) {
+        mapRef.current.removeLayer(sawahLayerRef.current)
+        sawahLayerRef.current = null
+      }
+      return
+    }
+    const entry = sawahMetadata.find(e => e.year === selectedSawahYear)
+    if (entry) loadSawahCOG(entry.public_url)
+  }, [selectedSawahYear, sawahMetadata, scriptsReady, loadSawahCOG])
+
+  // ── Immediate Sawah Opacity Update ──────────────────────────────────────────
+  useEffect(() => {
+    if (sawahLayerRef.current && typeof sawahLayerRef.current.setOpacity === 'function') {
+      sawahLayerRef.current.setOpacity(opacitySawah)
+    }
+  }, [opacitySawah])
+
   // Helper to DRY render logic
   const renderLayer = async (georaster, rMin, rMax, hazardKey) => {
     const GeoRasterLayer = window.GeoRasterLayer
@@ -1300,7 +1670,8 @@ export default function CogHazardMap() {
         const v = values[0]
         if (v == null || isNaN(v) || v === noData) return null
         // Skip exactly 0 as it usually represents safe/background in integer masks, but allow negative indices for drought.
-        if (v === 0 && rMin >= 0) return null
+        const isDrought = hazardKey === 'drought_gpm' || hazardKey === 'drought_mme';
+        if (v === 0 && rMin >= 0 && !isDrought) return null
 
         const t = Math.max(0, Math.min(1, (v - rMin) / (rMax - rMin)))
         return info ? interpolateColor(info.colorStops, t) : null
@@ -1338,7 +1709,7 @@ export default function CogHazardMap() {
         rMax = cached.rMax
       } else {
         // 2. Check Persistence Cache
-        const cacheName = 'cog-cache-v1'
+        const cacheName = 'cog-cache-v2'
         const cache = await caches.open(cacheName)
         const cachedResponse = await cache.match(publicUrl)
 
@@ -1561,6 +1932,16 @@ export default function CogHazardMap() {
           setOpacityAAL={setOpacityAAL}
           activeAalExposure={activeAalExposure}
           setActiveAalExposure={setActiveAalExposure}
+          sawahMetadata={sawahMetadata}
+          selectedSawahYear={selectedSawahYear}
+          setSelectedSawahYear={setSelectedSawahYear}
+          loadingSawah={loadingSawah}
+          opacitySawah={opacitySawah}
+          setOpacitySawah={setOpacitySawah}
+          floodView={floodView}
+          setFloodView={setFloodView}
+          floodSawahYear={floodSawahYear}
+          setFloodSawahYear={setFloodSawahYear}
           onOpenHSBGN={() => {
             setHsbgnPanelPos({ x: 0, y: 0 }); // reset position if re-opened
             setIsHSBGNPanelOpen(true)
@@ -1574,9 +1955,13 @@ export default function CogHazardMap() {
               educational: true,
               electricity: true,
               airport: true,
-              hotel: true
+              hotel: true,
+              bmn: true,
+              residential: true
             }))
           }}
+          droughtLossYear={droughtLossYear}
+          setDroughtLossYear={setDroughtLossYear}
         />
 
         {/* ── Map area ── */}
@@ -1671,6 +2056,14 @@ export default function CogHazardMap() {
             selectedCityFeature={selectedCityFeature}
             onSelectCity={handleCityDropdownSelect}
             onClearCity={() => handleCityDropdownSelect(null)}
+            droughtLossYear={droughtLossYear}
+            setDroughtLossYear={setDroughtLossYear}
+            droughtSawahData={droughtSawahData}
+            floodView={floodView}
+            setFloodView={(v) => { setFloodView(v); }}
+            floodSawahYear={floodSawahYear}
+            setFloodSawahYear={setFloodSawahYear}
+            floodSawahData={floodSawahData}
             onOpenTable={(tab) => {
               setInitialExposureTab(tab || 'healthcare');
               setInfraLayers(prev => ({
@@ -1824,6 +2217,7 @@ export default function CogHazardMap() {
                   exposureData={exposureData}
                   selectedGroup={selectedGroup}
                   selectedCityFeature={selectedCityFeature}
+                  cityGeojson={boundaryDataDL}
                   initialTab={initialExposureTab}
                   onRowClick={handleTableRowClick}
                   onTabChange={(tab) => {

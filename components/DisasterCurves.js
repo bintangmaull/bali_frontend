@@ -13,6 +13,7 @@ import {
 } from 'chart.js'
 import { getDisasterCurves } from '../src/lib/api'
 import { useTheme } from '../context/ThemeContext'
+import { DROUGHT_CURVE } from '../src/lib/drought_curve'
 
 ChartJS.register(LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
@@ -247,7 +248,8 @@ export default function DisasterCurves() {
     'mcf': 'MCF',
     'mur': 'MUR',
     'w': 'Lightwood/Wood',
-    'lightwood': 'Lightwood/Wood'
+    'lightwood': 'Lightwood/Wood',
+    'sawah': 'Rice Field'
   };
 
   const taxonomyColors = {
@@ -260,18 +262,23 @@ export default function DisasterCurves() {
     '2.0': '#dc3545',
     '1': '#ffc107',
     '2': '#dc3545',
+    'sawah': '#10b981'
   };
 
   const disasters = [
     { key: 'gempa', label: 'Gempa', xAxisLabel: 'Intensitas Bencana (MMI)' },
     { key: 'tsunami', label: 'Tsunami', xAxisLabel: 'Inundansi (m)' },
-    { key: 'banjir', label: 'Banjir', xAxisLabel: 'Kedalaman Banjir (m)' }
-  ]
+    { key: 'banjir', label: 'Banjir', xAxisLabel: 'Kedalaman Banjir (m)' },
+    { key: 'kekeringan', label: 'Kekeringan', xAxisLabel: 'GPM Index' }
+  ];
 
   return (
     <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
       {disasters.map(({ key, label }) => {
-        const grouped = rawData[key] || {}
+        let grouped = rawData[key] || {}
+        if (key === 'kekeringan' && Object.keys(grouped).length === 0) {
+          grouped = { 'sawah': { x: DROUGHT_CURVE.map(p => p.x), y: DROUGHT_CURVE.map(p => p.y) } }
+        }
         const taxonomyList = Object.keys(grouped);
         const allX = taxonomyList.flatMap(t => grouped[t]?.x || [])
         const maxX = allX.length ? Math.max(...allX) : 0

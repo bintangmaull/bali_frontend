@@ -102,10 +102,23 @@ export default function LayerServices({
   setOpacityAAL,
   activeAalExposure,
   setActiveAalExposure,
+  // Sawah raster exposure props
+  sawahMetadata = [],
+  selectedSawahYear,
+  setSelectedSawahYear,
+  loadingSawah,
+  opacitySawah,
+  setOpacitySawah,
   onOpenHSBGN,
-  onOpenBangunan
+  onOpenBangunan,
+  droughtLossYear,
+  setDroughtLossYear,
+  floodView,
+  setFloodView,
+  floodSawahYear,
+  setFloodSawahYear,
 }) {
-  const [openSettings, setOpenSettings] = React.useState(null) // 'basemap' | 'hazard' | 'aal' | null
+  const [openSettings, setOpenSettings] = React.useState(null) // 'basemap' | 'hazard' | 'aal' | 'sawah' | null
 
   return (
     <aside className={`absolute left-0 top-0 h-full z-[2001] bg-white shadow-2xl transition-all duration-500 ease-in-out flex
@@ -322,6 +335,74 @@ export default function LayerServices({
                   disabled={!selectedGroup}
                 />
               </div>
+
+              {/* Drought year selector — only when kekeringan + directLoss active */}
+              {selectedGroup === 'kekeringan' && infraLayers.directLoss && (
+                <div className="ml-6 mt-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                  <div className="text-[8px] text-gray-400 font-semibold uppercase tracking-wider mb-1.5">Tahun Exposure Sawah</div>
+                  <div className="flex gap-1.5">
+                    {[{key:'loss_2022',label:'2022'},{key:'loss_2025',label:'2025'},{key:'loss_2028',label:'2028'}].map(({key,label}) => (
+                      <button
+                        key={key}
+                        onClick={() => setDroughtLossYear && setDroughtLossYear(key)}
+                        className={`text-[10px] font-bold px-3 py-0.5 rounded-full border transition-all ${
+                          (droughtLossYear || 'loss_2022') === key
+                            ? 'bg-green-600 text-white border-green-600 shadow-sm'
+                            : 'bg-white text-gray-400 border-gray-200 hover:border-green-400 hover:text-green-700'
+                        }`}
+                      >{label}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Flood View Toggle & Year Selector */}
+              {selectedGroup === 'banjir' && infraLayers.directLoss && (
+                <div className="ml-6 mt-2.5 animate-in fade-in slide-in-from-top-1 duration-200 space-y-2.5">
+                  <div className="flex rounded-lg overflow-hidden border border-slate-200 text-[10px] font-semibold w-full max-w-[200px]">
+                    <button
+                      className={`flex-1 py-1.5 transition-colors ${
+                        (floodView || 'building') === 'building'
+                          ? 'bg-blue-600 text-white shadow-inner'
+                          : 'bg-white text-slate-600 hover:bg-slate-50'
+                      }`}
+                      onClick={() => setFloodView && setFloodView('building')}
+                    >
+                      🏠 Bangunan
+                    </button>
+                    <button
+                      className={`flex-1 py-1.5 transition-colors border-l border-slate-200 ${
+                        floodView === 'sawah'
+                          ? 'bg-blue-600 text-white shadow-inner'
+                          : 'bg-white text-slate-600 hover:bg-slate-50'
+                      }`}
+                      onClick={() => setFloodView && setFloodView('sawah')}
+                    >
+                      🌾 Sawah
+                    </button>
+                  </div>
+
+                  {floodView === 'sawah' && (
+                    <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                      <div className="text-[8px] text-gray-400 font-semibold uppercase tracking-wider mb-1.5">Tahun Exposure Sawah</div>
+                      <div className="flex gap-1.5">
+                        {[{key:'loss_2022',label:'2022'},{key:'loss_2025',label:'2025'},{key:'loss_2028',label:'2028'}].map(({key,label}) => (
+                          <button
+                            key={key}
+                            onClick={() => setFloodSawahYear && setFloodSawahYear(key)}
+                            className={`text-[10px] font-bold px-3 py-0.5 rounded-full border transition-all ${
+                              (floodSawahYear || 'loss_2022') === key
+                                ? 'bg-green-600 text-white border-green-600 shadow-sm'
+                                : 'bg-white text-gray-400 border-gray-200 hover:border-green-400 hover:text-green-700'
+                            }`}
+                          >{label}</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {!selectedGroup && (
                 <p className="text-[9px] text-gray-400 italic ml-6 leading-tight mt-1.5">
                   *Pilih Hazard terlebih dahulu untuk melihat AAL / Direct Loss
@@ -333,7 +414,7 @@ export default function LayerServices({
           {/* Eksposur Section */}
           <section>
             <div className="flex items-center gap-2">
-              <SectionTitle>Eksposur</SectionTitle>
+              <SectionTitle>EXPOSURE</SectionTitle>
               {fetchingExposure && (
                 <div className="w-3 h-3 border-2 border-orange-500/20 border-t-orange-500 rounded-full animate-spin mb-1" />
               )}
@@ -345,23 +426,76 @@ export default function LayerServices({
                 { id: 'electricity', label: 'Electricity' },
                 { id: 'airport', label: 'Airport' },
                 { id: 'hotel', label: 'Hotel' },
+                { id: 'bmn', label: 'BMN' },
+                { id: 'sawah', label: 'Rice Field' },
+                { id: 'residential', label: 'Residential' },
               ].map(item => (
                 <CheckItem
                   key={item.id}
                   label={item.label}
-                  checked={infraLayers[item.id] || false}
+                  checked={item.id === 'sawah' ? !!selectedSawahYear : (infraLayers[item.id] || false)}
                   onChange={() => {
-                    setInfraLayers(prev => ({
-                      ...prev,
-                      [item.id]: !prev[item.id]
-                    }));
-                    if (setInitialExposureTab && !infraLayers[item.id]) {
-                      setInitialExposureTab(item.id);
+                    if (item.id === 'sawah') {
+                      if (selectedSawahYear) {
+                        setSelectedSawahYear('');
+                      } else {
+                        setSelectedSawahYear(sawahMetadata[0]?.year || '2025');
+                      }
+                    } else {
+                      setInfraLayers(prev => ({
+                        ...prev,
+                        [item.id]: !prev[item.id]
+                      }));
+                      if (setInitialExposureTab && !infraLayers[item.id]) {
+                        setInitialExposureTab(item.id);
+                      }
                     }
                   }}
                 />
               ))}
             </div>
+
+            {/* Sawah Year selection (Conditional) */}
+            {selectedSawahYear && (
+              <div className="mt-2.5 p-2 bg-green-50/50 rounded-lg border border-green-100/50 animate-in fade-in slide-in-from-top-1 duration-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[8px] font-bold text-green-600 tracking-wider uppercase">Select Year</span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setOpenSettings(openSettings === 'sawah' ? null : 'sawah'); }}
+                    className={`p-1 rounded-full transition-colors ${openSettings === 'sawah' ? 'text-green-500 bg-green-100' : 'text-gray-400 hover:text-green-500'}`}
+                  >
+                    <SlidersHorizontal size={12} />
+                  </button>
+                </div>
+
+                {openSettings === 'sawah' && (
+                  <div className="mb-2 bg-white p-2 rounded shadow-sm border border-green-100">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-[9px] font-bold text-slate-600">Opacity</span>
+                      <span className="text-[9px] font-bold text-green-600">{Math.round(opacitySawah * 100)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0" max="1" step="0.05"
+                      value={opacitySawah}
+                      onChange={(e) => setOpacitySawah(parseFloat(e.target.value))}
+                      className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-500"
+                    />
+                  </div>
+                )}
+
+                <select
+                  value={selectedSawahYear}
+                  onChange={(e) => setSelectedSawahYear(e.target.value)}
+                  className="w-full bg-white text-green-700 text-[10px] font-bold py-1.5 px-2 rounded border border-green-200 focus:outline-none cursor-pointer shadow-sm appearance-none"
+                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2316a34a' stroke-width='3'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', backgroundSize: '10px' }}
+                >
+                  {sawahMetadata.map(s => (
+                    <option key={s.year} value={s.year}>Year {s.year}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </section>
 
           {/* Administratif Section */}

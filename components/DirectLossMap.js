@@ -93,7 +93,7 @@ function getJenksBreaks(data, nClasses) {
   return breaks
 }
 
-export default function DirectLossMap({ geojson, filters, search, selectedKota }) {
+export default function DirectLossMap({ geojson, cityGeojson, filters, search, selectedKota }) {
   const mapEl = useRef(null)
   const mapRef = useRef(null)
   const clusterRef = useRef(null)
@@ -256,7 +256,7 @@ export default function DirectLossMap({ geojson, filters, search, selectedKota }
           // Helper to check if any value in a group is > 0
           const hasBanjirR = [p.direct_loss_r_250, p.direct_loss_r_100, p.direct_loss_r_50, p.direct_loss_r_25, p.direct_loss_r_10, p.direct_loss_r_5, p.direct_loss_r_2].some(v => (v || 0) > 0);
           const hasBanjirRC = [p.direct_loss_rc_250, p.direct_loss_rc_100, p.direct_loss_rc_50, p.direct_loss_rc_25, p.direct_loss_rc_10, p.direct_loss_rc_5, p.direct_loss_rc_2].some(v => (v || 0) > 0);
-          const hasGempa = [p.direct_loss_pga_1000, p.direct_loss_pga_500, p.direct_loss_pga_250, p.direct_loss_pga_200, p.direct_loss_pga_100].some(v => (v || 0) > 0);
+          const hasGempa = true; // Always show earthquake section since we have ratios in dl_exposure now
           const hasTsunami = (p.direct_loss_inundansi || 0) > 0;
 
           // Helper to conditionally render a row
@@ -271,12 +271,29 @@ export default function DirectLossMap({ geojson, filters, search, selectedKota }
             hazardContent += `
               <div class="flex border-l-2 border-blue-500 pl-1">
                 <div class="w-12 text-[8px] font-bold text-blue-600 shrink-0">PGA</div>
-                <div class="flex-1 grid grid-cols-2 gap-x-1 gap-y-0 text-[8px] text-gray-600 leading-tight">
-                  ${renderRow('1000th', p.direct_loss_pga_1000)}
-                  ${renderRow('500th', p.direct_loss_pga_500)}
-                  ${renderRow('250th', p.direct_loss_pga_250)}
-                  ${renderRow('200th', p.direct_loss_pga_200)}
-                  ${renderRow('100th', p.direct_loss_pga_100, 'col-span-2')}
+                <div class="flex-1 grid grid-cols-1 gap-y-0 text-[8px] text-gray-600 leading-tight">
+                  ${['1000', '500', '250', '200', '100'].map(rp => {
+                    const cityFeature = (cityGeojson?.features || []).find(f => 
+                      (f.properties.nama_kota || f.properties.id_kota || '').toUpperCase() === (p.kota || '').toUpperCase()
+                    );
+                    const dlExp = cityFeature?.properties?.dl_exposure || {};
+                    
+                    // Map building type to ratio category
+                    const id = (p.id_bangunan || '').toUpperCase();
+                    let category = 'bmn';
+                    if (id.startsWith('FS')) category = 'healthcare';
+                    else if (id.startsWith('FD')) category = 'educational';
+                    else if (id.startsWith('ELECTRICITY')) category = 'electricity';
+                    else if (id.startsWith('AIRPORT')) category = 'airport';
+                    else if (id.startsWith('HOTEL')) category = 'hotel';
+                    else if (id.startsWith('RESIDENTIAL')) category = 'residential';
+                    
+                    const catData = dlExp[category] || {};
+                    const ratio = catData[`pga_${rp}`];
+                    const ratioStr = ratio != null ? (parseFloat(ratio) * 100).toFixed(6) + '%' : '-';
+                    
+                    return `<div>${rp}th: <b class="text-blue-700">${ratioStr}</b> (Loss Ratio)</div>`;
+                  }).join('')}
                 </div>
               </div>
             `;
