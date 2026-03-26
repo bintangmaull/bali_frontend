@@ -957,22 +957,37 @@ export default function CogHazardMap() {
           if (hazPrefix) activeMetric = `aal_${hazPrefix}_${activeAalExposure || 'total'}`;
         }
 
-        if (activeMetric) {
+        const isSawahDL = infraLayers.directLoss && (selectedGroup === 'banjir' || selectedGroup === 'kekeringan') && floodView === 'sawah';
+
+        if (activeMetric || isSawahDL) {
           const isEarthquake = selectedGroup === 'earthquake' && infraLayers.directLoss;
           
-          const vals = activeBoundaryData.features.map(f => {
-            if (isEarthquake) {
-              let dlExp = f.properties.dl_exposure || {};
-              if (typeof dlExp === 'string') { try { dlExp = JSON.parse(dlExp); } catch { dlExp = {}; } }
-              const activeLayer = Object.keys(infraLayers).find(l => infraLayers[l] && !['modelHazard', 'directLoss', 'aal'].includes(l)) || 'total';
-              // Map layer IDs to exposure keys used in dl_exposure for Earthquake
-              const layerToCat = { 'healthcare': 'fs', 'educational': 'fd' };
-              const categoryKey = layerToCat[activeLayer] || activeLayer;
-              const catData = dlExp[categoryKey] || {};
-              return (catData[activeMetric] || 0) * 100; // Return as percentage 0-100
+          let vals = [];
+          if (isSawahDL) {
+            const data = selectedGroup === 'banjir' ? floodSawahData : droughtSawahData;
+            if (data) {
+              const isCC = selectedRpId && (selectedRpId.includes('comp') || selectedRpId.includes('mme'));
+              const ccKey = selectedGroup === 'banjir' ? (isCC ? 'rc' : 'r') : (isCC ? 'mme' : 'gpm');
+              const rpMatch = selectedRpId ? selectedRpId.match(/(\d+)/) : null;
+              const rpKey = rpMatch ? rpMatch[1] : (data.return_periods?.[0]?.toString() || '2');
+              const lossYear = selectedGroup === 'banjir' ? floodSawahYear : droughtLossYear;
+              const rows = data[ccKey]?.[rpKey] || [];
+              vals = rows.map(r => r[lossYear] || 0).filter(v => typeof v === 'number' && !isNaN(v));
             }
-            return f.properties[activeMetric] || 0;
-          }).filter(v => typeof v === 'number' && !isNaN(v));
+          } else if (activeMetric) {
+            vals = activeBoundaryData.features.map(f => {
+              if (isEarthquake) {
+                let dlExp = f.properties.dl_exposure || {};
+                if (typeof dlExp === 'string') { try { dlExp = JSON.parse(dlExp); } catch { dlExp = {}; } }
+                const activeLayer = Object.keys(infraLayers).find(l => infraLayers[l] && !['modelHazard', 'directLoss', 'aal'].includes(l)) || 'total';
+                const layerToCat = { 'healthcare': 'fs', 'educational': 'fd' };
+                const categoryKey = layerToCat[activeLayer] || activeLayer;
+                const catData = dlExp[categoryKey] || {};
+                return (catData[activeMetric] || 0) * 100;
+              }
+              return f.properties[activeMetric] || 0;
+            }).filter(v => typeof v === 'number' && !isNaN(v));
+          }
 
           if (vals.length > 0) {
             const nClasses = vals.length > 30 ? 6 : 5;
@@ -982,7 +997,8 @@ export default function CogHazardMap() {
       }
 
       const getFillColor = (val) => {
-        if (!activeMetric || grades.length === 0) return '#f97316';
+        const isSawahDL = infraLayers.directLoss && (selectedGroup === 'banjir' || selectedGroup === 'kekeringan') && floodView === 'sawah';
+        if ((!activeMetric && !isSawahDL) || grades.length === 0) return '#f97316';
         if (val === 0) return aalColors[0];
         for (let i = 0; i < grades.length - 1; i++) {
           if (val >= grades[i] && val < grades[i + 1]) return aalColors[i];
@@ -990,13 +1006,27 @@ export default function CogHazardMap() {
         return aalColors[aalColors.length - 1] || aalColors[aalColors.length - 2];
       };
 
-      const isProportional = infraLayers.modelHazard && activeMetric;
+      const isProportional = selectedRpId && infraLayers.modelHazard && (activeMetric || (infraLayers.directLoss && (selectedGroup === 'banjir' || selectedGroup === 'kekeringan') && floodView === 'sawah'));
 
       const defaultStyle = (feature) => {
         const isEarthquake = selectedGroup === 'earthquake' && infraLayers.directLoss;
         let val = 0;
-        if (activeMetric) {
-          if (isEarthquake) {
+        if (selectedRpId && (activeMetric || (infraLayers.directLoss && (selectedGroup === 'banjir' || selectedGroup === 'kekeringan') && floodView === 'sawah'))) {
+          if (infraLayers.directLoss && (selectedGroup === 'banjir' || selectedGroup === 'kekeringan') && floodView === 'sawah') {
+            // Sawah Direct Loss (Flood or Drought) - PRIORITY 1
+            const data = selectedGroup === 'banjir' ? floodSawahData : droughtSawahData;
+            if (data) {
+              const isCC = selectedRpId && (selectedRpId.includes('comp') || selectedRpId.includes('mme'));
+              const ccKey = selectedGroup === 'banjir' ? (isCC ? 'rc' : 'r') : (isCC ? 'mme' : 'gpm');
+              const rpMatch = selectedRpId ? selectedRpId.match(/(\d+)/) : null;
+              const rpKey = rpMatch ? rpMatch[1] : (data.return_periods?.[0]?.toString() || '2');
+              const lossYear = selectedGroup === 'banjir' ? floodSawahYear : droughtLossYear;
+              const cityKey = (feature.properties.nama_kota || feature.properties.id_kota || '').toUpperCase();
+              const rows = data[ccKey]?.[rpKey] || [];
+              const row = rows.find(r => r.kota.toUpperCase() === cityKey);
+              val = row ? row[lossYear] || 0 : 0;
+            }
+          } else if (isEarthquake) {
             let dlExp = feature.properties.dl_exposure || {};
             if (typeof dlExp === 'string') { try { dlExp = JSON.parse(dlExp); } catch { dlExp = {}; } }
             const activeLayer = Object.keys(infraLayers).find(l => infraLayers[l] && !['modelHazard', 'directLoss', 'aal'].includes(l)) || 'total';
@@ -1004,7 +1034,7 @@ export default function CogHazardMap() {
             const categoryKey = layerToCat[activeLayer] || activeLayer;
             const catData = dlExp[categoryKey] || {};
             val = (catData[activeMetric] || 0) * 100;
-          } else {
+          } else if (activeMetric) {
             val = feature.properties[activeMetric] || 0;
           }
         }
@@ -1020,14 +1050,32 @@ export default function CogHazardMap() {
             dashArray: '4'
           };
         }
-        return {
-          color: activeMetric ? '#ffffff' : '#f97316',
-          weight: activeMetric ? 1 : 1.5,
-          opacity: activeMetric ? opacityAAL : 0.8,
-          fillOpacity: activeMetric ? (opacityAAL * 0.8) : 0,
-          fillColor: activeMetric ? getFillColor(val) : 'transparent',
-          dashArray: activeMetric ? '' : '4'
+        const showHazard = selectedRpId && activeMetric;
+        const isSawahDL = selectedRpId && infraLayers.directLoss && (selectedGroup === 'banjir' || selectedGroup === 'kekeringan') && floodView === 'sawah';
+
+        const hasAnyDisplay = showHazard || isSawahDL;
+
+        let customStyle = {
+          color: hasAnyDisplay ? '#ffffff' : '#64748b',
+          weight: hasAnyDisplay ? 1 : 1.5,
+          opacity: hasAnyDisplay ? opacityAAL : 0.8,
+          fillOpacity: hasAnyDisplay ? (opacityAAL * 0.8) : 0,
+          fillColor: hasAnyDisplay ? getFillColor(val) : 'transparent',
+          dashArray: hasAnyDisplay ? '' : '4'
         };
+
+        if (infraLayers.modelHazard && (showHazard || isSawahDL)) {
+          customStyle = {
+            color: '#64748b',
+            weight: 1.5,
+            opacity: opacityAAL > 0 ? 0.8 : 0,
+            fillOpacity: 0,
+            fillColor: 'transparent',
+            dashArray: '4'
+          };
+        }
+
+        return customStyle;
       };
 
       const highlightStyle = (feature) => {
@@ -1046,9 +1094,23 @@ export default function CogHazardMap() {
       };
 
       let maxMetricValue = 0;
-      if (isProportional && activeMetric) {
+      if (isProportional) {
         const isEarthquake = selectedGroup === 'earthquake' && infraLayers.directLoss;
         maxMetricValue = Math.max(...activeBoundaryData.features.map(f => {
+          if (infraLayers.directLoss && (selectedGroup === 'banjir' || selectedGroup === 'kekeringan') && floodView === 'sawah') {
+              const data = selectedGroup === 'banjir' ? floodSawahData : droughtSawahData;
+              if (data) {
+                const isCC = selectedRpId && (selectedRpId.includes('comp') || selectedRpId.includes('mme'));
+                const ccKey = selectedGroup === 'banjir' ? (isCC ? 'rc' : 'r') : (isCC ? 'mme' : 'gpm');
+                const rpMatch = selectedRpId ? selectedRpId.match(/(\d+)/) : null;
+                const rpKey = rpMatch ? rpMatch[1] : (data.return_periods?.[0]?.toString() || '2');
+                const lossYear = selectedGroup === 'banjir' ? floodSawahYear : droughtLossYear;
+                const allRows = data[ccKey]?.[rpKey] || [];
+                const losses = allRows.map(r => r[lossYear] || 0);
+                return Math.max(...losses, 0);
+              }
+              return 0;
+          }
           if (isEarthquake) {
             let dlExp = f.properties.dl_exposure || {};
             if (typeof dlExp === 'string') { try { dlExp = JSON.parse(dlExp); } catch { dlExp = {}; } }
@@ -1060,6 +1122,9 @@ export default function CogHazardMap() {
           }
           return f.properties[activeMetric] || 0;
         }).filter(v => typeof v === 'number' && !isNaN(v)));
+        if (proportionalLayer.current) {
+          mapRef.current.removeLayer(proportionalLayer.current);
+        }
         proportionalLayer.current = L.layerGroup().addTo(mapRef.current);
       }
 
@@ -1070,8 +1135,21 @@ export default function CogHazardMap() {
           if (feature.properties && feature.properties.id_kota) {
             const isEarthquake = selectedGroup === 'earthquake' && infraLayers.directLoss;
             let val = null;
-            if (activeMetric) {
-              if (isEarthquake) {
+            if (selectedRpId && (activeMetric || (infraLayers.directLoss && (selectedGroup === 'banjir' || selectedGroup === 'kekeringan') && floodView === 'sawah'))) {
+              if (infraLayers.directLoss && (selectedGroup === 'banjir' || selectedGroup === 'kekeringan') && floodView === 'sawah') {
+                const data = selectedGroup === 'banjir' ? floodSawahData : droughtSawahData;
+                if (data) {
+                  const isCC = selectedRpId && (selectedRpId.includes('comp') || selectedRpId.includes('mme'));
+                  const ccKey = selectedGroup === 'banjir' ? (isCC ? 'rc' : 'r') : (isCC ? 'mme' : 'gpm');
+                  const rpMatch = selectedRpId ? selectedRpId.match(/(\d+)/) : null;
+                  const rpKey = rpMatch ? rpMatch[1] : (data.return_periods?.[0]?.toString() || '2');
+                  const lossYear = selectedGroup === 'banjir' ? floodSawahYear : droughtLossYear;
+                  const cityKey = (feature.properties.nama_kota || feature.properties.id_kota || '').toUpperCase();
+                  const rows = data[ccKey]?.[rpKey] || [];
+                  const row = rows.find(r => r.kota.toUpperCase() === cityKey);
+                  val = row ? row[lossYear] || 0 : 0;
+                }
+              } else if (isEarthquake) {
                 let dlExp = feature.properties.dl_exposure || {};
                 if (typeof dlExp === 'string') { try { dlExp = JSON.parse(dlExp); } catch { dlExp = {}; } }
                 const activeLayer = Object.keys(infraLayers).find(l => infraLayers[l] && !['modelHazard', 'directLoss', 'aal'].includes(l)) || 'total';
@@ -1079,15 +1157,19 @@ export default function CogHazardMap() {
                 const categoryKey = layerToCat[activeLayer] || activeLayer;
                 const catData = dlExp[categoryKey] || {};
                 val = (catData[activeMetric] || 0) * 100;
-              } else {
+              } else if (activeMetric) {
                 val = feature.properties[activeMetric] || 0;
               }
             }
 
             let tooltipLabel = "AAL";
-            if (infraLayers.directLoss) tooltipLabel = isEarthquake ? "Loss Ratio" : "Direct Loss";
+            if (infraLayers.directLoss) {
+                tooltipLabel = isEarthquake ? "Loss Ratio" : "Direct Loss";
+                if (floodView === 'sawah') tooltipLabel = "Direct Loss Sawah";
+            }
 
-            const tooltipContent = activeMetric && val > 0
+            const hasVal = val !== null && val > 0;
+            const tooltipContent = hasVal
               ? `<strong>${feature.properties.id_kota}</strong><br/>${tooltipLabel}: ${fmtPopup(val, isEarthquake)}`
               : `<strong>${feature.properties.id_kota}</strong>`;
 
@@ -1097,7 +1179,7 @@ export default function CogHazardMap() {
             });
 
             // Add proportional marker if active Metric and value > 0
-            if (isProportional && activeMetric && val > 0 && maxMetricValue > 0) {
+            if (isProportional && (activeMetric || floodView === 'sawah') && val > 0 && maxMetricValue > 0) {
               const maxRadius = 30; // Max radius in pixels
               const minRadius = 5;
               let center = layer.getBounds().getCenter()
@@ -1171,125 +1253,11 @@ export default function CogHazardMap() {
         }
       }).addTo(mapRef.current);
     }
-  }, [infraLayers.boundaries, infraLayers.aal, infraLayers.directLoss, infraLayers.modelHazard, selectedGroup, selectedRpId, boundaryDataAAL, boundaryDataDL, opacityAAL, activeAalExposure])
+  }, [infraLayers.boundaries, infraLayers.aal, infraLayers.directLoss, infraLayers.modelHazard, selectedGroup, selectedRpId, boundaryDataAAL, boundaryDataDL, opacityAAL, activeAalExposure, floodView, floodSawahData, droughtSawahData, floodSawahYear, droughtLossYear])
 
-  // ── Drought Direct Loss Boundary Coloring ────────────────────────────────────
-  // When kekeringan + directLoss, color boundaries using droughtSawahData
-  useEffect(() => {
-    if (!mapRef.current || !boundaryLayer.current) return
-    if (!infraLayers.directLoss || selectedGroup !== 'kekeringan' || !droughtSawahData) return
 
-    // Determine RP from selectedRpId (e.g. "drought_gpm_25" → "25")
-    const rpPart = selectedRpId ? selectedRpId.split('_').pop() : null
-    const isCC = selectedRpId && selectedRpId.includes('mme')
-    const ccKey = isCC ? 'mme' : 'gpm'
-    const rpKey = rpPart && rpPart !== 'default' ? rpPart : (droughtSawahData.return_periods?.[0]?.toString() || '25')
 
-    // Build city→loss map from droughtSawahData using selected year
-    const rowsForRp = (droughtSawahData[ccKey]?.[rpKey] || [])
-    const cityLossMap = {}
-    rowsForRp.forEach(row => {
-      cityLossMap[row.kota.toUpperCase()] = row[droughtLossYear] || 0
-    })
 
-    // Compute jenks breaks
-    const vals = Object.values(cityLossMap).filter(v => v > 0)
-    const aalColors = ['#1a9850', '#d9ef8b', '#fee08b', '#fc8d59', '#d73027', '#7f0000']
-    let grades = []
-    if (vals.length > 0) {
-      grades = jenks(vals, Math.min(6, vals.length)).sort((a, b) => a - b)
-    }
-
-    const getFill = (val) => {
-      if (grades.length === 0 || val === 0) return aalColors[0]
-      for (let i = 0; i < grades.length - 1; i++) {
-        if (val >= grades[i] && val < grades[i + 1]) return aalColors[i]
-      }
-      return aalColors[aalColors.length - 1]
-    }
-
-    const fmtRupiah = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
-    const yearLabel = droughtLossYear.replace('loss_', '')
-
-    boundaryLayer.current.eachLayer(layer => {
-      const feat = layer.feature
-      if (!feat?.properties?.id_kota) return
-      const cityKey = (feat.properties.nama_kota || feat.properties.id_kota || '').toUpperCase()
-      const val = cityLossMap[cityKey] || 0
-      layer.setStyle({
-        fillColor: getFill(val),
-        fillOpacity: opacityAAL * 0.8,
-        color: '#ffffff',
-        weight: 1,
-        opacity: opacityAAL
-      })
-      const tooltipHtml = val > 0
-        ? `<strong>${feat.properties.id_kota}</strong><br/>Direct Loss Sawah ${yearLabel} (RP ${rpKey}TH): ${fmtRupiah(val)}`
-        : `<strong>${feat.properties.id_kota}</strong>`
-      layer.unbindTooltip()
-      layer.bindTooltip(tooltipHtml, { sticky: true, className: 'boundary-tooltip' })
-    })
-  }, [infraLayers.directLoss, selectedGroup, selectedRpId, droughtSawahData, droughtLossYear, opacityAAL, boundaryLayer.current])
-
-  // ── Flood Sawah Direct Loss Boundary Coloring ─────────────────────────────────
-  // When banjir + directLoss + floodView === 'sawah', recolor boundaries using floodSawahData
-  useEffect(() => {
-    if (!mapRef.current || !boundaryLayer.current) return
-    if (!infraLayers.directLoss || selectedGroup !== 'banjir' || floodView !== 'sawah' || !floodSawahData) return
-
-    // Parse RP and CC from selectedRpId:
-    //  e.g. "flood_25" → rp=25, cc=r  OR  "flood_comp_25" → rp=25, cc=rc
-    const isCC = selectedRpId && selectedRpId.includes('comp')
-    const ccKey = isCC ? 'rc' : 'r'
-    const rpMatch = selectedRpId ? selectedRpId.match(/(\d+)/) : null
-    const rpKey = rpMatch ? rpMatch[1] : (floodSawahData.return_periods?.[0]?.toString() || '2')
-
-    // Build city → loss map
-    const rowsForRp = (floodSawahData[ccKey]?.[rpKey] || [])
-    const cityLossMap = {}
-    rowsForRp.forEach(row => {
-      cityLossMap[row.kota.toUpperCase()] = row[floodSawahYear] || 0
-    })
-
-    // Jenks colour breaks
-    const vals = Object.values(cityLossMap).filter(v => v > 0)
-    const sawahColors = ['#1a9850', '#d9ef8b', '#fee08b', '#fc8d59', '#d73027', '#7f0000']
-    let grades = []
-    if (vals.length > 0) {
-      grades = jenks(vals, Math.min(6, vals.length)).sort((a, b) => a - b)
-    }
-
-    const getFill = (val) => {
-      if (grades.length === 0 || val === 0) return sawahColors[0]
-      for (let i = 0; i < grades.length - 1; i++) {
-        if (val >= grades[i] && val < grades[i + 1]) return sawahColors[i]
-      }
-      return sawahColors[sawahColors.length - 1]
-    }
-
-    const fmtRupiah = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
-    const yearLabel = floodSawahYear.replace('loss_', '')
-
-    boundaryLayer.current.eachLayer(layer => {
-      const feat = layer.feature
-      if (!feat?.properties?.id_kota) return
-      const cityKey = (feat.properties.nama_kota || feat.properties.id_kota || '').toUpperCase()
-      const val = cityLossMap[cityKey] || 0
-      layer.setStyle({
-        fillColor: getFill(val),
-        fillOpacity: opacityAAL * 0.8,
-        color: '#ffffff',
-        weight: 1,
-        opacity: opacityAAL
-      })
-      const ccLabel = isCC ? 'CC' : 'Non-CC'
-      const tooltipHtml = val > 0
-        ? `<strong>${feat.properties.id_kota}</strong><br/>Sawah ${yearLabel} (RP${rpKey}TH ${ccLabel}): ${fmtRupiah(val)}`
-        : `<strong>${feat.properties.id_kota}</strong>`
-      layer.unbindTooltip()
-      layer.bindTooltip(tooltipHtml, { sticky: true, className: 'boundary-tooltip' })
-    })
-  }, [infraLayers.directLoss, selectedGroup, selectedRpId, floodSawahData, floodSawahYear, floodView, opacityAAL, boundaryLayer.current])
 
   // ── Grouped Derived Data ────────────────────────────────────────────────────────
   const hazardGroupFiles = useMemo(() => {

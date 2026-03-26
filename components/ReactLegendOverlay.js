@@ -686,7 +686,7 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
       );
     };
 
-    const renderGroupedBar = (data, height = 160) => (
+    const renderGroupedBar = (data, height = 130) => (
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={data} margin={{ top: 4, right: 6, bottom: 6, left: -4 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -734,7 +734,7 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
                   </div>
                   <div className="bg-white border border-slate-200 rounded-lg p-1.5 shadow-sm cursor-pointer hover:border-blue-300 transition-colors"
                     onClick={() => setZoomedChart({ label: `Sawah ${label} — ${selectedKota}`, data })}>
-                    {renderGroupedBar(data, 160)}
+                    {renderGroupedBar(data, 130)}
                   </div>
                 </div>
               );
@@ -806,7 +806,7 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
     );
   };
 
-  const renderMultiRpChart = (data, height = 160) => (
+  const renderMultiRpChart = (data, height = 130) => (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} margin={{ top: 2, right: 4, bottom: 32, left: -4 }}>
         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eff6ff" />
@@ -1831,6 +1831,9 @@ const ReactLegendOverlay = ({
   floodSawahYear,
   setFloodSawahYear,
   floodSawahData,
+  droughtLossYear,
+  setDroughtLossYear,
+  droughtSawahData,
 }) => {
   const [inputMode, setInputMode] = useState('pick'); // 'pick' or 'manual'
   const [manualIntensity, setManualIntensity] = useState('');
@@ -1961,9 +1964,14 @@ const ReactLegendOverlay = ({
           title: 'Gempa', xTitle: 'Intensitas'
         },
         'kekeringan': {
-          taxos: ['sawah'],
-          colors: { 'sawah': '#10b981' },
-          labels: { 'sawah': 'Rice Field' },
+          groups: [
+            {
+              title: 'Sawah Vulnerability',
+              taxos: ['sawah'],
+              colors: { 'sawah': '#10b981' },
+              labels: { 'sawah': 'Sawah' }
+            }
+          ],
           title: 'Kekeringan', xTitle: 'GPM Index'
         }
       }[curveKey];
@@ -1974,12 +1982,21 @@ const ReactLegendOverlay = ({
         hazardCurves = curveData[curveKey];
       }
 
-      const groups = config?.groups || (config ? [{
+      let groups = config?.groups || (config ? [{
         title: 'Vulnerability Curve',
         taxos: config.taxos,
         colors: config.colors,
         labels: config.labels
       }] : []);
+
+      // NEW: Filter groups by floodView toggle for Banjir
+      if (curveKey === 'banjir') {
+        if (floodView === 'building') {
+            groups = groups.filter(g => g.title.toLowerCase().includes('building'));
+        } else if (floodView === 'sawah') {
+            groups = groups.filter(g => g.title.toLowerCase().includes('sawah'));
+        }
+      }
 
       // Calculate global maxX for all groups
       let allPtsX = [];
@@ -1992,9 +2009,10 @@ const ReactLegendOverlay = ({
 
       if (allPtsX.length > 0) {
         maxX = Math.max(...allPtsX, 1);
-        chartW = curveKey === 'banjir' ? 50 : (availableGroups.length > 1 ? 75 : 110);
-        chartH = curveKey === 'banjir' ? 36 : 50;
-        padding = { top: 10, right: 8, bottom: 15, left: curveKey === 'banjir' ? 14 : 20 };
+        const isSmallHazard = curveKey === 'banjir' || curveKey === 'kekeringan';
+        chartW = isSmallHazard ? 50 : (availableGroups.length > 1 ? 75 : 110);
+        chartH = isSmallHazard ? 36 : 50;
+        padding = { top: 10, right: 8, bottom: 15, left: isSmallHazard ? 14 : 20 };
         svgW = chartW + padding.left + padding.right;
         svgH = chartH + padding.top + padding.bottom;
         getX = (val) => (val / maxX) * chartW + padding.left;
@@ -2013,7 +2031,7 @@ const ReactLegendOverlay = ({
               groupPolylines.push(
                 <polyline key={t} points={points} fill="none" stroke={group.colors[t]} strokeWidth="1.5" strokeLinejoin="round" />
               );
-              if (!seenLabels.has(label) && !isDrought) {
+              if (!seenLabels.has(label)) {
                 groupLegendItems.push(
                   <div key={label} className="flex items-center gap-1.5 text-[8px] text-slate-500 font-medium whitespace-nowrap">
                     <div style={{ backgroundColor: group.colors[t] }} className="w-2.5 h-[2px] rounded-full"></div>
@@ -2063,7 +2081,7 @@ const ReactLegendOverlay = ({
           </div>
         ))}
 
-        {!isDrought && !isEarthquake && (
+        {!isEarthquake && (
           <>
             {/* Divider SVG -> Controls */}
             <div className="w-[1px] h-12 bg-slate-200 self-center mx-1 rounded-full"></div>
@@ -2155,11 +2173,11 @@ const ReactLegendOverlay = ({
     <>
       {(hasHazard || hasExposure) && (
         <div className="absolute bottom-6 left-[260px] right-0 lg:right-[320px] pointer-events-none z-[2002] flex justify-center">
-          <div className={`bg-white/95 backdrop-blur-sm px-4 lg:px-5 py-3 rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 pointer-events-auto transition-all duration-300 max-w-(full) min-w-max flex flex-row items-center overflow-x-auto custom-scrollbar ${hazardKey && hazardKey.includes('flood') ? 'gap-3 lg:gap-4' : 'gap-4 lg:gap-6'}`}>
+          <div className={`bg-white/95 backdrop-blur-sm px-4 lg:px-5 py-3 rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 pointer-events-auto transition-all duration-300 max-w-(full) min-w-max flex flex-row items-center overflow-x-auto custom-scrollbar ${(hazardKey && (hazardKey.includes('flood') || hazardKey.includes('drought'))) ? 'gap-3 lg:gap-4' : 'gap-4 lg:gap-6'}`}>
             {/* 1. Hazard Base Info */}
             {hasHazard && (
-              <div className={`flex flex-col justify-center ${hazardKey && hazardKey.includes('flood') ? 'min-w-[90px]' : 'min-w-[140px]'}`}>
-                <div className={`font-extrabold mb-1.5 text-slate-700 tracking-widest uppercase truncate ${hazardKey && hazardKey.includes('flood') ? 'text-[7px]' : 'text-[8px]'}`}>
+              <div className={`flex flex-col justify-center ${(hazardKey && (hazardKey.includes('flood') || hazardKey.includes('drought'))) ? 'min-w-[90px]' : 'min-w-[140px]'}`}>
+                <div className={`font-extrabold mb-1.5 text-slate-700 tracking-widest uppercase truncate ${(hazardKey && (hazardKey.includes('flood') || hazardKey.includes('drought'))) ? 'text-[7px]' : 'text-[8px]'}`}>
                   Hazard: {hazardInfo.label} ({hazardInfo.unit || 'Index'})
                 </div>
                 <div
@@ -2168,7 +2186,7 @@ const ReactLegendOverlay = ({
                     background: `linear-gradient(to right, ${hazardInfo.colorStops.map(s => s[1]).join(',')})`
                   }}
                 ></div>
-                <div className={`flex justify-between text-slate-900 font-bold ${hazardKey && hazardKey.includes('flood') ? 'text-[8px]' : 'text-[9px]'}`}>
+                <div className={`flex justify-between text-slate-900 font-bold ${(hazardKey && (hazardKey.includes('flood') || hazardKey.includes('drought'))) ? 'text-[8px]' : 'text-[9px]'}`}>
                   <span>{format(rasterStats.min)} {hazardInfo.unit}</span>
                   <span>{format(rasterStats.max)} {hazardInfo.unit}</span>
                 </div>
@@ -2312,28 +2330,51 @@ const ReactLegendOverlay = ({
                 let vals = [];
 
                 if (hasDirectLoss) {
-                  if (selectedGroup === 'banjir') {
-                    let hz = (selectedRpId && selectedRpId.includes('comp')) ? 'rc' : 'r';
-                    if (rp) metric = `dl_sum_${hz}_${rp}`;
-                  }
-                  else if (selectedGroup === 'earthquake') {
-                    if (rp) metric = `pga_${rp}`;
-                  }
-                  else if (selectedGroup === 'tsunami') {
-                    metric = `dl_sum_inundansi`;
-                  }
+                  const isFloodSawah = selectedGroup === 'banjir' && floodView === 'sawah';
 
-                  if (metric) {
-                    const isEq = selectedGroup === 'earthquake';
-                    vals = activeBoundaryData.features.map(f => {
-                      if (isEq) {
-                        let dlExp = f.properties.dl_exposure || {};
-                        if (typeof dlExp === 'string') { try { dlExp = JSON.parse(dlExp); } catch { dlExp = {}; } }
-                        const catData = dlExp.total || {};
-                        return (catData[metric] || 0) * 100;
-                      }
-                      return f.properties[metric] || 0;
-                    }).filter(v => typeof v === 'number' && !isNaN(v));
+                  if (isFloodSawah && floodSawahData) {
+                    const isCC = selectedRpId && selectedRpId.includes('comp');
+                    const ccKey = isCC ? 'rc' : 'r';
+                    const rpMatch = selectedRpId ? selectedRpId.match(/(\d+)/) : null;
+                    const rpKey = rpMatch ? rpMatch[1] : null;
+                    if (rpKey && floodSawahData[ccKey]?.[rpKey]) {
+                      const rows = floodSawahData[ccKey][rpKey];
+                      vals = rows.map(r => r[floodSawahYear] || 0).filter(v => typeof v === 'number' && !isNaN(v));
+                    }
+                  } else if (selectedGroup === 'kekeringan' && floodView === 'sawah' && droughtSawahData) {
+                    // Sawah Drought - NEW
+                    const isCC = selectedRpId && selectedRpId.includes('mme');
+                    const ccKey = isCC ? 'mme' : 'gpm';
+                    const rpPart = selectedRpId ? selectedRpId.split('_').pop() : null;
+                    const rpKey = rpPart && rpPart !== 'default' ? rpPart : null;
+                    if (rpKey && droughtSawahData[ccKey]?.[rpKey]) {
+                        const rows = droughtSawahData[ccKey][rpKey];
+                        vals = rows.map(r => r[droughtLossYear] || 0).filter(v => typeof v === 'number' && !isNaN(v));
+                    }
+                  } else {
+                    if (selectedGroup === 'banjir') {
+                      let hz = (selectedRpId && selectedRpId.includes('comp')) ? 'rc' : 'r';
+                      if (rp) metric = `dl_sum_${hz}_${rp}`;
+                    }
+                    else if (selectedGroup === 'earthquake') {
+                      if (rp) metric = `pga_${rp}`;
+                    }
+                    else if (selectedGroup === 'tsunami') {
+                      metric = `dl_sum_inundansi`;
+                    }
+
+                    if (metric) {
+                      const isEq = selectedGroup === 'earthquake';
+                      vals = activeBoundaryData.features.map(f => {
+                        if (isEq) {
+                          let dlExp = f.properties.dl_exposure || {};
+                          if (typeof dlExp === 'string') { try { dlExp = JSON.parse(dlExp); } catch { dlExp = {}; } }
+                          const catData = dlExp.total || {};
+                          return (catData[metric] || 0) * 100;
+                        }
+                        return f.properties[metric] || 0;
+                      }).filter(v => typeof v === 'number' && !isNaN(v));
+                    }
                   }
                 } else if (hasAAL) {
                   let hazPrefix = '';
@@ -2346,9 +2387,11 @@ const ReactLegendOverlay = ({
                 }
 
                 if (vals.length === 0) return (
-                  <div className="flex items-center gap-1.5">
-                    <span className="inline-block w-4 h-2 rounded-[2px]" style={{ background: '#1a9850' }} />
-                    <span className="text-[8px] font-semibold tracking-wider text-slate-500">Rp 0 - Rp 0</span>
+                  <div className="flex items-center gap-1.5 opacity-60">
+                    <span className="inline-block w-4 h-2 rounded-[2px] bg-slate-200" />
+                    <span className="text-[8px] font-semibold tracking-wider text-slate-400 italic">
+                      {!selectedRpId ? 'Pilih Return Period...' : 'Rp 0 - Rp 0'}
+                    </span>
                   </div>
                 );
 
