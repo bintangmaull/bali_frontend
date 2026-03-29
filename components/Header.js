@@ -38,10 +38,18 @@ export default function Header() {
       <div className="max-w-screen-2xl mx-auto flex items-center justify-between py-1.5 px-4">
         <div className="flex items-center space-x-3 md:pl-7">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold font-[space grotesk] text-[#C6FF00]">CardinAAL</h1>
-            <p className="text-gray-400 dark:text-gray-400 text-xs font-[space grotesk] hidden lg:block border-l border-gray-700 pl-2">
-              Calculation for Direct and Average Annual Loss
-            </p>
+            <div className="flex flex-col lg:flex-row lg:items-baseline py-1 lg:gap-3 leading-none">
+              <h1 className="text-lg md:text-xl font-bold tracking-tight text-white">
+                Budget <span className="text-[#C6FF00] font-black">Stress Testing</span>
+              </h1>
+              <div className="flex items-center gap-1.5 text-[10px] md:text-xs font-semibold text-slate-400 mt-1 lg:mt-0 lg:ml-2">
+                <span className="text-slate-500">(</span>
+                <span className="text-[#ff5252]">Catastrophic Model</span>
+                <span className="text-slate-600 font-normal lowercase">dan</span>
+                <span className="text-slate-300">Macro Fiscal Model</span>
+                <span className="text-slate-500">)</span>
+              </div>
+            </div>
           </div>
         </div>
         <nav className="hidden md:flex items-center space-x-4">

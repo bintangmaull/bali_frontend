@@ -205,7 +205,7 @@ const CategoryIcons = {
   ),
   airport: (
     <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-[#8c52ff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" title="Airport">
-      <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21.5 4c0 0-2 .5-3.5 2L14.5 9.5 6 7l-2 2 5.3 4.2L6 16.5l-2.5-1-1.5 1.5 3.5 2 2 3.5 1.5-1-2.5 3.3-3.3 4.2 5.3 2-2L11 16l8.2-1.8c1.5-1.5 2-3.5 2-3.5z"></path>
+      <path d="M17.8 19.2 16 11 l3.5 -3.5 C21 6 21.5 4 21.5 4 c0 0 -2 .5 -3.5 2 L14.5 9.5 6 7 l-2 2 5.3 4.2 L6 16.5 l-2.5 -1 -1.5 1.5 3.5 2 2 3.5 1.5 -1 -2.5 3.3 -3.3 4.2 5.3 2 -2 L11 16 l8.2 -1.8 c1.5 -1.5 2 -3.5 2 -3.5 z"></path>
     </svg>
   ),
   default: (
@@ -289,9 +289,9 @@ export default function CrudBuildings({
 
   const apiCache = useRef({})
 
-  function refreshTable() {
+  function refreshTable(force = false) {
     const cacheKey = `${activeKotaFilter || ''}_${search || ''}`;
-    if (apiCache.current[cacheKey]) {
+    if (!force && apiCache.current[cacheKey]) {
       const res = apiCache.current[cacheKey];
       setRows(res);
       onFilteredBuildings(res);
@@ -303,18 +303,20 @@ export default function CrudBuildings({
         apiCache.current[cacheKey] = res;
         setRows(res)
         onFilteredBuildings(res)
+        return res;
       })
     }
     return getBuildings({ limit: 50 }).then(res => {
         apiCache.current[cacheKey] = res;
         setRows(res)
         onFilteredBuildings(res)
+        return res;
     })
   }
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      refreshTable()
+      refreshTable().catch(err => console.warn('Silently catching table refresh error:', err))
     }, 400)
     return () => clearTimeout(timer)
   }, [activeKotaFilter, search])
@@ -443,7 +445,13 @@ export default function CrudBuildings({
       } else {
         await refreshTable()
       }
-      if (onDataChanged) onDataChanged()
+      if (onDataChanged) {
+        if (affectedCities.length > 0) {
+          onDataChanged(affectedCities)
+        } else {
+          onDataChanged()
+        }
+      }
 
       setModalMode('')
       setPreviewData(null)
@@ -471,8 +479,8 @@ export default function CrudBuildings({
     try {
       await updateBuilding(editing.id_bangunan, data)
       await recalc(editing.id_bangunan)
-      await refreshTable()
-      if (onDataChanged) onDataChanged()
+      await refreshTable(true)
+      if (onDataChanged) onDataChanged(editing.kota)
       setModalMode('')
       setEditing(null)
     } catch (e) { console.error(e) }
@@ -489,8 +497,8 @@ export default function CrudBuildings({
       await recalc(id_bangunan)
       if (setProvFilter) setProvFilter(data.provinsi)
       if (setKotaFilter) setKotaFilter(data.kota)
-      await refreshTable()
-      if (onDataChanged) onDataChanged()
+      await refreshTable(true)
+      if (onDataChanged) onDataChanged(data.kota)
       setModalMode('')
     } catch (e) {
       console.error(e)
@@ -505,8 +513,8 @@ export default function CrudBuildings({
     setIsDeleting(true)
     try {
       await deleteBuilding(deleteTarget.id_bangunan, deleteTarget.kota)
-      await refreshTable()
-      if (onDataChanged) onDataChanged()
+      await refreshTable(true)
+      if (onDataChanged) onDataChanged(deleteTarget.kota)
       setDeleteTarget(null)
     } catch (e) {
       console.error(e)

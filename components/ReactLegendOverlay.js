@@ -1,8 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Info, Maximize2, Minimize2, MapPin, X, BarChart2, Check, ExternalLink, Filter, Shield, Layers, Calendar, ChevronDown, ChevronLeft, ChevronRight, Table2 as TableIcon } from 'lucide-react';
+import { TrendingUp, TrendingDown, Info, Maximize2, Minimize2, MapPin, X, BarChart2, Check, ExternalLink, Filter, Shield, Layers, Calendar, ChevronDown, ChevronLeft, ChevronRight, Table2 as TableIcon, Layout } from 'lucide-react';
+import { MANUAL_GEMPA_DATA } from '../src/lib/manual_gempa_data';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import { DROUGHT_CURVE } from '../src/lib/drought_curve';
+
+const formatUSD = (v) => {
+  if (!v && v !== 0) return '-';
+  if (typeof v !== 'number') return v;
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v * 0.00006);
+};
 
 const colorsAAL = ['#1a9850', '#d9ef8b', '#fee08b', '#fc8d59', '#d73027', '#7f0000'];
 
@@ -63,6 +70,46 @@ const HAZARD_KEYS = [
   { key: 'r', label: 'Banjir\n(R)', color: '#3b82f6' },
   { key: 'rc', label: 'Banjir\n(RC)', color: '#0ea5e9' },
 ];
+
+const PML_RP_KEYS = [
+  { key: '100', label: '100 TH', color: '#6366f1' },
+  { key: '200', label: '200 TH', color: '#818cf8' },
+  { key: '250', label: '250 TH', color: '#a5b4fc' },
+  { key: '500', label: '500 TH', color: '#c7d2fe' },
+  { key: '1000', label: '1000 TH', color: '#e0e7ff' },
+];
+
+const formatYAxisShort = (val) => {
+  if (val >= 1e12) return `Rp${(val / 1e12).toFixed(1)}T`;
+  if (val >= 1e9) return `Rp${(val / 1e9).toFixed(0)}M`;
+  if (val >= 1e6) return `Rp${(val / 1e6).toFixed(0)}Jt`;
+  return val.toLocaleString('id-ID');
+};
+
+const ComparisonTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white/95 backdrop-blur border border-slate-200 p-2 rounded-lg shadow-lg">
+        <p className="font-bold text-slate-800 text-[9px] mb-1.5 border-b border-slate-100 pb-1">{label}</p>
+        <div className="flex flex-col gap-1">
+          {payload.map((entry, index) => (
+            <div key={index} className="flex items-center justify-between gap-4 text-[8px]">
+              <div className="flex items-center gap-1.5 text-slate-600">
+                <span className="w-2 h-2 rounded-[2px]" style={{ backgroundColor: entry.color }}></span>
+                <span>{entry.name.replace('\n', ' ')}</span>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="font-bold text-slate-800">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(entry.value)}</span>
+                <span className="text-[7px] text-green-600 font-bold">({formatUSD(entry.value)})</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
 const EXPOSURE_GROUPS = [
   { exp: 'total', label: 'All Buildings' },
   { exp: 'fs', label: 'Healthcare Facilities', layerKey: 'healthcare' },
@@ -70,45 +117,13 @@ const EXPOSURE_GROUPS = [
   { exp: 'electricity', label: 'Electricity', layerKey: 'electricity' },
   { exp: 'hotel', label: 'Hotel', layerKey: 'hotel' },
   { exp: 'airport', label: 'Airport', layerKey: 'airport' },
-  { exp: 'residential', label: 'Residential', layerKey: 'residential', gempaOnly: true },
+  { exp: 'residential', aalSuffix: 'res', label: 'Residential', layerKey: 'residential', gempaOnly: true },
   { exp: 'bmn', label: 'BMN', layerKey: 'bmn', gempaOnly: true },
 ];
 
-const MANUAL_GEMPA_DATA = {
-  'BADUNG': { bmn_count: 69, bmn_asset: 77848084159, res_count: 27, res_asset: 9500895584122 },
-  'BANGLI': { bmn_count: 39, bmn_asset: 44272158327, res_count: 27, res_asset: 5631366270969 },
-  'BULELENG': { bmn_count: 198, bmn_asset: 299763436275, res_count: 27, res_asset: 18088725175152 },
-  'DENPASAR CITY': { bmn_count: 719, bmn_asset: 1482104196742, res_count: 17, res_asset: 12442895473885 },
-  'GIANYAR': { bmn_count: 50, bmn_asset: 52577457686, res_count: 25, res_asset: 8255262527901 },
-  'JEMBRANA': { bmn_count: 163, bmn_asset: 421798722264, res_count: 27, res_asset: 7053825455301 },
-  'KARANGASEM': { bmn_count: 111, bmn_asset: 53617127987, res_count: 25, res_asset: 11540510101766 },
-  'KLUNGKUNG': { bmn_count: 35, bmn_asset: 16641806996, res_count: 24, res_asset: 4139119259679 },
-  'TABANAN': { bmn_count: 31, bmn_asset: 29177851441, res_count: 26, res_asset: 10739327186760 }
-};
+// Manual Gempa Data is now handled by the backend rekap-aset-kota API
 
 const getManualGempaAddition = (cityName, type) => {
-  const data = cityName ? MANUAL_GEMPA_DATA[cityName.toUpperCase()] : null;
-  if (cityName && data) {
-    if (type === 'total') return { count: data.bmn_count + data.res_count, asset: data.bmn_asset + data.res_asset };
-    if (type === 'bmn') return { count: data.bmn_count, asset: data.bmn_asset };
-    if (type === 'residential') return { count: data.res_count, asset: data.res_asset };
-  } else if (!cityName) {
-    let sumCount = 0;
-    let sumAsset = 0;
-    Object.values(MANUAL_GEMPA_DATA).forEach(d => {
-      if (type === 'total') {
-        sumCount += d.bmn_count + d.res_count;
-        sumAsset += d.bmn_asset + d.res_asset;
-      } else if (type === 'bmn') {
-        sumCount += d.bmn_count;
-        sumAsset += d.bmn_asset;
-      } else if (type === 'residential') {
-        sumCount += d.res_count;
-        sumAsset += d.res_asset;
-      }
-    });
-    return { count: sumCount, asset: sumAsset };
-  }
   return { count: 0, asset: 0 };
 };
 
@@ -131,6 +146,7 @@ function MiniBarChart({ data, maxVal, expAsset = 0 }) {
   const containerRef = React.useRef(null);
 
   const fmtFull = v => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v);
+  const formatUSD = (v) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v * 0.00006);
 
   return (
     <div className="relative inline-block" ref={containerRef} onMouseLeave={() => setHoverData(null)}>
@@ -181,6 +197,9 @@ function MiniBarChart({ data, maxVal, expAsset = 0 }) {
         >
           <div className="font-bold mb-1 border-b border-slate-700 pb-1">{hoverData.label.replace('\n', ' ')}</div>
           <div>{hoverData.isRatio ? 'Loss Ratio' : 'Direct Loss'}: <span className="font-semibold text-orange-300">{hoverData.isRatio ? (hoverData.value).toFixed(4) + '%' : fmtFull(hoverData.value)}</span></div>
+          {!hoverData.isRatio && (
+            <div>Direct Loss (USD): <span className="font-semibold text-green-300">{formatUSD(hoverData.value)}</span></div>
+          )}
           {expAsset > 0 && !hoverData.isRatio && (
             <div>Loss Ratio: <span className="font-semibold text-blue-300">{((hoverData.value / expAsset) * 100).toFixed(4)}%</span></div>
           )}
@@ -439,7 +458,10 @@ function DroughtSawahChartPanel({ selectedGroup, selectedCityFeature }) {
                       <span className="w-2.5 h-2.5 rounded-sm" style={{ background: entry.fill }} />
                       <span>Sawah {yearLabels[entry.dataKey]}</span>
                     </div>
-                    <span className="font-bold text-green-800">{formatRupiah(entry.value)}</span>
+                    <div className="flex flex-col items-end">
+                      <span className="font-bold text-green-800">{formatRupiah(entry.value)}</span>
+                      <span className="text-[10px] text-green-600 font-bold">({formatUSD(entry.value)})</span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -516,7 +538,10 @@ function DroughtSawahChartPanel({ selectedGroup, selectedCityFeature }) {
                         <span className="w-2 h-2 rounded-full" style={{ background: entry.fill }} />
                         <span>{rpLabels[entry.dataKey]}</span>
                       </div>
-                      <span className="font-bold" style={{ color: entry.fill }}>{formatRupiah(entry.value)}</span>
+                      <div className="flex flex-col items-end">
+                        <span className="font-bold" style={{ color: entry.fill }}>{formatRupiah(entry.value)}</span>
+                        <span className="text-[10px] text-green-600 font-bold">({formatUSD(entry.value)})</span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -679,7 +704,10 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
                 <span className="w-2 h-2 rounded-full" style={{ background: entry.fill || entry.color }} />
                 <span>{entry.name}</span>
               </div>
-              <span className="font-bold" style={{ color: entry.fill || entry.color }}>{formatRupiah(entry.value)}</span>
+              <div className="flex flex-col items-end">
+                <span className="font-bold" style={{ color: entry.fill || entry.color }}>{formatRupiah(entry.value)}</span>
+                <span className="text-[10px] text-green-600 font-bold">({formatUSD(entry.value)})</span>
+              </div>
             </div>
           ))}
         </div>
@@ -799,7 +827,10 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
               <span className="w-2 h-2 rounded-full" style={{ background: entry.fill }} />
               <span>{rpLabels[entry.dataKey]}</span>
             </div>
-            <span className="font-bold" style={{ color: entry.fill }}>{formatRupiah(entry.value)}</span>
+            <div className="flex flex-col items-end">
+              <span className="font-bold" style={{ color: entry.fill }}>{formatRupiah(entry.value)}</span>
+              <span className="text-[10px] text-green-600 font-bold">({formatUSD(entry.value)})</span>
+            </div>
           </div>
         ))}
       </div>
@@ -960,6 +991,8 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
   } else {
     totalCount = boundaryData.features.reduce((sum, f) => sum + (f.properties.count_total || 0), 0);
     totalAsset = boundaryData.features.reduce((sum, f) => sum + (f.properties.total_asset_total || 0), 0);
+    
+    // Manual Gempa additions are now handled centrally in the enriched boundary properties
   }
 
   // Add manual Gempa data for Total
@@ -1106,15 +1139,11 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
       } else {
         expCount = boundaryData.features.reduce((sum, f) => sum + (f.properties[`count_${group.exp}`] || 0), 0);
         expAsset = boundaryData.features.reduce((sum, f) => sum + (f.properties[`total_asset_${group.exp}`] || 0), 0);
+        
+        // Manual Gempa additions are already handled in the enriched boundary properties
       }
 
-      // Add manual Gempa data for specific exposures
-      if (selectedGroup === 'earthquake' && (group.exp === 'bmn' || group.exp === 'residential')) {
-        const cityName = selectedCityFeature ? (selectedCityFeature.properties.nama_kota || selectedCityFeature.properties.id_kota) : null;
-        const manualAdd = getManualGempaAddition(cityName, group.exp);
-        expCount += manualAdd.count;
-        expAsset += manualAdd.asset;
-      }
+      // Manual Gempa additions are now handled centrally in CogHazardMap aggregator
 
       return (
         <div key={group.exp} className="bg-slate-50 rounded-xl p-3 mb-3 border border-slate-100/50 relative">
@@ -1138,7 +1167,10 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
               </div>
               <div className="flex flex-col text-right">
                 <span className="text-slate-400 uppercase tracking-wider font-semibold">Nilai Aset</span>
-                <span className="font-bold text-slate-700">{formatRupiah(expAsset)}</span>
+                <div className="flex flex-col items-end">
+                  <span className="font-bold text-slate-700">{formatRupiah(expAsset)}</span>
+                  <span className="text-[8px] text-green-600 font-bold">({formatUSD(expAsset)})</span>
+                </div>
               </div>
             </div>
           )}
@@ -1160,7 +1192,10 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
         <div className="w-[1px] h-6 bg-slate-200"></div>
         <div className="flex flex-col text-right">
           <span className="text-[8px] font-bold text-slate-400 tracking-widest uppercase">Total Nilai Aset</span>
-          <span className="text-[12px] font-extrabold text-slate-800">{formatRupiah(totalAsset)}</span>
+          <div className="flex flex-col items-end">
+            <span className="text-[12px] font-extrabold text-slate-800">{formatRupiah(totalAsset)}</span>
+            <span className="text-[10px] text-green-600 font-bold">({formatUSD(totalAsset)})</span>
+          </div>
         </div>
       </div>
 
@@ -1211,7 +1246,10 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
                                   <span className="w-2 h-2 rounded-[2px]" style={{ backgroundColor: entry.color }}></span>
                                   <span>{entry.name}</span>
                                 </div>
-                                <span className="font-bold text-slate-800">{formatRupiah(entry.value)}</span>
+                                <div className="flex flex-col items-end">
+                                  <span className="font-bold text-slate-800">{formatRupiah(entry.value)}</span>
+                                  <span className="text-[7px] text-green-600 font-bold">({formatUSD(entry.value)})</span>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -1282,7 +1320,10 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
                                   <span className="w-2 h-2 rounded-[2px]" style={{ backgroundColor: entry.color }}></span>
                                   <span>{entry.name}</span>
                                 </div>
-                                <span className="font-bold text-slate-800">{formatRupiah(entry.value)}</span>
+                                <div className="flex flex-col items-end">
+                                  <span className="font-bold text-slate-800">{formatRupiah(entry.value)}</span>
+                                  <span className="text-[7px] text-green-600 font-bold">({formatUSD(entry.value)})</span>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -1374,8 +1415,11 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
                                     <span className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></span>
                                     <span>{entry.name}</span>
                                   </div>
-                                  <span className="font-bold text-slate-800">
-                                    {selectedGroup === 'earthquake' ? `${entry.value.toFixed(4)}%` : formatRupiah(entry.value)}
+                                  <span className="font-bold text-slate-800 text-right leading-tight">
+                                    <div className="flex flex-col items-end">
+                                      <span>{selectedGroup === 'earthquake' ? `${entry.value.toFixed(4)}%` : formatRupiah(entry.value)}</span>
+                                      {selectedGroup !== 'earthquake' && <span className="text-[8px] text-green-600 font-bold">({formatUSD(entry.value)})</span>}
+                                    </div>
                                   </span>
                                 </div>
                               ))}
@@ -1422,6 +1466,49 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
 
 function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTable, selectedGroup }) {
   const [zoomedChart, setZoomedChart] = useState(null);
+  const [pmlData, setPmlData] = useState([]);
+
+  const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+  useEffect(() => {
+    if (selectedGroup === 'earthquake') {
+      const kota = selectedCityFeature ? (selectedCityFeature.properties.nama_kota || selectedCityFeature.properties.id_kota) : '';
+      fetch(`${BACKEND_URL}/api/pml-gempa${kota ? `?kota=${kota}` : ''}`)
+        .then(r => {
+          if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
+          return r.json();
+        })
+        .then(data => setPmlData(data))
+        .catch(e => {
+          console.error('PML fetch failed:', e);
+          setPmlData([]);
+        });
+    }
+  }, [selectedGroup, selectedCityFeature, BACKEND_URL]);
+
+  const getPmlChartData = (group) => {
+    const suffix = group.aalSuffix || group.exp;
+    const isTotal = group.exp === 'total';
+    const aggregated = (pmlData || []).reduce((acc, curr) => {
+      const rp = curr.return_period;
+      if (!acc[rp]) acc[rp] = 0;
+      if (isTotal) {
+        // Sum all PML categories
+        const val = (curr.pml_airport || 0) + (curr.pml_res || 0) + (curr.pml_hotel || 0) + 
+                    (curr.pml_bmn || 0) + (curr.pml_fd || 0) + (curr.pml_fs || 0) + (curr.pml_electricity || 0);
+        acc[rp] += val;
+      } else {
+        const key = `pml_${suffix}`;
+        acc[rp] += curr[key] || 0;
+      }
+      return acc;
+    }, {});
+    return Object.keys(aggregated).sort((a, b) => Number(a) - Number(b)).map(rp => ({
+      label: `${rp} TH`,
+      color: '#6366f1',
+      value: aggregated[rp]
+    }));
+  };
 
   let totalCount = 0;
   let totalAsset = 0;
@@ -1451,14 +1538,15 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
 
   const formatRupiah = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v);
 
-  const getVal = (exp, hazKey) => {
-    const metric = `aal_${hazKey}_${exp}`;
+  const getVal = (group, hazKey) => {
+    const suffix = group.aalSuffix || group.exp;
+    const metric = `aal_${hazKey}_${suffix}`;
     if (selectedCityFeature) return selectedCityFeature.properties[metric] || 0;
     return boundaryData.features.reduce((sum, f) => sum + (f.properties[metric] || 0), 0);
   };
 
   const renderCharts = (groups) => groups.map(group => {
-    const data = HAZARD_KEYS.map(hk => ({ label: hk.label, color: hk.color, value: getVal(group.exp, hk.key) }));
+    const data = HAZARD_KEYS.map(hk => ({ label: hk.label, color: hk.color, value: getVal(group, hk.key) }));
     const groupMax = Math.max(...data.map(d => d.value), 1);
 
     let expCount = 0;
@@ -1506,13 +1594,29 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
             </div>
             <div className="flex flex-col text-right">
               <span className="text-slate-400 uppercase tracking-wider font-semibold">Nilai Aset</span>
-              <span className="font-bold text-slate-700">{formatRupiah(expAsset)}</span>
+              <div className="flex flex-col items-end">
+                <span className="font-bold text-slate-700">{formatRupiah(expAsset)}</span>
+                <span className="text-[8px] text-green-600 font-bold">({formatUSD(expAsset)})</span>
+              </div>
             </div>
           </div>
         )}
         <div className="flex justify-center flex-wrap gap-4 overflow-visible">
           <MiniBarChart data={data} maxVal={groupMax} expAsset={expAsset} />
         </div>
+
+        {selectedGroup === 'earthquake' && pmlData.length > 0 && (
+          <div className="mt-4 pt-3 border-t border-slate-200/60 text-center">
+            <div className="text-[8px] font-bold text-slate-400 tracking-widest uppercase mb-2">PML Gempa (Probabilistic Loss)</div>
+            <div className="flex justify-center">
+              <MiniBarChart 
+                data={getPmlChartData(group)}
+                maxVal={Math.max(...getPmlChartData(group).map(d => d.value), 1)}
+                expAsset={expAsset}
+              />
+            </div>
+          </div>
+        )}
       </div>
     );
   });
@@ -1531,19 +1635,46 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
 
   const exposureChartData = React.useMemo(() => {
     if (!boundaryData?.features) return [];
-
     return EXPOSURE_GROUPS.filter(g => g.exp !== 'total').map(group => {
       const item = { exposure_name: group.label };
       HAZARD_KEYS.forEach(hk => {
         let sum = 0;
         boundaryData.features.forEach(f => {
-          sum += (f.properties[`aal_${hk.key}_${group.exp}`] || 0);
+          const suffix = group.aalSuffix || group.exp;
+          sum += (f.properties[`aal_${hk.key}_${suffix}`] || 0);
         });
         item[hk.key] = sum;
       });
       return item;
     });
   }, [boundaryData]);
+
+  const pmlCityChartData = React.useMemo(() => {
+    if (selectedGroup !== 'earthquake' || !pmlData || pmlData.length === 0) return [];
+    if (selectedCityFeature) return [];
+    const byCity = pmlData.reduce((acc, curr) => {
+      const city = curr.id_kota;
+      if (!acc[city]) acc[city] = { kota: city };
+      acc[city][curr.return_period] = (curr.pml_res || 0) + (curr.pml_bmn || 0) + (curr.pml_hotel || 0) + 
+                                       (curr.pml_fd || 0) + (curr.pml_fs || 0) + (curr.pml_electricity || 0) + (curr.pml_airport || 0);
+      return acc;
+    }, {});
+    return Object.values(byCity).sort((a, b) => a.kota.localeCompare(b.kota));
+  }, [pmlData, selectedGroup, selectedCityFeature]);
+
+  const pmlExposureChartData = React.useMemo(() => {
+    if (selectedGroup !== 'earthquake' || !pmlData || pmlData.length === 0) return [];
+    return EXPOSURE_GROUPS.filter(g => g.exp !== 'total').map(group => {
+      const item = { exposure_name: group.label };
+      const suffix = group.aalSuffix || group.exp;
+      const key = `pml_${suffix}`;
+      [100, 200, 250, 500, 1000].forEach(rp => {
+        const filtered = pmlData.filter(p => p.return_period === rp);
+        item[rp.toString()] = filtered.reduce((sum, p) => sum + (p[key] || 0), 0);
+      });
+      return item;
+    });
+  }, [pmlData, selectedGroup]);
 
   if (!boundaryData?.features?.length) return null;
 
@@ -1599,7 +1730,7 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
                     iconType="circle"
                     iconSize={8}
                     wrapperStyle={{ paddingBottom: '12px' }}
-                    formatter={(value) => <span className="text-slate-600 font-medium text-xs ml-1">{value.replace('\\n', ' ')}</span>}
+                    formatter={(value) => <span className="text-slate-600 font-medium text-xs ml-1">{value.replace('\n', ' ')}</span>}
                   />
                   <Tooltip
                     cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }}
@@ -1615,7 +1746,10 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
                                     <span className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></span>
                                     <span>{entry.name.replace('\n', ' ')}</span>
                                   </div>
-                                  <span className="font-bold text-slate-800">{selectedGroup === 'earthquake' ? `${entry.value.toFixed(4)}%` : formatRupiah(entry.value)}</span>
+                                  <div className="flex flex-col items-end">
+                                    <span className="font-bold text-slate-800">{formatRupiah(entry.value)}</span>
+                                    <span className="text-[8px] text-green-600 font-bold">({formatUSD(entry.value)})</span>
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -1625,7 +1759,7 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
                       return null;
                     }}
                   />
-                  {HAZARD_KEYS.map((col) => (
+                  {(zoomedChart.isPml ? PML_RP_KEYS : HAZARD_KEYS).map((col) => (
                     <Bar
                       key={col.key}
                       dataKey={col.key}
@@ -1652,7 +1786,10 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
           <div className="w-[1px] h-6 bg-slate-200"></div>
           <div className="flex flex-col text-right">
             <span className="text-[8px] font-bold text-slate-400 tracking-widest uppercase">Total Nilai Aset</span>
-            <span className="text-[12px] font-extrabold text-slate-800">{formatRupiah(totalAsset)}</span>
+            <div className="flex flex-col items-end">
+              <span className="text-[12px] font-extrabold text-slate-800">{formatRupiah(totalAsset)}</span>
+              <span className="text-[10px] text-green-600 font-bold">({formatUSD(totalAsset)})</span>
+            </div>
           </div>
         </div>
       )}
@@ -1704,7 +1841,10 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
                                   <span className="w-2 h-2 rounded-[2px]" style={{ backgroundColor: entry.color }}></span>
                                   <span>{entry.name.replace('\n', ' ')}</span>
                                 </div>
-                                <span className="font-bold text-slate-800">{formatRupiah(entry.value)}</span>
+                                <div className="flex flex-col items-end">
+                                  <span className="font-bold text-slate-800">{formatRupiah(entry.value)}</span>
+                                  <span className="text-[7px] text-green-600 font-bold">({formatUSD(entry.value)})</span>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -1728,7 +1868,34 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
         </div>
       )}
 
-      {/* Exposure Comparison Chart */}
+      {/* City Comparison Chart (AAL) */}
+      {!selectedCityFeature && cityChartData.length > 0 && (
+        <div className="w-full h-[180px] bg-white border border-slate-200 rounded-xl p-2 mt-2 shadow-sm relative z-0 flex flex-col">
+          <div className="text-[8px] font-extrabold text-slate-500 tracking-widest uppercase mb-1 flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              <BarChart2 size={10} className="text-blue-500" />
+              Perbandingan AAL Antar Kota
+            </div>
+            <span className="text-[7px] text-slate-400 font-medium">Klik untuk perbesar</span>
+          </div>
+          <div
+            className="flex-1 w-full relative cursor-pointer group rounded border border-transparent hover:border-blue-200 hover:bg-slate-50 transition-colors"
+            onClick={() => setZoomedChart({ type: 'city', title: 'Perbandingan AAL Antar Kota', data: cityChartData, xKey: "kota" })}
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={cityChartData} margin={{ top: 5, right: 10, bottom: 20, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="kota" tick={{ fontSize: 6, fill: '#64748b' }} interval={0} angle={-35} textAnchor="end" height={40} />
+                <YAxis tickFormatter={formatYAxisShort} tick={{ fontSize: 7, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <Tooltip cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }} content={<ComparisonTooltip />} />
+                {HAZARD_KEYS.map((col) => <Bar key={col.key} dataKey={col.key} name={col.label} fill={col.color} radius={[2, 2, 0, 0]} />)}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* Exposure Comparison Chart (AAL) */}
       {exposureChartData.length > 0 && (
         <div className="w-full h-[180px] bg-white border border-slate-200 rounded-xl p-2 mt-2 shadow-sm relative z-0 flex flex-col">
           <div className="text-[8px] font-extrabold text-slate-500 tracking-widest uppercase mb-1 flex items-center justify-between">
@@ -1745,56 +1912,63 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={exposureChartData} margin={{ top: 5, right: 10, bottom: 20, left: -10 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis
-                  dataKey="exposure_name"
-                  tick={{ fontSize: 6, fill: '#64748b', fontWeight: 700 }}
-                  axisLine={{ stroke: '#cbd5e1' }}
-                  tickLine={false}
-                  interval={0}
-                  angle={-25}
-                  textAnchor="end"
-                  height={40}
-                />
-                <YAxis
-                  tickFormatter={(val) => val >= 1e12 ? `Rp${(val / 1e12).toFixed(1)}T` : val >= 1e9 ? `Rp${(val / 1e9).toFixed(0)}M` : `Rp${(val / 1e6).toFixed(0)}Jt`}
-                  tick={{ fontSize: 7, fill: '#94a3b8' }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }}
-                  content={({ active, payload, label }) => {
-                    if (active && payload && payload.length) {
-                      return (
-                        <div className="bg-white/95 backdrop-blur border border-slate-200 p-2 rounded-lg shadow-lg">
-                          <p className="font-bold text-slate-800 text-[9px] mb-1.5 border-b border-slate-100 pb-1">{label}</p>
-                          <div className="flex flex-col gap-1">
-                            {payload.map((entry, index) => (
-                              <div key={index} className="flex items-center justify-between gap-4 text-[8px]">
-                                <div className="flex items-center gap-1.5 text-slate-600">
-                                  <span className="w-2 h-2 rounded-[2px]" style={{ backgroundColor: entry.color }}></span>
-                                  <span>{entry.name.replace('\n', ' ')}</span>
-                                </div>
-                                <span className="font-bold text-slate-800">{formatRupiah(entry.value)}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                {HAZARD_KEYS.map((col) => (
-                  <Bar key={col.key} dataKey={col.key} name={col.label} fill={col.color} radius={[2, 2, 0, 0]} />
-                ))}
+                <XAxis dataKey="exposure_name" tick={{ fontSize: 6, fill: '#64748b' }} interval={0} angle={-25} textAnchor="end" height={40} />
+                <YAxis tickFormatter={formatYAxisShort} tick={{ fontSize: 7, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <Tooltip cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }} content={<ComparisonTooltip />} />
+                {HAZARD_KEYS.map((col) => <Bar key={col.key} dataKey={col.key} name={col.label} fill={col.color} radius={[2, 2, 0, 0]} />)}
               </BarChart>
             </ResponsiveContainer>
-            <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 backdrop-blur-[1px]">
-              <div className="bg-slate-900/80 text-white rounded-full p-2 shadow-lg transform scale-95 group-hover:scale-100 transition-all">
-                <Maximize2 size={16} />
-              </div>
+          </div>
+        </div>
+      )}
+
+      {/* PML Comparison Charts */}
+      {selectedGroup === 'earthquake' && pmlCityChartData.length > 0 && (
+        <div className="w-full h-[180px] bg-white border border-slate-200 rounded-xl p-2 mt-2 shadow-sm relative z-0 flex flex-col">
+          <div className="text-[8px] font-extrabold text-slate-500 tracking-widest uppercase mb-1 flex items-center justify-between">
+            <div className="flex items-center gap-1 text-indigo-500">
+              <BarChart2 size={10} />
+              Perbandingan PML Antar Kota
             </div>
+          </div>
+          <div
+            className="flex-1 cursor-pointer"
+            onClick={() => setZoomedChart({ type: 'pml_city', title: 'Perbandingan PML Antar Kota', data: pmlCityChartData, xKey: "kota", isPml: true })}
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={pmlCityChartData} margin={{ top: 5, right: 10, bottom: 20, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="kota" tick={{ fontSize: 6, fill: '#64748b' }} interval={0} angle={-35} textAnchor="end" height={40} />
+                <YAxis tickFormatter={formatYAxisShort} tick={{ fontSize: 7, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <Tooltip cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }} content={<ComparisonTooltip />} />
+                {PML_RP_KEYS.map(rp => <Bar key={rp.key} dataKey={rp.key} name={rp.label} fill={rp.color} radius={[2, 2, 0, 0]} />)}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {selectedGroup === 'earthquake' && pmlExposureChartData.length > 0 && (
+        <div className="w-full h-[180px] bg-white border border-slate-200 rounded-xl p-2 mt-2 shadow-sm relative z-0 flex flex-col">
+          <div className="text-[8px] font-extrabold text-slate-500 tracking-widest uppercase mb-1 flex items-center justify-between">
+            <div className="flex items-center gap-1 text-violet-500">
+              <BarChart2 size={10} />
+              Perbandingan PML Antar Eksposur
+            </div>
+          </div>
+          <div
+            className="flex-1 cursor-pointer"
+            onClick={() => setZoomedChart({ type: 'pml_exposure', title: 'Perbandingan PML Antar Eksposur', data: pmlExposureChartData, xKey: "exposure_name", isPml: true })}
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={pmlExposureChartData} margin={{ top: 5, right: 10, bottom: 20, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="exposure_name" tick={{ fontSize: 6, fill: '#64748b' }} interval={0} angle={-25} textAnchor="end" height={40} />
+                <YAxis tickFormatter={formatYAxisShort} tick={{ fontSize: 7, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <Tooltip cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }} content={<ComparisonTooltip />} />
+                {PML_RP_KEYS.map(rp => <Bar key={rp.key} dataKey={rp.key} name={rp.label} fill={rp.color} radius={[2, 2, 0, 0]} />)}
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       )}

@@ -1,0 +1,24 @@
+2026-03-27 21:37:11,079 INFO === START city recalc for city: BADUNG ===
+2026-03-27 21:37:13,453 DEBUG 📥 Buildings in BADUNG: 2063 rows
+2026-03-27 21:37:19,629 DEBUG direct_loss_inundansi sample: [379291441814.0301, 0.0, 0.0]
+2026-03-27 21:37:19,630 DEBUG direct_loss_r_2 sample: [53186354470.63793, 0.0, 0.0]
+2026-03-27 21:37:19,631 DEBUG direct_loss_r_5 sample: [57454038769.52733, 0.0, 0.0]
+2026-03-27 21:37:19,631 DEBUG direct_loss_r_10 sample: [60130842599.90287, 0.0, 0.0]
+2026-03-27 21:37:19,632 DEBUG direct_loss_r_25 sample: [0.0, 0.0, 0.0]
+2026-03-27 21:37:19,634 DEBUG direct_loss_r_50 sample: [0.0, 0.0, 0.0]
+2026-03-27 21:37:19,635 DEBUG direct_loss_r_100 sample: [0.0, 0.0, 0.0]
+2026-03-27 21:37:19,635 DEBUG direct_loss_r_250 sample: [0.0, 0.0, 0.0]
+2026-03-27 21:37:19,640 DEBUG direct_loss_rc_2 sample: [55415326171.86918, 0.0, 0.0]
+2026-03-27 21:37:19,642 DEBUG direct_loss_rc_5 sample: [61013742214.6324, 0.0, 0.0]
+2026-03-27 21:37:19,643 DEBUG direct_loss_rc_10 sample: [63570700444.939766, 0.0, 0.0]
+2026-03-27 21:37:19,644 DEBUG direct_loss_rc_25 sample: [0.0, 0.0, 0.0]
+2026-03-27 21:37:19,644 DEBUG direct_loss_rc_50 sample: [0.0, 0.0, 0.0]
+2026-03-27 21:37:19,645 DEBUG direct_loss_rc_100 sample: [0.0, 0.0, 0.0]
+2026-03-27 21:37:19,647 DEBUG direct_loss_rc_250 sample: [0.0, 0.0, 0.0]
+2026-03-27 21:37:23,030 DEBUG ✅ Preserved existing gempa direct loss data from DB
+2026-03-27 21:37:25,406 INFO ✅ City Direct Loss saved for BADUNG
+2026-03-27 21:37:25,406 DEBUG === START _calculate_rekap_aset ===
+2026-03-27 21:37:26,476 INFO ✅ Rekap Aset Kota saved (1 cities)
+2026-03-27 21:37:27,073 INFO ✅ City AAL updated for BADUNG
+2026-03-27 21:37:27,573 INFO ✅ Total Keseluruhan sinkron
+2026-03-27 21:37:27,574 INFO === END city recalc for BADUNG ===

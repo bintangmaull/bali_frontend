@@ -76,7 +76,7 @@ export default function CrudHSBGN({ onDataChanged }) {
       setShowSuccess(true)
 
       reloadTable()
-      if (onDataChanged) onDataChanged()
+      if (onDataChanged) onDataChanged(editing.kota)
       setEditing(null)
     } catch (err) {
       console.error(err)

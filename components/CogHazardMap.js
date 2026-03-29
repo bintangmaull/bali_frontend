@@ -12,6 +12,7 @@ import Modal from './ui/Modal'
 import CrudHSBGN from './CrudHSBGN'
 import CrudBuildings from './CrudBuildings'
 import ExposureTableContent from './ExposureTableContent'
+import { MANUAL_GEMPA_DATA } from '../src/lib/manual_gempa_data'
 
 function jenks(data, n_classes) {
   if (!Array.isArray(data) || data.length === 0) return [];
@@ -82,6 +83,17 @@ const EXPOSURE_COLORS = {
   bmn: '#10b981',          // Emerald
   residential: '#6366f1'   // Indigo
 }
+
+const AAL_COLORS = ['#1a9850', '#d9ef8b', '#fee08b', '#fc8d59', '#d73027', '#7f0000'];
+
+const getFillColor = (val, grades, activeMetric, isSawahDL) => {
+  if ((!activeMetric && !isSawahDL) || !grades || grades.length === 0) return '#f97316';
+  if (val === 0) return AAL_COLORS[0];
+  for (let i = 0; i < grades.length - 1; i++) {
+    if (val >= grades[i] && val < grades[i + 1]) return AAL_COLORS[i];
+  }
+  return AAL_COLORS[AAL_COLORS.length - 1] || AAL_COLORS[AAL_COLORS.length - 2];
+};
 
 const DEFAULT_CURVES = {
   'banjir': {
@@ -261,6 +273,146 @@ export default function CogHazardMap() {
   const [rasterStats, setRasterStats] = useState(null)
   const [fetchingExposure, setFetchingExposure] = useState(false)
   const [selectedBuildingHtml, setSelectedBuildingHtml] = useState(null)
+  const [selectedBuildingId, setSelectedBuildingId] = useState(null)
+
+  // Memoized lookups for O(1) access
+  const exposureLookup = useMemo(() => {
+    if (!exposureData?.features) return new Map()
+    const map = new Map()
+    exposureData.features.forEach(f => {
+      if (f.properties?.id_bangunan) {
+        map.set(f.properties.id_bangunan.toUpperCase(), f)
+      }
+    })
+    return map
+  }, [exposureData])
+
+  const boundaryLookup = useMemo(() => {
+    if (!boundaryDataDL?.features) return new Map()
+    const map = new Map()
+    boundaryDataDL.features.forEach(f => {
+      const cityKey = (f.properties.nama_kota || f.properties.id_kota || '').toUpperCase()
+      if (cityKey) map.set(cityKey, f)
+    })
+    return map
+  }, [boundaryDataDL])
+
+
+  const getBuildingPopupHtml = useCallback((p) => {
+    const id = (p.id_bangunan || '').toUpperCase()
+    const luasVal = parseFloat(p.luas) || 0
+    const hsbgnVal = parseFloat(p.hsbgn) || 0
+    const assetValue = p.nilai_aset != null ? parseFloat(p.nilai_aset) : (luasVal * hsbgnVal)
+
+    const formatNumberWithUnit = (value) => {
+      if (value == null || isNaN(value)) return '0'
+      if (value >= 1e12) return (value / 1e12).toFixed(2) + ' T'
+      if (value >= 1e9) return (value / 1e9).toFixed(2) + ' M'
+      if (value >= 1e6) return (value / 1e6).toFixed(2) + ' jt'
+      if (value >= 1e3) return (value / 1e3).toFixed(2) + ' rb'
+      return value.toString()
+    }
+
+    const formatPercent = (loss, totalVal) => {
+      if (!totalVal || totalVal === 0 || !loss) return '<span class="text-gray-400 font-normal">(0%)</span>'
+      const pct = (loss / totalVal) * 100
+      if (pct < 0.1 && pct > 0) return '<span class="text-gray-400 font-normal">(<0.1%)</span>'
+      if (pct >= 99.9) return '<span class="text-red-500 font-normal opacity-80">(100%)</span>'
+      return `<span class="text-gray-500 font-normal opacity-80">(${pct.toFixed(1)}%)</span>`
+    }
+
+    const assetStr = assetValue > 0 ? formatNumberWithUnit(assetValue) : '-'
+    const isBMNRes = id.startsWith('BMN') || id.startsWith('RESIDENTIAL')
+
+    return `
+      <div class="flex flex-col gap-2 font-[SF Pro] text-left">
+        <!-- Header -->
+        <div>
+          <h3 class="font-bold text-[13px] text-gray-800 leading-tight">${p.nama_gedung || 'Tanpa Nama'}</h3>
+          <p class="text-[10px] text-gray-500 italic mt-0.5">${p.taxonomy || '-'} • Lt: ${p.jumlah_lantai || '-'} • ${p.kota || ''}</p>
+          <p class="text-[9px] text-gray-400 leading-tight mt-0.5 truncate">${p.alamat || '-'}</p>
+        </div>
+        
+        <!-- Core Attrs -->
+        <div class="grid grid-cols-2 gap-1 text-[10px] bg-slate-50 p-1.5 rounded-md border border-slate-100">
+          <div class="text-gray-500 flex flex-col leading-tight"><span>Luas</span><span class="font-semibold text-gray-700">${p.luas || '-'} m²</span></div>
+          <div class="text-gray-500 flex flex-col leading-tight"><span>Nilai Aset</span><span class="font-semibold text-gray-700">Rp ${assetStr}</span></div>
+        </div>
+
+        <div class="space-y-1.5 mt-1 border-t border-gray-100 pt-1.5 ${isBMNRes ? 'hidden' : ''}">
+          <!-- Gempa Bumi -->
+          <div class="border-l-2 border-blue-500 pl-1.5">
+            <div class="text-[10px] font-bold text-blue-600 leading-none mb-1">Gempa (PGA)</div>
+            <div class="grid grid-cols-1 gap-y-0.5 text-[9px] text-gray-600">
+              ${['1000', '500', '250', '200', '100'].map(rp => {
+                  const cityKey = (p.kota || '').toUpperCase()
+                  const cityFeature = boundaryLookup.get(cityKey);
+                  const dlExp = cityFeature?.properties?.dl_exposure || {};
+                  
+                  let category = 'bmn';
+                  if (id.startsWith('FS')) category = 'healthcare';
+                  else if (id.startsWith('FD')) category = 'educational';
+                  else if (id.startsWith('ELECTRICITY')) category = 'electricity';
+                  else if (id.startsWith('AIRPORT')) category = 'airport';
+                  else if (id.startsWith('HOTEL')) category = 'hotel';
+                  else if (id.startsWith('RESIDENTIAL')) category = 'residential';
+                  
+                  const catData = dlExp[category] || {};
+                  const ratio = catData[`pga_${rp}`];
+                  const ratioStr = ratio != null ? (parseFloat(ratio) * 100).toFixed(6) + '%' : '-';
+                  
+                  return `<div>${rp}th: <b class="text-blue-700">${ratioStr}</b> (Loss Ratio)</div>`;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- Banjir R -->
+          <div class="border-l-2 border-green-500 pl-1.5">
+            <div class="text-[10px] font-bold text-green-600 leading-none mb-1">Banjir (R)</div>
+            <div class="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[9px] text-gray-600">
+              <div>250th: <b>${formatNumberWithUnit(p.direct_loss_r_250 || 0)}</b> ${formatPercent(p.direct_loss_r_250, assetValue)}</div>
+              <div>100th: <b>${formatNumberWithUnit(p.direct_loss_r_100 || 0)}</b> ${formatPercent(p.direct_loss_r_100, assetValue)}</div>
+              <div>50th: <b>${formatNumberWithUnit(p.direct_loss_r_50 || 0)}</b> ${formatPercent(p.direct_loss_r_50, assetValue)}</div>
+              <div>25th: <b>${formatNumberWithUnit(p.direct_loss_r_25 || 0)}</b> ${formatPercent(p.direct_loss_r_25, assetValue)}</div>
+              <div>10th: <b>${formatNumberWithUnit(p.direct_loss_r_10 || 0)}</b> ${formatPercent(p.direct_loss_r_10, assetValue)}</div>
+              <div>5th: <b>${formatNumberWithUnit(p.direct_loss_r_5 || 0)}</b> ${formatPercent(p.direct_loss_r_5, assetValue)}</div>
+              <div class="col-span-2">2th: <b>${formatNumberWithUnit(p.direct_loss_r_2 || 0)}</b> ${formatPercent(p.direct_loss_r_2, assetValue)}</div>
+            </div>
+          </div>
+
+          <!-- Banjir RC -->
+          <div class="border-l-2 border-emerald-500 pl-1.5">
+            <div class="text-[10px] font-bold text-emerald-600 leading-none mb-1">Banjir (RC)</div>
+            <div class="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[9px] text-gray-600">
+              <div>250th: <b>${formatNumberWithUnit(p.direct_loss_rc_250 || 0)}</b> ${formatPercent(p.direct_loss_rc_250, assetValue)}</div>
+              <div>100th: <b>${formatNumberWithUnit(p.direct_loss_rc_100 || 0)}</b> ${formatPercent(p.direct_loss_rc_100, assetValue)}</div>
+              <div>50th: <b>${formatNumberWithUnit(p.direct_loss_rc_50 || 0)}</b> ${formatPercent(p.direct_loss_rc_50, assetValue)}</div>
+              <div>25th: <b>${formatNumberWithUnit(p.direct_loss_rc_25 || 0)}</b> ${formatPercent(p.direct_loss_rc_25, assetValue)}</div>
+              <div>10th: <b>${formatNumberWithUnit(p.direct_loss_rc_10 || 0)}</b> ${formatPercent(p.direct_loss_rc_10, assetValue)}</div>
+              <div>5th: <b>${formatNumberWithUnit(p.direct_loss_rc_5 || 0)}</b> ${formatPercent(p.direct_loss_rc_5, assetValue)}</div>
+              <div class="col-span-2">2th: <b>${formatNumberWithUnit(p.direct_loss_rc_2 || 0)}</b> ${formatPercent(p.direct_loss_rc_2, assetValue)}</div>
+            </div>
+          </div>
+
+          <!-- Tsunami -->
+          <div class="border-l-2 border-cyan-500 pl-1.5">
+            <div class="text-[10px] font-bold text-cyan-600 leading-none mb-1">Tsunami (Inundansi)</div>
+            <div class="text-[9px] text-gray-600 leading-tight">
+              Total: <b>${formatNumberWithUnit(p.direct_loss_inundansi || 0)}</b> ${formatPercent(p.direct_loss_inundansi, assetValue)}
+            </div>
+          </div>
+        </div>
+      </div>
+    `
+  }, [boundaryLookup])
+
+  useEffect(() => {
+    if (!selectedBuildingId || exposureLookup.size === 0) return
+    const feat = exposureLookup.get(selectedBuildingId.toUpperCase())
+    if (feat) {
+      setSelectedBuildingHtml(getBuildingPopupHtml(feat.properties))
+    }
+  }, [selectedBuildingId, exposureLookup, getBuildingPopupHtml])
 
   // Drag state for Building Detail Panel
   const [panelPos, setPanelPos] = useState({ x: 0, y: 0 })
@@ -306,11 +458,264 @@ export default function CogHazardMap() {
 
   // Dedicated AAL Exposure State (decoupled from the point layer checkboxes)
   const [activeAalExposure, setActiveAalExposure] = useState('total')
+  
+  // Track which cities have been targetedly refreshed to ensure we trust their live point counts
+  const [refreshedCities, setRefreshedCities] = useState(new Set());
+
+  // ── Helper for City Aggregation ─────────────────────────────────────────────
+  const calculateCityEnrichment = useCallback((feature, buildings) => {
+    if (!feature || !buildings) return feature;
+
+    const props = feature.properties;
+    const cityId = (props.id_kota || props.nama_kota || '').toUpperCase();
+    
+    // Check if we should trust the live point counts for this city
+    const isCityFresh = refreshedCities.has(cityId);
+    
+    // START: Global manual supplement application and property unpacking
+    const baseTotals = { ...props };
+    
+    // Parse existing dl_exposure from backend
+    let existingDlExp = {};
+    if (props.dl_exposure) {
+      try {
+        existingDlExp = typeof props.dl_exposure === 'string' ? JSON.parse(props.dl_exposure) : props.dl_exposure;
+      } catch (e) { }
+    }
+
+    // 1. Unpack ALL metrics from dl_exposure.total into flat properties
+    if (existingDlExp.total) {
+       Object.entries(existingDlExp.total).forEach(([key, val]) => {
+          baseTotals[key] = val;
+          baseTotals[`direct_loss_${key}`] = val;
+          
+          // Bridge ratio_ prefix gap
+          if (key.startsWith('pga_') || key.startsWith('r_') || key.startsWith('rc_') || key.startsWith('inundansi') || key.startsWith('drought')) {
+             baseTotals[`ratio_${key}`] = val;
+          }
+          
+          if (!key.startsWith('dl_sum_')) baseTotals[`dl_sum_${key}`] = val;
+       });
+    }
+
+    // 2. Bridge DB column names back to frontend expected names
+    Object.keys(props).forEach(key => {
+       if (key.startsWith('ratio_') && baseTotals[key.replace('ratio_', '')] === undefined) {
+          baseTotals[key.replace('ratio_', '')] = props[key];
+       }
+       if (key.startsWith('dl_sum_') && baseTotals[key.replace('dl_sum_', '')] === undefined) {
+          baseTotals[key.replace('dl_sum_', '')] = props[key];
+       }
+    });
+    
+    // 3. Apply Manual Gempa Supplements
+    if (selectedGroup === 'earthquake') {
+      const manualCity = MANUAL_GEMPA_DATA[cityId];
+      if (manualCity) {
+        const cityWideRatios = existingDlExp.total || {};
+        ['residential', 'bmn'].forEach(cat => {
+          if (manualCity[cat]) {
+            baseTotals[`count_${cat}`] = (parseFloat(props[`count_${cat}`]) || 0) + manualCity[cat].count;
+            baseTotals[`total_asset_${cat}`] = (parseFloat(props[`total_asset_${cat}`]) || 0) + manualCity[cat].asset;
+            baseTotals.count_total = (parseFloat(baseTotals.count_total) || 123) + manualCity[cat].count; // Placeholder count_total fix
+            baseTotals.total_asset_total = (parseFloat(baseTotals.total_asset_total) || 0) + manualCity[cat].asset;
+            
+            if (!existingDlExp[cat] || Object.keys(existingDlExp[cat]).length === 0) {
+              existingDlExp[cat] = { ...cityWideRatios };
+            }
+          }
+        });
+      }
+    }
+
+    // If NOT fresh OR no buildings are available yet, return with unpacked properties
+    if (!isCityFresh || !buildings || buildings.length === 0) {
+       return {
+         ...feature,
+         properties: {
+           ...baseTotals,
+           dl_exposure: JSON.stringify(existingDlExp)
+         }
+       };
+    }
+
+    // ── LIVE POINT-BASED ENRICHMENT (For modified cities) ─────────────────────
+    const cityHsbgnSed = parseFloat(props.hsbgn_sederhana) || 0;
+    const cityHsbgnNSed = parseFloat(props.hsbgn_tidaksederhana) || 0;
+
+    const cityFeatures = buildings.filter(f => {
+      const pCity = (f.properties.kota || '').toUpperCase();
+      return pCity.includes(cityId) || cityId.includes(pCity);
+    });
+
+    if (cityFeatures.length === 0) {
+      return {
+        ...feature,
+        properties: {
+          ...baseTotals,
+          dl_exposure: JSON.stringify(existingDlExp)
+        }
+      };
+    }
+
+    const totals = {
+      ...baseTotals, // Preserve all backend and manual keys
+      count_total: 0,
+      total_asset_total: 0,
+      dl_exposure: { ...existingDlExp } 
+    };
+
+    const categories = ['fs', 'fd', 'electricity', 'airport', 'hotel', 'bmn', 'residential'];
+    categories.forEach(cat => {
+      totals[`count_${cat}`] = 0;
+      totals[`total_asset_${cat}`] = 0;
+      if (!totals.dl_exposure[cat]) totals.dl_exposure[cat] = {};
+    });
+
+    cityFeatures.forEach(f => {
+      const p = f.properties;
+      const id = (p.id_bangunan || '').toUpperCase();
+      let cat = null;
+      if (id.startsWith('FS')) cat = 'fs';
+      else if (id.startsWith('FD')) cat = 'fd';
+      else if (id.startsWith('ELECTRICITY')) cat = 'electricity';
+      else if (id.startsWith('AIRPORT')) cat = 'airport';
+      else if (id.startsWith('HOTEL')) cat = 'hotel';
+      else if (id.startsWith('BMN')) cat = 'bmn';
+      else if (id.startsWith('RESIDENTIAL')) cat = 'residential';
+
+      const luas = parseFloat(p.luas) || 0;
+      const hsbgn = parseFloat(p.hsbgn) || (cat === 'residential' || cat === 'bmn' ? cityHsbgnSed : cityHsbgnNSed);
+      const asset = (p.nilai_aset != null && parseFloat(p.nilai_aset) > 0) 
+        ? parseFloat(p.nilai_aset) 
+        : (luas * hsbgn);
+
+      totals.count_total++;
+      totals.total_asset_total += asset;
+      
+      if (cat) {
+        totals[`count_${cat}`]++;
+        totals[`total_asset_${cat}`] += asset;
+        Object.keys(p).forEach(key => {
+          if (key.startsWith('direct_loss_')) {
+            const hazardKey = key.replace('direct_loss_', '');
+            const lossVal = parseFloat(p[key]) || 0;
+            totals.dl_exposure[cat][hazardKey] = (totals.dl_exposure[cat][hazardKey] || 0) + lossVal;
+            const globalKey = `dl_sum_${hazardKey}`;
+            totals[globalKey] = (totals[globalKey] || 0) + lossVal;
+            totals[hazardKey] = (totals[hazardKey] || 0) + lossVal;
+            totals[`ratio_${hazardKey}`] = (totals[hazardKey] / totals.total_asset_total) * 100;
+          }
+        });
+      }
+    });
+
+    // Final merge of manual data for point-based enrichment
+    if (selectedGroup === 'earthquake') {
+      const manualCity = MANUAL_GEMPA_DATA[cityId];
+      if (manualCity) {
+        const liveCityWideRatios = {};
+        const rps = ['100', '200', '250', '500', '1000'];
+        rps.forEach(rp => {
+          const lKey = `pga_${rp}`;
+          if (totals.total_asset_total > 0) liveCityWideRatios[lKey] = (totals[lKey] || 0) / totals.total_asset_total;
+        });
+
+        ['residential', 'bmn'].forEach(cat => {
+          if (manualCity[cat]) {
+            totals[`count_${cat}`] += manualCity[cat].count;
+            totals[`total_asset_${cat}`] += manualCity[cat].asset;
+            totals.count_total += manualCity[cat].count;
+            totals.total_asset_total += manualCity[cat].asset;
+
+            if (Object.keys(totals.dl_exposure[cat]).length === 0) {
+              totals.dl_exposure[cat] = { ...liveCityWideRatios };
+            }
+          }
+        });
+      }
+    }
+
+    const processedTotals = { ...totals };
+    processedTotals.dl_exposure = JSON.stringify(totals.dl_exposure);
+
+    return {
+      ...feature,
+      properties: { ...feature.properties, ...processedTotals }
+    };
+  }, [selectedGroup, refreshedCities]);
+
+  // Enriched version of boundaryDataDL and boundaryDataAAL
+  const enrichedBoundaryDataDL = useMemo(() => {
+    if (!boundaryDataDL?.features || !exposureData?.features) return boundaryDataDL;
+    return {
+      ...boundaryDataDL,
+      features: boundaryDataDL.features.map(f => calculateCityEnrichment(f, exposureData.features))
+    };
+  }, [boundaryDataDL, exposureData, calculateCityEnrichment]);
+
+  const enrichedBoundaryDataAAL = useMemo(() => {
+    if (!boundaryDataAAL?.features || !exposureData?.features) return boundaryDataAAL;
+    return {
+      ...boundaryDataAAL,
+      features: boundaryDataAAL.features.map(f => calculateCityEnrichment(f, exposureData.features))
+    };
+  }, [boundaryDataAAL, exposureData, calculateCityEnrichment]);
+
+  const enrichedCityFeature = useMemo(() => {
+    if (!selectedCityFeature) return null;
+    return calculateCityEnrichment(selectedCityFeature, exposureData?.features);
+  }, [selectedCityFeature, exposureData, calculateCityEnrichment]);
 
   const [dataVersion, setDataVersion] = useState(0)
-  const refreshAALData = useCallback(() => {
+  const [updatedKotaFilter, setUpdatedKotaFilter] = useState(null)
+  const refreshAALData = useCallback((kotaOrKotas) => {
     setDataVersion(v => v + 1)
+    if (kotaOrKotas) {
+      const kotas = Array.isArray(kotaOrKotas) ? kotaOrKotas : [kotaOrKotas];
+      setRefreshedCities(prev => {
+        const next = new Set(prev);
+        kotas.forEach(k => next.add(k.toUpperCase()));
+        return next;
+      });
+      setUpdatedKotaFilter(kotaOrKotas)
+    }
   }, [])
+
+  // ── Targeted City Exposure Refresh (Avoid 20 min full reload) ─────────────────
+  useEffect(() => {
+    if (!updatedKotaFilter || !exposureData) return;
+
+    const fetchSpecificCities = async () => {
+      try {
+        const kotas = Array.isArray(updatedKotaFilter) ? updatedKotaFilter : [updatedKotaFilter];
+        
+        for (const targetCity of kotas) {
+          const url = `${BACKEND_URL}/api/gedung?kota=${encodeURIComponent(targetCity)}&_v=${Date.now()}`
+          const res = await fetch(url)
+          if (!res.ok) continue;
+          const updatedFeatureCollection = await res.json()
+          
+          setExposureData(prev => {
+            if (!prev || !prev.features) return prev;
+            const newFeatures = updatedFeatureCollection.features || [];
+            const filteredOld = prev.features.filter(f => 
+               f.properties.kota?.toLowerCase() !== targetCity.toLowerCase()
+            );
+            return { ...prev, features: [...filteredOld, ...newFeatures] }
+          })
+        }
+        
+        setDataVersion(v => v + 1)
+      } catch (err) {
+        console.error('Failed to targeted refresh city:', updatedKotaFilter, err)
+      } finally {
+        setUpdatedKotaFilter(null)
+      }
+    }
+    
+    fetchSpecificCities()
+  }, [updatedKotaFilter, exposureData])
 
   // HSBGN Floating Panel State
   const [isHSBGNPanelOpen, setIsHSBGNPanelOpen] = useState(false)
@@ -452,6 +857,7 @@ export default function CogHazardMap() {
       zoom: 9.5,
       zoomSnap: 0.5,
       zoomControl: false,
+      preferCanvas: true,
     })
 
     // Create specific panes for Z-Index ordering
@@ -551,7 +957,7 @@ export default function CogHazardMap() {
       .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
       .then(data => setDroughtSawahData(data))
       .catch(e => console.warn('Drought sawah loss fetch failed:', e.message))
-  }, [])
+  }, [dataVersion])
 
   // ── Fetch Flood Sawah Loss Data ───────────────────────────────────────────────
   useEffect(() => {
@@ -559,7 +965,7 @@ export default function CogHazardMap() {
       .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
       .then(data => setFloodSawahData(data))
       .catch(e => console.warn('Flood sawah loss fetch failed:', e.message))
-  }, [])
+  }, [dataVersion])
 
   // ── Fetch Disaster Curves ────────────────────────────────────────────────────
   useEffect(() => {
@@ -596,7 +1002,8 @@ export default function CogHazardMap() {
           // Serve from cache immediately
           const data = await cachedResponse.json()
           setExposureData(data)
-        } else {
+        } else if (!exposureData) {
+          // Only show loading state if we have no data at all
           setFetchingExposure(true)
         }
 
@@ -607,11 +1014,15 @@ export default function CogHazardMap() {
 
         // If the backend doesn't support last-modified, or it's different, or it's not cached yet, fetch it.
         if (!cachedResponse || !serverModified || (serverModified !== cacheModified)) {
-          const response = await fetch(url)
-          if (response.ok) {
-            await cache.put(url, response.clone())
-            const data = await response.json()
-            setExposureData(data)
+          try {
+            const response = await fetch(url)
+            if (response.ok) {
+              await cache.put(url, response.clone())
+              const data = await response.json()
+              setExposureData(data)
+            }
+          } catch (fetchErr) {
+            console.warn('Background fetch for exposure data failed, keeping cached version:', fetchErr)
           }
         }
       } catch (e) {
@@ -620,8 +1031,12 @@ export default function CogHazardMap() {
         setFetchingExposure(false)
       }
     }
-    prefetch()
-  }, [dataVersion]) // Depend on dataVersion to allow refetch Trigger
+    // Only run the heavy provincial prefetch if we have no data at all yet.
+    // This prevents the 20-minute background fetch from firing on every small HSBGN update.
+    if (!exposureData) {
+      prefetch()
+    }
+  }, [dataVersion]) // Keep dataVersion to refresh if user manually triggers something, but the guard above stops the loop.
 
   // ── Fetch Boundary Data (Background on Mount) ────────────────────────────────
   useEffect(() => {
@@ -648,7 +1063,16 @@ export default function CogHazardMap() {
           const respAal = await fetch(urlAal).catch(() => null)
           if (respAal && respAal.ok) {
             await cache.put(urlAal, respAal.clone())
-            setBoundaryDataAAL(await respAal.json())
+            const dataAal = await respAal.json()
+            setBoundaryDataAAL(dataAal)
+            
+            // Refresh selected city feature reference from AAL data if DL doesn't exist
+            if (selectedCityFeature && !boundaryDataDL) {
+               const newFeat = dataAal.features.find(f => 
+                (f.properties.id_kota || f.properties.nama_kota) === (selectedCityFeature.properties.id_kota || selectedCityFeature.properties.nama_kota)
+              );
+              if (newFeat) setSelectedCityFeature(newFeat);
+            }
           }
         }
 
@@ -658,7 +1082,16 @@ export default function CogHazardMap() {
           const respDl = await fetch(urlDlFresh)
           if (respDl.ok) {
             await cache.put(urlDl, respDl.clone())
-            setBoundaryDataDL(await respDl.json())
+            const dataDl = await respDl.json()
+            setBoundaryDataDL(dataDl)
+
+            // Refresh selected city feature reference to use new data
+            if (selectedCityFeature) {
+              const newFeat = dataDl.features.find(f =>
+                (f.properties.id_kota || f.properties.nama_kota) === (selectedCityFeature.properties.id_kota || selectedCityFeature.properties.nama_kota)
+              );
+              if (newFeat) setSelectedCityFeature(newFeat);
+            }
           }
         } catch (e) {
           // Fallback to cache
@@ -673,7 +1106,7 @@ export default function CogHazardMap() {
       }
     }
     fetchBoundaries()
-  }, [dataVersion])
+  }, [dataVersion]) // Only re-fetch manually on dataVersion update to prevent loop
 
   // ── Effect to update Exposure Markers ─────────────────────────────────────────
   useEffect(() => {
@@ -735,117 +1168,11 @@ export default function CogHazardMap() {
         // Prioritize stored nilai_aset if available, otherwise use calculation
         const assetValue = p.nilai_aset != null ? parseFloat(p.nilai_aset) : (luasVal * hsbgnVal);
 
-        const formatNumberWithUnit = (value) => {
-          if (value == null || isNaN(value)) return '0'
-          if (value >= 1e12) return (value / 1e12).toFixed(2) + ' T'
-          if (value >= 1e9) return (value / 1e9).toFixed(2) + ' M'
-          if (value >= 1e6) return (value / 1e6).toFixed(2) + ' jt'
-          if (value >= 1e3) return (value / 1e3).toFixed(2) + ' rb'
-          return value.toString()
-        }
-
-        const formatPercent = (loss, totalVal) => {
-          if (!totalVal || totalVal === 0 || !loss) return '<span class="text-gray-400 font-normal">(0%)</span>'
-          const pct = (loss / totalVal) * 100
-          if (pct < 0.1 && pct > 0) return '<span class="text-gray-400 font-normal">(<0.1%)</span>'
-          if (pct >= 99.9) return '<span class="text-red-500 font-normal opacity-80">(100%)</span>'
-          return `<span class="text-gray-500 font-normal opacity-80">(${pct.toFixed(1)}%)</span>`
-        }
-
-        const assetStr = assetValue > 0 ? formatNumberWithUnit(assetValue) : '-';
-        const isBMNRes = id.startsWith('BMN') || id.startsWith('RESIDENTIAL');
-
-        const popupHtml = `
-          <div class="flex flex-col gap-2 font-[SF Pro] text-left">
-            <!-- Header -->
-            <div>
-              <h3 class="font-bold text-[13px] text-gray-800 leading-tight">${p.nama_gedung || 'Tanpa Nama'}</h3>
-              <p class="text-[10px] text-gray-500 italic mt-0.5">${p.taxonomy || '-'} • Lt: ${p.jumlah_lantai || '-'} • ${p.kota || ''}</p>
-              <p class="text-[9px] text-gray-400 leading-tight mt-0.5 truncate">${p.alamat || '-'}</p>
-            </div>
-            
-            <!-- Core Attrs -->
-            <div class="grid grid-cols-2 gap-1 text-[10px] bg-slate-50 p-1.5 rounded-md border border-slate-100">
-              <div class="text-gray-500 flex flex-col leading-tight"><span>Luas</span><span class="font-semibold text-gray-700">${p.luas || '-'} m²</span></div>
-              <div class="text-gray-500 flex flex-col leading-tight"><span>Nilai Aset</span><span class="font-semibold text-gray-700">Rp ${assetStr}</span></div>
-            </div>
-
-            <!-- Hazards - Hidden for BMN/Residential as they don't have calculations yet -->
-            <div class="space-y-1.5 mt-1 border-t border-gray-100 pt-1.5 ${isBMNRes ? 'hidden' : ''}">
-              
-            <!-- Gempa Bumi -->
-            <div class="border-l-2 border-blue-500 pl-1.5">
-              <div class="text-[10px] font-bold text-blue-600 leading-none mb-1">Gempa (PGA)</div>
-              <div class="grid grid-cols-1 gap-y-0.5 text-[9px] text-gray-600">
-                ${['1000', '500', '250', '200', '100'].map(rp => {
-                  const cityFeature = (boundaryDataDL?.features || []).find(f => 
-                    (f.properties.nama_kota || f.properties.id_kota || '').toUpperCase() === (p.kota || '').toUpperCase()
-                  );
-                  const dlExp = cityFeature?.properties?.dl_exposure || {};
-                  
-                  // Map building type to ratio category
-                  const id = (p.id_bangunan || '').toUpperCase();
-                  let category = 'bmn';
-                  if (id.startsWith('FS')) category = 'healthcare';
-                  else if (id.startsWith('FD')) category = 'educational';
-                  else if (id.startsWith('ELECTRICITY')) category = 'electricity';
-                  else if (id.startsWith('AIRPORT')) category = 'airport';
-                  else if (id.startsWith('HOTEL')) category = 'hotel';
-                  else if (id.startsWith('RESIDENTIAL')) category = 'residential';
-                  
-                  const catData = dlExp[category] || {};
-                  const ratio = catData[`pga_${rp}`];
-                  const ratioStr = ratio != null ? (parseFloat(ratio) * 100).toFixed(6) + '%' : '-';
-                  
-                  return `<div>${rp}th: <b class="text-blue-700">${ratioStr}</b> (Loss Ratio)</div>`;
-                }).join('')}
-              </div>
-            </div>
-
-              <!-- Banjir R -->
-              <div class="border-l-2 border-green-500 pl-1.5">
-                <div class="text-[10px] font-bold text-green-600 leading-none mb-1">Banjir (R)</div>
-                <div class="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[9px] text-gray-600">
-                  <div>250th: <b>${formatNumberWithUnit(p.direct_loss_r_250 || 0)}</b> ${formatPercent(p.direct_loss_r_250, assetValue)}</div>
-                  <div>100th: <b>${formatNumberWithUnit(p.direct_loss_r_100 || 0)}</b> ${formatPercent(p.direct_loss_r_100, assetValue)}</div>
-                  <div>50th: <b>${formatNumberWithUnit(p.direct_loss_r_50 || 0)}</b> ${formatPercent(p.direct_loss_r_50, assetValue)}</div>
-                  <div>25th: <b>${formatNumberWithUnit(p.direct_loss_r_25 || 0)}</b> ${formatPercent(p.direct_loss_r_25, assetValue)}</div>
-                  <div>10th: <b>${formatNumberWithUnit(p.direct_loss_r_10 || 0)}</b> ${formatPercent(p.direct_loss_r_10, assetValue)}</div>
-                  <div>5th: <b>${formatNumberWithUnit(p.direct_loss_r_5 || 0)}</b> ${formatPercent(p.direct_loss_r_5, assetValue)}</div>
-                  <div class="col-span-2">2th: <b>${formatNumberWithUnit(p.direct_loss_r_2 || 0)}</b> ${formatPercent(p.direct_loss_r_2, assetValue)}</div>
-                </div>
-              </div>
-
-              <!-- Banjir RC -->
-              <div class="border-l-2 border-emerald-500 pl-1.5">
-                <div class="text-[10px] font-bold text-emerald-600 leading-none mb-1">Banjir (RC)</div>
-                <div class="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[9px] text-gray-600">
-                  <div>250th: <b>${formatNumberWithUnit(p.direct_loss_rc_250 || 0)}</b> ${formatPercent(p.direct_loss_rc_250, assetValue)}</div>
-                  <div>100th: <b>${formatNumberWithUnit(p.direct_loss_rc_100 || 0)}</b> ${formatPercent(p.direct_loss_rc_100, assetValue)}</div>
-                  <div>50th: <b>${formatNumberWithUnit(p.direct_loss_rc_50 || 0)}</b> ${formatPercent(p.direct_loss_rc_50, assetValue)}</div>
-                  <div>25th: <b>${formatNumberWithUnit(p.direct_loss_rc_25 || 0)}</b> ${formatPercent(p.direct_loss_rc_25, assetValue)}</div>
-                  <div>10th: <b>${formatNumberWithUnit(p.direct_loss_rc_10 || 0)}</b> ${formatPercent(p.direct_loss_rc_10, assetValue)}</div>
-                  <div>5th: <b>${formatNumberWithUnit(p.direct_loss_rc_5 || 0)}</b> ${formatPercent(p.direct_loss_rc_5, assetValue)}</div>
-                  <div class="col-span-2">2th: <b>${formatNumberWithUnit(p.direct_loss_rc_2 || 0)}</b> ${formatPercent(p.direct_loss_rc_2, assetValue)}</div>
-                </div>
-              </div>
-
-              <!-- Tsunami -->
-              <div class="border-l-2 border-cyan-500 pl-1.5">
-                <div class="text-[10px] font-bold text-cyan-600 leading-none mb-1">Tsunami (Inundansi)</div>
-                <div class="text-[9px] text-gray-600 leading-tight">
-                  Total: <b>${formatNumberWithUnit(p.direct_loss_inundansi || 0)}</b> ${formatPercent(p.direct_loss_inundansi, assetValue)}
-                </div>
-              </div>
-
-            </div>
-          </div>
-        `;
-
         marker.on('click', () => {
           // Reset panel position when selecting a new building
           setPanelPos({ x: 0, y: 0 })
-          setSelectedBuildingHtml(popupHtml)
+          setSelectedBuildingId(p.id_bangunan)
+          setIsSidebarOpen(true)
         })
 
         markers.push(marker)
@@ -920,334 +1247,201 @@ export default function CogHazardMap() {
     if (infraLayers.boundaries || infraLayers.aal || infraLayers.directLoss) {
       let activeMetric = null;
       let grades = [];
-      const aalColors = ['#1a9850', '#d9ef8b', '#fee08b', '#fc8d59', '#d73027', '#7f0000'];
+      let hazPrefix = '';
+      let rp = '';
 
-      if ((infraLayers.aal || infraLayers.directLoss) && selectedGroup) {
-        let hazPrefix = '';
-        let rp = '';
+      if (selectedRpId) {
+        const parts = selectedRpId.split('_');
+        rp = parts[parts.length - 1];
+        if (rp === 'default') rp = '';
+      }
 
-        if (selectedRpId) {
-          const parts = selectedRpId.split('_');
-          rp = parts[parts.length - 1];
-          if (rp === 'default') rp = '';
+      if (infraLayers.directLoss) {
+        if (selectedGroup === 'banjir') {
+          hazPrefix = (selectedRpId && selectedRpId.includes('comp')) ? 'rc' : 'r';
+          if (rp) activeMetric = `dl_sum_${hazPrefix}_${rp}`;
+        } else if (selectedGroup === 'earthquake') {
+          if (rp) activeMetric = `pga_${rp}`; 
+        } else if (selectedGroup === 'tsunami') {
+          activeMetric = 'dl_sum_inundansi';
+        } else if (selectedGroup === 'kekeringan') {
+          activeMetric = null;
         }
+      } else if (infraLayers.aal) {
+        if (selectedGroup === 'banjir') hazPrefix = (selectedRpId && selectedRpId.includes('comp')) ? 'rc' : 'r';
+        else if (selectedGroup === 'earthquake') hazPrefix = 'pga';
+        else if (selectedGroup === 'tsunami') hazPrefix = 'inundansi';
+        else if (selectedGroup === 'kekeringan') hazPrefix = 'drought';
+        if (hazPrefix) activeMetric = `aal_${hazPrefix}_${activeAalExposure || 'total'}`;
+      }
 
-        if (infraLayers.directLoss) {
-          if (selectedGroup === 'banjir') {
-            hazPrefix = (selectedRpId && selectedRpId.includes('comp')) ? 'rc' : 'r';
-            if (rp) activeMetric = `dl_sum_${hazPrefix}_${rp}`;
-          }
-          else if (selectedGroup === 'earthquake') {
-            if (rp) activeMetric = `pga_${rp}`; // Eq direct loss is stored simply as pga_{rp} in dl_exposure
-          }
-          else if (selectedGroup === 'tsunami') {
-            hazPrefix = 'inundansi';
-            activeMetric = `dl_sum_${hazPrefix}`;
-          }
-          else if (selectedGroup === 'kekeringan') {
-            // Drought handled separately via droughtSawahData — skip standard metric
-            activeMetric = null;
-          }
-        }
-        else if (infraLayers.aal) {
-          if (selectedGroup === 'banjir') hazPrefix = (selectedRpId && selectedRpId.includes('comp')) ? 'rc' : 'r';
-          else if (selectedGroup === 'earthquake') hazPrefix = 'pga';
-          else if (selectedGroup === 'tsunami') hazPrefix = 'inundansi';
-          else if (selectedGroup === 'kekeringan') hazPrefix = 'drought';
-          if (hazPrefix) activeMetric = `aal_${hazPrefix}_${activeAalExposure || 'total'}`;
-        }
+      const isAal = infraLayers.aal && activeMetric;
+      const isSawahDL = selectedRpId && infraLayers.directLoss && ((selectedGroup === 'banjir' && floodView === 'sawah') || selectedGroup === 'kekeringan');
+      const isEarthquake = selectedGroup === 'earthquake' && infraLayers.directLoss;
 
-        const isSawahDL = infraLayers.directLoss && (selectedGroup === 'banjir' || selectedGroup === 'kekeringan') && floodView === 'sawah';
-
-        if (activeMetric || isSawahDL) {
-          const isEarthquake = selectedGroup === 'earthquake' && infraLayers.directLoss;
-          
-          let vals = [];
-          if (isSawahDL) {
-            const data = selectedGroup === 'banjir' ? floodSawahData : droughtSawahData;
-            if (data) {
-              const isCC = selectedRpId && (selectedRpId.includes('comp') || selectedRpId.includes('mme'));
-              const ccKey = selectedGroup === 'banjir' ? (isCC ? 'rc' : 'r') : (isCC ? 'mme' : 'gpm');
-              const rpMatch = selectedRpId ? selectedRpId.match(/(\d+)/) : null;
-              const rpKey = rpMatch ? rpMatch[1] : (data.return_periods?.[0]?.toString() || '2');
-              const lossYear = selectedGroup === 'banjir' ? floodSawahYear : droughtLossYear;
-              const rows = data[ccKey]?.[rpKey] || [];
-              vals = rows.map(r => r[lossYear] || 0).filter(v => typeof v === 'number' && !isNaN(v));
+      // 1. Calculate Legend Grades (Jenks)
+      if (activeMetric || isSawahDL) {
+        let vals = [];
+        if (isSawahDL) {
+          const data = selectedGroup === 'banjir' ? floodSawahData : droughtSawahData;
+          if (data) {
+            const isCC = selectedRpId && (selectedRpId.includes('comp') || selectedRpId.includes('mme'));
+            const ccKey = selectedGroup === 'banjir' ? (isCC ? 'rc' : 'r') : (isCC ? 'mme' : 'gpm');
+            const rpMatch = selectedRpId ? selectedRpId.match(/(\d+)/) : null;
+            const rpKey = rpMatch ? rpMatch[1] : (data.return_periods?.[0]?.toString() || '2');
+            const lossYear = selectedGroup === 'banjir' ? floodSawahYear : droughtLossYear;
+            const rows = data[ccKey]?.[rpKey] || [];
+            vals = rows.map(r => r[lossYear] || 0).filter(v => typeof v === 'number' && !isNaN(v));
+          }
+        } else if (activeMetric) {
+          vals = activeBoundaryData.features.map(f => {
+            if (isEarthquake) {
+              let dlExp = f.properties.dl_exposure || {};
+              if (typeof dlExp === 'string') { try { dlExp = JSON.parse(dlExp); } catch { dlExp = {}; } }
+              const activeLayer = Object.keys(infraLayers).find(l => infraLayers[l] && !['modelHazard', 'directLoss', 'aal', 'boundaries'].includes(l)) || 'total';
+              const layerToCat = { 'healthcare': 'fs', 'educational': 'fd' };
+              const categoryKey = layerToCat[activeLayer] || activeLayer;
+              const catData = dlExp[categoryKey] || {};
+              return (catData[activeMetric] || catData[`direct_loss_${activeMetric}`] || 0) * 100;
             }
-          } else if (activeMetric) {
-            vals = activeBoundaryData.features.map(f => {
-              if (isEarthquake) {
-                let dlExp = f.properties.dl_exposure || {};
-                if (typeof dlExp === 'string') { try { dlExp = JSON.parse(dlExp); } catch { dlExp = {}; } }
-                const activeLayer = Object.keys(infraLayers).find(l => infraLayers[l] && !['modelHazard', 'directLoss', 'aal'].includes(l)) || 'total';
-                const layerToCat = { 'healthcare': 'fs', 'educational': 'fd' };
-                const categoryKey = layerToCat[activeLayer] || activeLayer;
-                const catData = dlExp[categoryKey] || {};
-                return (catData[activeMetric] || 0) * 100;
-              }
-              return f.properties[activeMetric] || 0;
-            }).filter(v => typeof v === 'number' && !isNaN(v));
-          }
+            return f.properties[activeMetric] || f.properties[`ratio_${activeMetric}`] || 0;
+          }).filter(v => typeof v === 'number' && !isNaN(v));
+        }
 
-          if (vals.length > 0) {
-            const nClasses = vals.length > 30 ? 6 : 5;
-            grades = jenks(vals, nClasses).sort((a, b) => a - b);
-          }
+        if (vals.length > 0) {
+          const nClasses = vals.length > 30 ? 6 : 5;
+          grades = jenks(vals, nClasses).sort((a, b) => a - b);
         }
       }
 
-      const getFillColor = (val) => {
-        const isSawahDL = infraLayers.directLoss && (selectedGroup === 'banjir' || selectedGroup === 'kekeringan') && floodView === 'sawah';
-        if ((!activeMetric && !isSawahDL) || grades.length === 0) return '#f97316';
-        if (val === 0) return aalColors[0];
-        for (let i = 0; i < grades.length - 1; i++) {
-          if (val >= grades[i] && val < grades[i + 1]) return aalColors[i];
+      const isProportional = infraLayers.modelHazard && (activeMetric || isSawahDL);
+
+      // 2. Styling Functions
+      const getVal = (feature) => {
+        let val = 0;
+        if (isSawahDL) {
+          const data = selectedGroup === 'banjir' ? floodSawahData : droughtSawahData;
+          if (data) {
+            const isCC = selectedRpId && (selectedRpId.includes('comp') || selectedRpId.includes('mme'));
+            const ccKey = selectedGroup === 'banjir' ? (isCC ? 'rc' : 'r') : (isCC ? 'mme' : 'gpm');
+            const rpMatch = selectedRpId ? selectedRpId.match(/(\d+)/) : null;
+            const rpKey = rpMatch ? rpMatch[1] : (data.return_periods?.[0]?.toString() || '2');
+            const lossYear = selectedGroup === 'banjir' ? floodSawahYear : droughtLossYear;
+            const cityKey = (feature.properties.nama_kota || feature.properties.id_kota || '').toUpperCase();
+            const rows = data[ccKey]?.[rpKey] || [];
+            const row = rows.find(r => r.kota.toUpperCase() === cityKey);
+            val = row ? row[lossYear] || 0 : 0;
+          }
+        } else if (isEarthquake) {
+          let dlExp = feature.properties.dl_exposure || {};
+          if (typeof dlExp === 'string') { try { dlExp = JSON.parse(dlExp); } catch { dlExp = {}; } }
+          const activeLayer = Object.keys(infraLayers).find(l => infraLayers[l] && !['modelHazard', 'directLoss', 'aal', 'boundaries'].includes(l)) || 'total';
+          const layerToCat = { 'healthcare': 'fs', 'educational': 'fd' };
+          const categoryKey = layerToCat[activeLayer] || activeLayer;
+          const catData = dlExp[categoryKey] || {};
+          val = (catData[activeMetric] || catData[`direct_loss_${activeMetric}`] || 0) * 100;
+        } else if (activeMetric) {
+          val = feature.properties[activeMetric] || feature.properties[`ratio_${activeMetric}`] || 0;
         }
-        return aalColors[aalColors.length - 1] || aalColors[aalColors.length - 2];
+        return val;
       };
 
-      const isProportional = selectedRpId && infraLayers.modelHazard && (activeMetric || (infraLayers.directLoss && (selectedGroup === 'banjir' || selectedGroup === 'kekeringan') && floodView === 'sawah'));
-
       const defaultStyle = (feature) => {
-        const isEarthquake = selectedGroup === 'earthquake' && infraLayers.directLoss;
-        let val = 0;
-        if (selectedRpId && (activeMetric || (infraLayers.directLoss && (selectedGroup === 'banjir' || selectedGroup === 'kekeringan') && floodView === 'sawah'))) {
-          if (infraLayers.directLoss && (selectedGroup === 'banjir' || selectedGroup === 'kekeringan') && floodView === 'sawah') {
-            // Sawah Direct Loss (Flood or Drought) - PRIORITY 1
-            const data = selectedGroup === 'banjir' ? floodSawahData : droughtSawahData;
-            if (data) {
-              const isCC = selectedRpId && (selectedRpId.includes('comp') || selectedRpId.includes('mme'));
-              const ccKey = selectedGroup === 'banjir' ? (isCC ? 'rc' : 'r') : (isCC ? 'mme' : 'gpm');
-              const rpMatch = selectedRpId ? selectedRpId.match(/(\d+)/) : null;
-              const rpKey = rpMatch ? rpMatch[1] : (data.return_periods?.[0]?.toString() || '2');
-              const lossYear = selectedGroup === 'banjir' ? floodSawahYear : droughtLossYear;
-              const cityKey = (feature.properties.nama_kota || feature.properties.id_kota || '').toUpperCase();
-              const rows = data[ccKey]?.[rpKey] || [];
-              const row = rows.find(r => r.kota.toUpperCase() === cityKey);
-              val = row ? row[lossYear] || 0 : 0;
-            }
-          } else if (isEarthquake) {
-            let dlExp = feature.properties.dl_exposure || {};
-            if (typeof dlExp === 'string') { try { dlExp = JSON.parse(dlExp); } catch { dlExp = {}; } }
-            const activeLayer = Object.keys(infraLayers).find(l => infraLayers[l] && !['modelHazard', 'directLoss', 'aal'].includes(l)) || 'total';
-            const layerToCat = { 'healthcare': 'fs', 'educational': 'fd' };
-            const categoryKey = layerToCat[activeLayer] || activeLayer;
-            const catData = dlExp[categoryKey] || {};
-            val = (catData[activeMetric] || 0) * 100;
-          } else if (activeMetric) {
-            val = feature.properties[activeMetric] || 0;
-          }
-        }
+        const val = getVal(feature);
+        const showHazard = !!activeMetric;
+        const hasAnyDisplay = showHazard || isSawahDL;
 
         if (isProportional) {
-          // Transparent polygon with visible border to see hazard map underneath
           return {
-            color: '#64748b', // more visible slate border
+            color: '#64748b',
             weight: 1.5,
             opacity: opacityAAL > 0 ? 0.8 : 0,
-            fillOpacity: 0,
-            fillColor: 'transparent',
+            fillOpacity: hasAnyDisplay ? (opacityAAL * 0.15) : 0,
+            fillColor: hasAnyDisplay ? getFillColor(val, grades, activeMetric, isSawahDL) : 'transparent',
             dashArray: '4'
           };
         }
-        const showHazard = selectedRpId && activeMetric;
-        const isSawahDL = selectedRpId && infraLayers.directLoss && (selectedGroup === 'banjir' || selectedGroup === 'kekeringan') && floodView === 'sawah';
 
-        const hasAnyDisplay = showHazard || isSawahDL;
-
-        let customStyle = {
+        return {
           color: hasAnyDisplay ? '#ffffff' : '#64748b',
           weight: hasAnyDisplay ? 1 : 1.5,
           opacity: hasAnyDisplay ? opacityAAL : 0.8,
           fillOpacity: hasAnyDisplay ? (opacityAAL * 0.8) : 0,
-          fillColor: hasAnyDisplay ? getFillColor(val) : 'transparent',
+          fillColor: hasAnyDisplay ? getFillColor(val, grades, activeMetric, isSawahDL) : 'transparent',
           dashArray: hasAnyDisplay ? '' : '4'
         };
-
-        if (infraLayers.modelHazard && (showHazard || isSawahDL)) {
-          customStyle = {
-            color: '#64748b',
-            weight: 1.5,
-            opacity: opacityAAL > 0 ? 0.8 : 0,
-            fillOpacity: 0,
-            fillColor: 'transparent',
-            dashArray: '4'
-          };
-        }
-
-        return customStyle;
       };
 
       const highlightStyle = (feature) => {
-        if (isProportional) {
-          return { weight: 2, color: '#f97316', fillOpacity: 0.1, dashArray: '' };
-        }
-        if (activeMetric) {
-          return { weight: 2, color: '#64748b', fillOpacity: opacityAAL, dashArray: '' };
-        }
-        return { color: '#ea580c', weight: 3, opacity: 1, fillOpacity: 0, fillColor: 'transparent', dashArray: '' };
+        if (isProportional) return { weight: 2, color: '#f97316', fillOpacity: 0.1, dashArray: '' };
+        return { weight: 2, color: '#64748b', fillOpacity: opacityAAL, dashArray: '' };
       };
 
-      const fmtPopup = (n, isEarthquake = false) => {
-        if (isEarthquake) return n.toFixed(4) + '%';
+      const fmtPopup = (n, isEq = false) => {
+        if (isEq) return n.toFixed(4) + '%';
         return n.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 });
       };
 
+      // 3. Proportional Markers Setup
       let maxMetricValue = 0;
       if (isProportional) {
-        const isEarthquake = selectedGroup === 'earthquake' && infraLayers.directLoss;
-        maxMetricValue = Math.max(...activeBoundaryData.features.map(f => {
-          if (infraLayers.directLoss && (selectedGroup === 'banjir' || selectedGroup === 'kekeringan') && floodView === 'sawah') {
-              const data = selectedGroup === 'banjir' ? floodSawahData : droughtSawahData;
-              if (data) {
-                const isCC = selectedRpId && (selectedRpId.includes('comp') || selectedRpId.includes('mme'));
-                const ccKey = selectedGroup === 'banjir' ? (isCC ? 'rc' : 'r') : (isCC ? 'mme' : 'gpm');
-                const rpMatch = selectedRpId ? selectedRpId.match(/(\d+)/) : null;
-                const rpKey = rpMatch ? rpMatch[1] : (data.return_periods?.[0]?.toString() || '2');
-                const lossYear = selectedGroup === 'banjir' ? floodSawahYear : droughtLossYear;
-                const allRows = data[ccKey]?.[rpKey] || [];
-                const losses = allRows.map(r => r[lossYear] || 0);
-                return Math.max(...losses, 0);
-              }
-              return 0;
-          }
-          if (isEarthquake) {
-            let dlExp = f.properties.dl_exposure || {};
-            if (typeof dlExp === 'string') { try { dlExp = JSON.parse(dlExp); } catch { dlExp = {}; } }
-            const activeLayer = Object.keys(infraLayers).find(l => infraLayers[l] && !['modelHazard', 'directLoss', 'aal'].includes(l)) || 'total';
-            const layerToCat = { 'healthcare': 'fs', 'educational': 'fd' };
-            const categoryKey = layerToCat[activeLayer] || activeLayer;
-            const catData = dlExp[categoryKey] || {};
-            return (catData[activeMetric] || 0) * 100;
-          }
-          return f.properties[activeMetric] || 0;
-        }).filter(v => typeof v === 'number' && !isNaN(v)));
-        if (proportionalLayer.current) {
-          mapRef.current.removeLayer(proportionalLayer.current);
-        }
+        maxMetricValue = Math.max(...activeBoundaryData.features.map(f => getVal(f)).filter(v => typeof v === 'number' && !isNaN(v)), 0);
+        if (proportionalLayer.current) mapRef.current.removeLayer(proportionalLayer.current);
         proportionalLayer.current = L.layerGroup().addTo(mapRef.current);
       }
 
+      // 4. Create GeoJSON Layer
       boundaryLayer.current = L.geoJSON(activeBoundaryData, {
         pane: 'boundaryPane',
         style: defaultStyle,
         onEachFeature: (feature, layer) => {
-          if (feature.properties && feature.properties.id_kota) {
-            const isEarthquake = selectedGroup === 'earthquake' && infraLayers.directLoss;
-            let val = null;
-            if (selectedRpId && (activeMetric || (infraLayers.directLoss && (selectedGroup === 'banjir' || selectedGroup === 'kekeringan') && floodView === 'sawah'))) {
-              if (infraLayers.directLoss && (selectedGroup === 'banjir' || selectedGroup === 'kekeringan') && floodView === 'sawah') {
-                const data = selectedGroup === 'banjir' ? floodSawahData : droughtSawahData;
-                if (data) {
-                  const isCC = selectedRpId && (selectedRpId.includes('comp') || selectedRpId.includes('mme'));
-                  const ccKey = selectedGroup === 'banjir' ? (isCC ? 'rc' : 'r') : (isCC ? 'mme' : 'gpm');
-                  const rpMatch = selectedRpId ? selectedRpId.match(/(\d+)/) : null;
-                  const rpKey = rpMatch ? rpMatch[1] : (data.return_periods?.[0]?.toString() || '2');
-                  const lossYear = selectedGroup === 'banjir' ? floodSawahYear : droughtLossYear;
-                  const cityKey = (feature.properties.nama_kota || feature.properties.id_kota || '').toUpperCase();
-                  const rows = data[ccKey]?.[rpKey] || [];
-                  const row = rows.find(r => r.kota.toUpperCase() === cityKey);
-                  val = row ? row[lossYear] || 0 : 0;
-                }
-              } else if (isEarthquake) {
-                let dlExp = feature.properties.dl_exposure || {};
-                if (typeof dlExp === 'string') { try { dlExp = JSON.parse(dlExp); } catch { dlExp = {}; } }
-                const activeLayer = Object.keys(infraLayers).find(l => infraLayers[l] && !['modelHazard', 'directLoss', 'aal'].includes(l)) || 'total';
-                const layerToCat = { 'healthcare': 'fs', 'educational': 'fd' };
-                const categoryKey = layerToCat[activeLayer] || activeLayer;
-                const catData = dlExp[categoryKey] || {};
-                val = (catData[activeMetric] || 0) * 100;
-              } else if (activeMetric) {
-                val = feature.properties[activeMetric] || 0;
-              }
-            }
-
+          if (feature.properties && (feature.properties.id_kota || feature.properties.nama_kota)) {
+            const val = getVal(feature);
             let tooltipLabel = "AAL";
             if (infraLayers.directLoss) {
-                tooltipLabel = isEarthquake ? "Loss Ratio" : "Direct Loss";
-                if (floodView === 'sawah') tooltipLabel = "Direct Loss Sawah";
+               tooltipLabel = isEarthquake ? "Loss Ratio" : "Direct Loss";
+               if (isSawahDL) tooltipLabel = "Direct Loss Sawah";
             }
 
             const hasVal = val !== null && val > 0;
-            const tooltipContent = hasVal
-              ? `<strong>${feature.properties.id_kota}</strong><br/>${tooltipLabel}: ${fmtPopup(val, isEarthquake)}`
-              : `<strong>${feature.properties.id_kota}</strong>`;
+            const tooltipContent = `<strong>${feature.properties.nama_kota || feature.properties.id_kota}</strong>${hasVal ? `<br/>${tooltipLabel}: ${fmtPopup(val, isEarthquake)}` : ''}`;
 
-            layer.bindTooltip(tooltipContent, {
-              sticky: true,
-              className: 'boundary-tooltip'
-            });
+            layer.bindTooltip(tooltipContent, { sticky: true, className: 'boundary-tooltip' });
 
-            // Add proportional marker if active Metric and value > 0
-            if (isProportional && (activeMetric || floodView === 'sawah') && val > 0 && maxMetricValue > 0) {
-              const maxRadius = 30; // Max radius in pixels
-              const minRadius = 5;
-              let center = layer.getBounds().getCenter()
-              
-              // Try to find a visually appealing center inside the polygon using Turf.js
-              if (window.turf && feature && feature.geometry) {
+            if (isProportional && val > 0 && maxMetricValue > 0) {
+              const maxRadius = 30, minRadius = 5;
+              let center = layer.getBounds().getCenter();
+              if (window.turf && feature.geometry) {
                 try {
-                  const centerFeature = window.turf.pointOnFeature(feature)
-                  if (centerFeature && centerFeature.geometry && centerFeature.geometry.coordinates) {
-                    const [lng, lat] = centerFeature.geometry.coordinates
-                    center = L.latLng(lat, lng)
-                  }
-                } catch (e) {
-                  console.warn("Turf centroid calculation failed, falling back to bounds center", e)
-                }
+                  const centerFeature = window.turf.pointOnFeature(feature);
+                  if (centerFeature?.geometry?.coordinates) center = L.latLng(centerFeature.geometry.coordinates[1], centerFeature.geometry.coordinates[0]);
+                } catch (e) {}
               }
 
-              let radius = Math.sqrt(val / maxMetricValue) * maxRadius
-              radius = Math.max(radius, minRadius) // Ensure it's not too small
+              let radius = Math.sqrt(val / maxMetricValue) * maxRadius;
+              radius = Math.max(radius, minRadius);
               
               const circle = L.circleMarker(center, {
-                radius: radius,
-                fillColor: getFillColor(val),
+                radius,
+                fillColor: getFillColor(val, grades, activeMetric, isSawahDL),
                 color: '#ffffff',
                 weight: 1.5,
                 opacity: opacityAAL > 0 ? 1 : 0,
                 fillOpacity: opacityAAL * 0.9,
                 pane: 'markerPane'
               });
-              
-              circle.bindTooltip(tooltipContent, {
-                sticky: true,
-                className: 'boundary-tooltip'
-              });
-              
-              circle.on('click', (e) => {
-                 // Trigger the feature click
-                 layer.fireEvent('click', e);
-              });
-              
+              circle.bindTooltip(tooltipContent, { sticky: true, className: 'boundary-tooltip' });
+              circle.on('click', (e) => layer.fireEvent('click', e));
               proportionalLayer.current.addLayer(circle);
             }
 
             layer.on('click', (e) => {
-              if (highlightedBoundaryRef.current) {
-                boundaryLayer.current.resetStyle(highlightedBoundaryRef.current);
-              }
+              if (highlightedBoundaryRef.current) boundaryLayer.current.resetStyle(highlightedBoundaryRef.current);
               layer.setStyle(highlightStyle(feature));
               highlightedBoundaryRef.current = layer;
-              if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-                layer.bringToFront();
-              }
-
-              // Set selected city for chart
+              layer.bringToFront();
               setSelectedCityFeature(feature);
-
-              if (mapRef.current && !activeMetric) {
-                mapRef.current.fitBounds(layer.getBounds(), {
-                  padding: [20, 20],
-                  maxZoom: 12,
-                  animate: true
-                });
-              }
-
-              // NEW: Forward the click event to the map to trigger Pick Point
-              if (mapRef.current) {
-                mapRef.current.fire('click', { latlng: e.latlng, layerPoint: e.layerPoint, containerPoint: e.containerPoint });
-              }
+              if (mapRef.current) mapRef.current.fire('click', { latlng: e.latlng, layerPoint: e.layerPoint, containerPoint: e.containerPoint });
             });
           }
         }
@@ -1303,8 +1497,10 @@ export default function CogHazardMap() {
         layerRef.current = null
       }
       setRasterStats(null)
-    } else {
-      // Do not auto-select first RP of new group so 'Pilih Return Period' is shown
+    } else if (selectedGroup === 'tsunami' || selectedGroup === 'kekeringan' || selectedGroup === 'flood_comp') {
+      // Auto-select for groups that typically only have one relevant mode/RP
+      const files = hazardGroupFiles[selectedGroup] || []
+      if (files.length > 0) setSelectedRpId(files[0].id)
     }
   }, [selectedGroup, hazardGroupFiles])
 
@@ -1996,7 +2192,7 @@ export default function CogHazardMap() {
               onPointerCancel={handlePointerUp}
             >
               <div className="flex justify-end pb-1 mb-1 border-b border-gray-100">
-                <button onClick={() => setSelectedBuildingHtml(null)} className="close-btn text-gray-400 hover:text-gray-800 focus:outline-none cursor-pointer transition-colors bg-gray-50 hover:bg-gray-100 rounded-full p-1">
+                <button onClick={() => { setSelectedBuildingHtml(null); setSelectedBuildingId(null); }} className="close-btn text-gray-400 hover:text-gray-800 focus:outline-none cursor-pointer transition-colors bg-gray-50 hover:bg-gray-100 rounded-full p-1">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -2017,11 +2213,11 @@ export default function CogHazardMap() {
             EXPOSURE_COLORS={EXPOSURE_COLORS}
             activeAalExposure={activeAalExposure}
             onInputModeChange={(mode) => setLegendInputMode(mode)}
-            boundaryDataAAL={boundaryDataAAL}
-            boundaryDataDL={boundaryDataDL}
+            boundaryDataAAL={enrichedBoundaryDataAAL}
+            boundaryDataDL={enrichedBoundaryDataDL}
             selectedGroup={selectedGroup}
             selectedRpId={selectedRpId}
-            selectedCityFeature={selectedCityFeature}
+            selectedCityFeature={enrichedCityFeature}
             onSelectCity={handleCityDropdownSelect}
             onClearCity={() => handleCityDropdownSelect(null)}
             droughtLossYear={droughtLossYear}
