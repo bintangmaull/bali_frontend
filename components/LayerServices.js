@@ -1,79 +1,92 @@
-// components/LayerServices.js
 import React from 'react'
-import { ChevronLeft, Layers, SlidersHorizontal } from 'lucide-react'
+import { ChevronLeft, Layers, SlidersHorizontal, Layout } from 'lucide-react'
+import { useTheme } from '../context/ThemeContext'
 
-const SectionTitle = ({ children, onSettingsClick, isActive }) => (
-  <div className="flex items-center justify-between mt-1 mb-2">
-    <h3 className="text-gray-400 text-[9px] font-bold tracking-[0.1em] uppercase">
-      {children}
-    </h3>
-    {onSettingsClick && (
-      <button 
-        onClick={(e) => { e.stopPropagation(); onSettingsClick(); }}
-        className={`p-1 rounded-full transition-colors flex-shrink-0 ${isActive ? 'text-orange-500 bg-orange-50' : 'text-gray-300 hover:text-orange-500 hover:bg-orange-50'}`}
-        title={`Atur Opacity Layer ${typeof children === 'string' ? children : ''}`}
-      >
-        <SlidersHorizontal size={14} strokeWidth={2.5} />
-      </button>
-    )}
-  </div>
-)
-
-const RadioItem = ({ label, name, value, checked, onChange }) => (
-  <div className="flex items-center justify-between group py-0.5 w-full">
-    <div 
-      className="flex items-center gap-2.5 cursor-pointer flex-1"
-      onClick={() => onChange(value)}
-    >
-      <div className="relative flex items-center justify-center">
-        <input
-          type="radio"
-          name={name}
-          value={value}
-          checked={checked}
-          readOnly
-          className="sr-only"
-        />
-        <div className={`w-3.5 h-3.5 rounded-full border transition-all duration-200 flex-shrink-0
-          ${checked ? 'border-orange-500' : 'border-gray-200 group-hover:border-gray-300'}`} />
-        {checked && <div className="absolute w-1.5 h-1.5 rounded-full bg-orange-500 animate-in fade-in zoom-in duration-200 flex-shrink-0" />}
-      </div>
-      <span className={`text-[12px] transition-colors duration-200 truncate
-        ${checked ? 'text-gray-800 font-medium' : 'text-gray-400 group-hover:text-gray-600'}`}>
-        {label}
-      </span>
+const SectionTitle = ({ children, onSettingsClick, isActive }) => {
+  const { darkMode } = useTheme();
+  return (
+    <div className="flex items-center justify-between mt-1 mb-2">
+      <h3 className={`text-[9px] font-bold tracking-[0.1em] uppercase ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+        {children}
+      </h3>
+      {onSettingsClick && (
+        <button 
+          onClick={(e) => { e.stopPropagation(); onSettingsClick(); }}
+          className={`p-1 rounded-full transition-colors flex-shrink-0 ${isActive ? 'text-orange-500 bg-orange-50' : (darkMode ? 'text-gray-600 hover:text-orange-400 hover:bg-orange-950/30' : 'text-gray-300 hover:text-orange-500 hover:bg-orange-50')}`}
+          title={`Atur Opacity Layer ${typeof children === 'string' ? children : ''}`}
+        >
+          <SlidersHorizontal size={14} strokeWidth={2.5} />
+        </button>
+      )}
     </div>
-  </div>
-)
+  );
+};
 
-const CheckItem = ({ label, checked, onChange, disabled }) => (
-  <div className={`flex items-center justify-between group py-0.5 w-full ${disabled ? 'opacity-50' : ''}`}>
-    <label className={`flex items-center gap-2.5 flex-1 ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-      <div className="relative flex items-center justify-center">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={onChange}
-          disabled={disabled}
-          className="sr-only"
-        />
-        <div className={`w-3.5 h-3.5 rounded border transition-all duration-200 flex-shrink-0
-          ${checked ? 'border-blue-500 bg-blue-500' : 'border-gray-200'}
-          ${!disabled && !checked ? 'group-hover:border-gray-300' : ''}`} />
-        {checked && (
-          <svg className="absolute w-3 h-3 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
-        )}
+const RadioItem = ({ label, name, value, checked, onChange }) => {
+  const { darkMode } = useTheme();
+  return (
+    <div className="flex items-center justify-between group py-0.5 w-full">
+      <div 
+        className="flex items-center gap-2.5 cursor-pointer flex-1"
+        onClick={() => onChange(value)}
+      >
+        <div className="relative flex items-center justify-center">
+          <input
+            type="radio"
+            name={name}
+            value={value}
+            checked={checked}
+            readOnly
+            className="sr-only"
+          />
+          <div className={`w-3.5 h-3.5 rounded-full border transition-all duration-200 flex-shrink-0
+            ${checked ? 'border-orange-500' : (darkMode ? 'border-gray-700 group-hover:border-gray-600' : 'border-gray-200 group-hover:border-gray-300')}`} />
+          {checked && <div className="absolute w-1.5 h-1.5 rounded-full bg-orange-500 animate-in fade-in zoom-in duration-200 flex-shrink-0" />}
+        </div>
+        <span className={`text-[12px] transition-colors duration-200 truncate
+          ${checked 
+            ? (darkMode ? 'text-white font-bold' : 'text-gray-800 font-medium') 
+            : (darkMode ? 'text-gray-400 group-hover:text-gray-300' : 'text-gray-400 group-hover:text-gray-600')}`}>
+          {label}
+        </span>
       </div>
-      <span className={`text-[12px] transition-colors duration-200 truncate
-        ${checked ? 'text-gray-800 font-medium' : 'text-gray-400'}
-        ${!disabled && !checked ? 'group-hover:text-gray-600' : ''}`}>
-        {label}
-      </span>
-    </label>
-  </div>
-)
+    </div>
+  );
+};
+
+const CheckItem = ({ label, checked, onChange, disabled }) => {
+  const { darkMode } = useTheme();
+  return (
+    <div className={`flex items-center justify-between group py-0.5 w-full ${disabled ? 'opacity-50' : ''}`}>
+      <label className={`flex items-center gap-2.5 flex-1 ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+        <div className="relative flex items-center justify-center">
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={onChange}
+            disabled={disabled}
+            className="sr-only"
+          />
+          <div className={`w-3.5 h-3.5 rounded border transition-all duration-200 flex-shrink-0
+            ${checked ? 'border-[#2F6FAF] bg-[#2F6FAF]' : (darkMode ? 'border-gray-700' : 'border-gray-200')}
+            ${!disabled && !checked ? (darkMode ? 'group-hover:border-gray-600' : 'group-hover:border-gray-300') : ''}`} />
+          {checked && (
+            <svg className="absolute w-3 h-3 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          )}
+        </div>
+        <span className={`text-[12px] transition-colors duration-200 truncate
+          ${checked 
+            ? (darkMode ? 'text-white font-bold' : 'text-gray-800 font-medium') 
+            : (darkMode ? 'text-gray-400 group-hover:text-gray-300' : 'text-gray-400 group-hover:text-gray-600')}
+          ${!disabled && !checked ? '' : ''}`}>
+          {label}
+        </span>
+      </label>
+    </div>
+  );
+};
 
 export default function LayerServices({
   isSidebarOpen,
@@ -118,18 +131,25 @@ export default function LayerServices({
   floodSawahYear,
   setFloodSawahYear,
 }) {
+  const { darkMode } = useTheme()
   const [openSettings, setOpenSettings] = React.useState(null) // 'basemap' | 'hazard' | 'aal' | 'sawah' | null
 
   return (
-    <aside className={`absolute left-0 top-0 h-full z-[2001] bg-white shadow-2xl transition-all duration-500 ease-in-out flex
+    <aside className={`absolute left-0 top-0 h-full z-[2001] transition-all duration-500 ease-in-out flex
+      ${darkMode ? 'bg-[#1A1D21] border-r border-gray-800 shadow-[20px_0_30px_rgba(0,0,0,0.3)]' : 'bg-white border-r border-slate-200 shadow-2xl'}
       ${isSidebarOpen ? 'w-[260px]' : 'w-0'}`}>
       
       <div className="flex-1 flex flex-col h-full relative overflow-hidden">
         {/* Header sidebar */}
-        <div className="bg-white border-b border-gray-100 p-3 flex items-center justify-between">
-          <div>
-            <h2 className="text-gray-800 text-[15px] font-bold tracking-tight">Layer Selection</h2>
-            <p className="text-gray-400 text-[8px] mt-0.5 uppercase tracking-wider">Map Configuration</p>
+        <div className={`p-3 flex items-center justify-between border-b ${darkMode ? 'bg-[#1E2023] border-gray-800' : 'bg-white border-gray-100'}`}>
+          <div className="flex items-center gap-1.5 px-0.5 min-w-0 flex-1">
+            <Layout size={16} className={`shrink-0 ${darkMode ? 'text-[#6FB5C2]' : 'text-[#1E5C9A]'}`} />
+            <div className="flex flex-col min-w-0">
+              <h2 className={`font-bold text-[10px] leading-none whitespace-nowrap ${darkMode ? 'text-white' : 'text-[#1E5C9A]'}`}>
+                Layer Selection
+              </h2>
+              <span className="text-gray-400 text-[6.5px] uppercase tracking-widest leading-none mt-0.5 whitespace-nowrap">Map Configuration</span>
+            </div>
           </div>
           <button 
             onClick={() => setIsSidebarOpen(false)}
@@ -144,7 +164,9 @@ export default function LayerServices({
           
           {/* Base Map / Layer Selection Toggle */}
           <div className="flex justify-center mb-1 mt-1 px-1">
-            <div className="bg-white/95 backdrop-blur-sm p-1 rounded-full shadow-[0_2px_12px_rgb(0,0,0,0.1)] border border-slate-100/50 flex items-center gap-1 w-full max-w-[210px]">
+            <div className={`p-1 rounded-full border flex items-center gap-1 w-full max-w-[210px] backdrop-blur-sm transition-all ${
+              darkMode ? 'bg-gray-800/80 border-gray-700 shadow-inner' : 'bg-white/95 border-slate-100/50 shadow-[0_2px_12px_rgb(0,0,0,0.1)]'
+            }`}>
               {/* Left Icon with Settings Trigger */}
               <button 
                 onClick={(e) => { e.stopPropagation(); setOpenSettings(openSettings === 'basemap' ? null : 'basemap'); }}
@@ -179,9 +201,11 @@ export default function LayerServices({
           {/* Basemap Settings Dropdown */}
           <div className="relative flex justify-center w-full">
             {openSettings === 'basemap' && (
-              <div className="absolute top-0 z-[2010] bg-white p-3 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 w-[200px] animate-in fade-in zoom-in-95 duration-200 mt-1">
+              <div className={`absolute top-0 z-[2010] p-3 rounded-xl border animate-in fade-in zoom-in-95 duration-200 mt-1 ${
+                darkMode ? 'bg-gray-800 border-gray-700 shadow-2xl' : 'bg-white border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.12)]'
+              } w-[200px]`}>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-[10px] font-bold text-slate-700">Opacity Basemap</span>
+                  <span className={`text-[10px] font-bold ${darkMode ? 'text-gray-300' : 'text-slate-700'}`}>Opacity Basemap</span>
                   <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">{Math.round(opacityBasemap * 100)}%</span>
                 </div>
                 <input 
@@ -205,7 +229,9 @@ export default function LayerServices({
             </SectionTitle>
             
             {openSettings === 'hazard' && (
-              <div className="absolute right-0 top-8 z-[2010] bg-white p-3 rounded-xl shadow-lg border border-slate-100 w-48 animate-in fade-in zoom-in-95 duration-200">
+              <div className={`absolute right-0 top-8 z-[2010] p-3 rounded-xl border animate-in fade-in zoom-in-95 duration-200 w-48 ${
+                darkMode ? 'bg-gray-800 border-gray-700 shadow-2xl' : 'bg-white border-slate-100 shadow-lg'
+              }`}>
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-[10px] font-bold text-slate-700">Opacity Layer Hazard</span>
                   <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">{Math.round(opacityHazard * 100)}%</span>
@@ -246,7 +272,11 @@ export default function LayerServices({
                         <select
                           value={selectedRpId}
                           onChange={(e) => setSelectedRpId(e.target.value)}
-                          className="w-full bg-orange-50 text-orange-700 text-[11px] font-semibold py-1 px-2 rounded border border-orange-200 focus:outline-none focus:ring-1 focus:ring-orange-500 appearance-none cursor-pointer shadow-sm"
+                          className={`w-full text-[11px] font-semibold py-1 px-2 rounded border focus:outline-none focus:ring-1 appearance-none cursor-pointer shadow-sm transition-all ${
+                            darkMode 
+                              ? 'bg-gray-800 border-gray-700 text-orange-400 focus:ring-orange-500/50' 
+                              : 'bg-orange-50 text-orange-700 border-orange-200 focus:ring-orange-500'
+                          }`}
                           style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23f97316' stroke-width='3'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', backgroundSize: '10px' }}
                         >
                           <option value="" disabled className="text-gray-400">Pilih Return Period...</option>
@@ -283,17 +313,19 @@ export default function LayerServices({
             </SectionTitle>
 
             {openSettings === 'aal' && (
-              <div className="absolute right-0 top-8 z-[2010] bg-white p-3 rounded-xl shadow-lg border border-slate-100 w-48 animate-in fade-in zoom-in-95 duration-200">
+              <div className={`absolute right-0 top-8 z-[2010] p-3 rounded-xl border animate-in fade-in zoom-in-95 duration-200 w-48 ${
+                darkMode ? 'bg-gray-800 border-gray-700 shadow-2xl' : 'bg-white border-slate-100 shadow-lg'
+              }`}>
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-[10px] font-bold text-slate-700">Opacity Layer Boundary</span>
-                  <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">{Math.round(opacityAAL * 100)}%</span>
+                  <span className="text-[10px] font-bold text-[#1E5C9A] bg-blue-50 px-1.5 py-0.5 rounded">{Math.round(opacityAAL * 100)}%</span>
                 </div>
                 <input 
                   type="range" 
                   min="0" max="1" step="0.05" 
                   value={opacityAAL} 
                   onChange={(e) => setOpacityAAL(parseFloat(e.target.value))}
-                  className="w-full accent-blue-500 cursor-pointer h-1.5 bg-slate-200 rounded-lg appearance-none"
+                  className="w-full accent-[#2F6FAF] cursor-pointer h-1.5 bg-slate-200 rounded-lg appearance-none"
                 />
                 <div className="text-[8px] text-gray-400 italic text-left mt-2.5 mb-0.5">*Langsung diterapkan ke peta</div>
               </div>
@@ -313,7 +345,11 @@ export default function LayerServices({
                     <select
                       value={activeAalExposure}
                       onChange={(e) => setActiveAalExposure(e.target.value)}
-                      className="bg-orange-50 text-orange-700 text-[10px] font-semibold py-1 px-2 pr-6 rounded border border-orange-200 focus:outline-none focus:ring-1 focus:ring-orange-500 appearance-none cursor-pointer shadow-sm min-w-[120px]"
+                      className={`text-[10px] font-semibold py-1 px-2 pr-6 rounded border focus:outline-none focus:ring-1 appearance-none cursor-pointer shadow-sm min-w-[120px] transition-all ${
+                        darkMode 
+                          ? 'bg-gray-800 border-gray-700 text-orange-400 focus:ring-orange-500/50' 
+                          : 'bg-orange-50 text-orange-700 border-orange-200 focus:ring-orange-500'
+                      }`}
                       style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23f97316' stroke-width='3'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 6px center', backgroundSize: '10px' }}
                     >
                       <option value="total">All Buildings</option>
@@ -363,7 +399,7 @@ export default function LayerServices({
                     <button
                       className={`flex-1 py-1.5 transition-colors ${
                         (floodView || 'building') === 'building'
-                          ? 'bg-blue-600 text-white shadow-inner'
+                          ? 'bg-[#1E5C9A] text-white shadow-inner'
                           : 'bg-white text-slate-600 hover:bg-slate-50'
                       }`}
                       onClick={() => setFloodView && setFloodView('building')}
@@ -373,8 +409,8 @@ export default function LayerServices({
                     <button
                       className={`flex-1 py-1.5 transition-colors border-l border-slate-200 ${
                         floodView === 'sawah'
-                          ? 'bg-blue-600 text-white shadow-inner'
-                          : 'bg-white text-slate-600 hover:bg-slate-50'
+                          ? 'bg-[#1E5C9A] text-white shadow-inner'
+                          : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-white text-slate-600 hover:bg-slate-50'
                       }`}
                       onClick={() => setFloodView && setFloodView('sawah')}
                     >
@@ -393,7 +429,7 @@ export default function LayerServices({
                             className={`text-[10px] font-bold px-3 py-0.5 rounded-full border transition-all ${
                               (floodSawahYear || 'loss_2022') === key
                                 ? 'bg-green-600 text-white border-green-600 shadow-sm'
-                                : 'bg-white text-gray-400 border-gray-200 hover:border-green-400 hover:text-green-700'
+                                : darkMode ? 'bg-gray-800 text-gray-400 border-gray-700 hover:border-[#6FB5C2] hover:text-[#6FB5C2]' : 'bg-white text-gray-400 border-gray-200 hover:border-green-400 hover:text-green-700'
                             }`}
                           >{label}</button>
                         ))}
@@ -469,7 +505,7 @@ export default function LayerServices({
                 </div>
 
                 {openSettings === 'sawah' && (
-                  <div className="mb-2 bg-white p-2 rounded shadow-sm border border-green-100">
+                  <div className={`mb-2 p-2 rounded shadow-sm border ${darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white border-green-100'}`}>
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-[9px] font-bold text-slate-600">Opacity</span>
                       <span className="text-[9px] font-bold text-green-600">{Math.round(opacitySawah * 100)}%</span>
@@ -487,7 +523,9 @@ export default function LayerServices({
                 <select
                   value={selectedSawahYear}
                   onChange={(e) => setSelectedSawahYear(e.target.value)}
-                  className="w-full bg-white text-green-700 text-[10px] font-bold py-1.5 px-2 rounded border border-green-200 focus:outline-none cursor-pointer shadow-sm appearance-none"
+                  className={`w-full text-[10px] font-bold py-1.5 px-2 rounded border focus:outline-none cursor-pointer shadow-sm appearance-none ${
+                    darkMode ? 'bg-gray-800 border-gray-700 text-[#6FB5C2]' : 'bg-white border-green-200 text-green-700'
+                  }`}
                   style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2316a34a' stroke-width='3'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', backgroundSize: '10px' }}
                 >
                   {sawahMetadata.map(s => (
@@ -516,7 +554,7 @@ export default function LayerServices({
             <div className="space-y-2.5 mt-3 flex flex-col items-center">
               <button
                 onClick={onOpenHSBGN}
-                className="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 py-1.5 px-3 rounded-lg text-xs font-semibold shadow-sm transition-colors flex items-center justify-center gap-2"
+                className="w-full bg-blue-50 hover:bg-blue-100 text-[#1E5C9A] border border-blue-200 py-1.5 px-3 rounded-lg text-xs font-semibold shadow-sm transition-colors flex items-center justify-center gap-2"
               >
                 <Layers size={14} />
                 Manajemen HSBGN
@@ -525,7 +563,7 @@ export default function LayerServices({
               {onOpenBangunan && (
                 <button
                   onClick={onOpenBangunan}
-                  className="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 py-1.5 px-3 rounded-lg text-xs font-semibold shadow-sm transition-colors flex items-center justify-center gap-2"
+                  className="w-full bg-blue-50 hover:bg-blue-100 text-[#1E5C9A] border border-blue-200 py-1.5 px-3 rounded-lg text-xs font-semibold shadow-sm transition-colors flex items-center justify-center gap-2"
                 >
                   <Layers size={14} />
                   Manajemen Bangunan

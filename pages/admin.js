@@ -141,7 +141,7 @@ export default function AdminPage() {
 
   const tabCls = (t) =>
     `px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${tab === t
-      ? 'bg-[#C6FF00] text-black'
+      ? 'bg-[#1E5C9A] text-white'
       : 'text-gray-400 hover:text-white hover:bg-white/10'}`
 
   if (!isLoggedIn) {
@@ -149,7 +149,7 @@ export default function AdminPage() {
       <div className="min-h-screen flex items-center justify-center bg-[#0D0F12]">
         <div className="w-full max-w-sm p-8 bg-[#1E2023] border border-gray-700 rounded-2xl shadow-2xl">
           <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-[#C6FF00]">Admin Panel</h1>
+            <h1 className="text-2xl font-bold text-[#1E5C9A]">Admin Panel</h1>
             <p className="text-gray-400 text-sm mt-1">Masukkan kredensial khusus developer.</p>
           </div>
 
@@ -166,7 +166,7 @@ export default function AdminPage() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-2.5 bg-[#2a2d31] border border-gray-600 text-white rounded-xl focus:border-[#C6FF00] outline-none transition text-sm"
+                className="w-full px-4 py-2.5 bg-[#2a2d31] border border-gray-600 text-white rounded-xl focus:border-[#1E5C9A] outline-none transition text-sm"
                 required
               />
             </div>
@@ -176,13 +176,13 @@ export default function AdminPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2.5 bg-[#2a2d31] border border-gray-600 text-white rounded-xl focus:border-[#C6FF00] outline-none transition text-sm"
+                className="w-full px-4 py-2.5 bg-[#2a2d31] border border-gray-600 text-white rounded-xl focus:border-[#1E5C9A] outline-none transition text-sm"
                 required
               />
             </div>
             <button
               type="submit"
-              className="w-full py-2.5 rounded-xl bg-[#C6FF00] text-black font-semibold text-sm hover:bg-[#d4ff33] active:scale-95 transition-all mt-6"
+              className="w-full py-2.5 rounded-xl bg-[#1E5C9A] text-white font-semibold text-sm hover:bg-[#2F6FAF] active:scale-95 transition-all mt-6"
             >
               Masuk
             </button>
@@ -203,7 +203,7 @@ export default function AdminPage() {
       {/* Header */}
       <div className="bg-[#1E2023] border-b border-gray-700 px-6 py-4 flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-[#C6FF00]">CardinAAL — Admin Panel</h1>
+          <h1 className="text-xl font-bold text-[#1E5C9A]">Bali Multi-Hazard Risk Dashboard — Admin Panel</h1>
           <p className="text-xs text-gray-400 mt-0.5">Developer-only area</p>
         </div>
         <button
@@ -350,7 +350,7 @@ export default function AdminPage() {
                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border
                           ${log.action === 'tambah' ? 'bg-green-500/20 text-green-300 border-green-500/30'
                           : log.action === 'hapus' ? 'bg-red-500/20 text-red-300 border-red-500/30'
-                          : log.action === 'upload_csv' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                          : log.action === 'upload_csv' ? 'bg-[#2F6FAF]/20 text-[#1E5C9A] border-[#2F6FAF]/30'
                           : 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'}`}>
                           {log.action}
                         </span>

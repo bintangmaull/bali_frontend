@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTheme } from '../context/ThemeContext';
 import { createPortal } from 'react-dom';
 import { TrendingUp, TrendingDown, Info, Maximize2, Minimize2, MapPin, X, BarChart2, Check, ExternalLink, Filter, Shield, Layers, Calendar, ChevronDown, ChevronLeft, ChevronRight, Table2 as TableIcon, Layout } from 'lucide-react';
 import { MANUAL_GEMPA_DATA } from '../src/lib/manual_gempa_data';
@@ -213,6 +214,7 @@ function MiniBarChart({ data, maxVal, expAsset = 0 }) {
 }
 
 function DroughtSawahChartPanel({ selectedGroup, selectedCityFeature }) {
+  const { darkMode } = useTheme();
   const [droughtData, setDroughtData] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
   const [zoomedChart, setZoomedChart] = React.useState(null); // { cc, rp } | null
@@ -290,7 +292,7 @@ function DroughtSawahChartPanel({ selectedGroup, selectedCityFeature }) {
             <div key={i} className="flex items-center justify-between gap-4 mb-0.5">
               <div className="flex items-center gap-1.5 text-slate-600">
                 <span className="w-2 h-2 rounded-full" style={{ background: entry.fill || entry.color }} />
-                <span>{entry.name}</span>
+                <span className={darkMode ? 'text-gray-300' : 'text-slate-600'}>{entry.name}</span>
               </div>
               <span className="font-bold" style={{ color: entry.fill || entry.color }}>{formatRupiah(entry.value)}</span>
             </div>
@@ -302,10 +304,10 @@ function DroughtSawahChartPanel({ selectedGroup, selectedCityFeature }) {
     const renderYearComparison = (height = 170) => (
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={yearComparisonData} margin={{ top: 4, right: 6, bottom: 6, left: -4 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-          <XAxis dataKey="year" tick={{ fontSize: 7, fill: '#64748b', fontWeight: 700 }} axisLine={{ stroke: '#cbd5e1' }} tickLine={false} />
-          <YAxis tickFormatter={formatRupiah} tick={{ fontSize: 6, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={52} />
-          <Tooltip cursor={{ fill: 'rgba(241,245,249,0.4)' }} content={tooltipContent} />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={darkMode ? 'rgba(148, 163, 184, 0.1)' : '#f1f5f9'} />
+          <XAxis dataKey="year" tick={{ fontSize: 7, fill: darkMode ? '#94a3b8' : '#64748b', fontWeight: 700 }} axisLine={{ stroke: darkMode ? '#475569' : '#cbd5e1' }} tickLine={false} />
+          <YAxis tickFormatter={formatRupiah} tick={{ fontSize: 6, fill: darkMode ? '#64748b' : '#94a3b8' }} axisLine={false} tickLine={false} width={52} />
+          <Tooltip cursor={{ fill: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(241,245,249,0.4)' }} content={tooltipContent} />
           {rpSeriesConfig.map(({ dataKey, label, color }) => (
             <Bar key={dataKey} dataKey={dataKey} name={label} fill={color} radius={[2, 2, 0, 0]} maxBarSize={12} />
           ))}
@@ -530,16 +532,16 @@ function DroughtSawahChartPanel({ selectedGroup, selectedCityFeature }) {
             const tooltipContent = ({ active, payload, label: l }) => {
               if (!active || !payload?.length) return null;
               return (
-                <div className="bg-white/95 backdrop-blur border border-green-200 p-3 rounded-xl shadow-xl text-xs max-w-xs">
-                  <p className="font-bold text-slate-800 mb-2 border-b pb-1">{l}</p>
+                <div className={`backdrop-blur border p-3 rounded-xl shadow-xl text-xs max-w-xs ${darkMode ? 'bg-gray-900/95 border-gray-700' : 'bg-white/95 border-green-200'}`}>
+                  <p className={`font-bold border-b mb-2 pb-1 ${darkMode ? 'text-white border-gray-700' : 'text-slate-800 border-slate-100'}`}>{l}</p>
                   {payload.map((entry, i) => (
                     <div key={i} className="flex items-center justify-between gap-4 mb-0.5">
-                      <div className="flex items-center gap-1.5 text-slate-600">
+                      <div className={`flex items-center gap-1.5 ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>
                         <span className="w-2 h-2 rounded-full" style={{ background: entry.fill }} />
                         <span>{rpLabels[entry.dataKey]}</span>
                       </div>
                       <div className="flex flex-col items-end">
-                        <span className="font-bold" style={{ color: entry.fill }}>{formatRupiah(entry.value)}</span>
+                        <span className="font-bold" style={{ color: !darkMode ? entry.fill : '' }}>{formatRupiah(entry.value)}</span>
                         <span className="text-[10px] text-green-600 font-bold">({formatUSD(entry.value)})</span>
                       </div>
                     </div>
@@ -551,10 +553,10 @@ function DroughtSawahChartPanel({ selectedGroup, selectedCityFeature }) {
             const renderMultiRpChart = (data, height = 130) => (
               <ResponsiveContainer width="100%" height={height}>
                 <BarChart data={data} margin={{ top: 2, right: 4, bottom: 32, left: -4 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0fdf4" />
-                  <XAxis dataKey="kota" tick={{ fontSize: 5, fill: '#64748b', fontWeight: 700 }} axisLine={{ stroke: '#cbd5e1' }} tickLine={false} interval={0} angle={-35} textAnchor="end" height={42} />
-                  <YAxis tickFormatter={formatRupiah} tick={{ fontSize: 5.5, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={48} />
-                  <Tooltip cursor={{ fill: 'rgba(209,250,229,0.4)' }} content={tooltipContent} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={darkMode ? 'rgba(148, 163, 184, 0.1)' : '#f0fdf4'} />
+                  <XAxis dataKey="kota" tick={{ fontSize: 5, fill: darkMode ? '#94a3b8' : '#64748b', fontWeight: 700 }} axisLine={{ stroke: darkMode ? '#475569' : '#cbd5e1' }} tickLine={false} interval={0} angle={-35} textAnchor="end" height={42} />
+                  <YAxis tickFormatter={formatRupiah} tick={{ fontSize: 5.5, fill: darkMode ? '#64748b' : '#94a3b8' }} axisLine={false} tickLine={false} width={48} />
+                  <Tooltip cursor={{ fill: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(209,250,229,0.4)' }} content={tooltipContent} />
                   {Object.entries(rpColors).map(([key, color]) => (
                     <Bar key={key} dataKey={key} name={rpLabels[key]} fill={color} radius={[2, 2, 0, 0]} maxBarSize={9} />
                   ))}
@@ -569,7 +571,7 @@ function DroughtSawahChartPanel({ selectedGroup, selectedCityFeature }) {
                   {Object.entries(rpColors).map(([key, color]) => (
                     <div key={key} className="flex items-center gap-1">
                       <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
-                      <span className="text-[6px] text-slate-600 font-medium">{rpLabels[key]}</span>
+                      <span className={`text-[6px] font-medium ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>{rpLabels[key]}</span>
                     </div>
                   ))}
                 </div>
@@ -584,11 +586,11 @@ function DroughtSawahChartPanel({ selectedGroup, selectedCityFeature }) {
                   return (
                     <div key={yearKey} className="flex flex-col gap-0.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-[7px] font-bold text-slate-500">{label}</span>
-                        <span className="text-[6px] text-slate-400 cursor-pointer hover:text-green-600 transition-colors"
+                        <span className={`text-[7px] font-bold ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>{label}</span>
+                        <span className={`text-[6px] cursor-pointer transition-colors ${darkMode ? 'text-gray-500 hover:text-green-400' : 'text-slate-400 hover:text-green-600'}`}
                           onClick={() => setZoomedChart({ yearKey, label, data, rpColors, rpLabels, tooltipContent, renderMultiRpChart })}>Perbesar</span>
                       </div>
-                      <div className="bg-white border border-green-100 rounded-lg p-1.5 shadow-sm cursor-pointer hover:border-green-300 transition-colors"
+                      <div className={`border rounded-lg p-1.5 shadow-sm cursor-pointer transition-colors ${darkMode ? 'bg-gray-800/40 border-gray-700 hover:border-green-500/50' : 'bg-white border-green-100/50 hover:border-green-300'}`}
                         onClick={() => setZoomedChart({ yearKey, label, data, rpColors, rpLabels, tooltipContent, renderMultiRpChart })}>
                         {data.length === 0
                           ? <div className="text-[8px] text-slate-400 text-center py-3">Tidak ada data</div>
@@ -632,6 +634,7 @@ function DroughtSawahChartPanel({ selectedGroup, selectedCityFeature }) {
 }
 
 function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYear, setSelectedSawahYear }) {
+  const { darkMode } = useTheme();
   const [loading] = React.useState(false);
   const [zoomedChart, setZoomedChart] = React.useState(null);
 
@@ -693,19 +696,18 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
     });
 
     const tooltipContent = ({ active, payload, label }) => {
-
       if (!active || !payload?.length) return null;
       return (
-        <div className="bg-white/95 backdrop-blur border border-slate-200 p-3 rounded-xl shadow-xl text-xs max-w-xs">
-          <p className="font-bold text-slate-800 mb-2 border-b pb-1">{label}</p>
+        <div className={`backdrop-blur border p-3 rounded-xl shadow-xl text-xs max-w-xs ${darkMode ? 'bg-gray-900/95 border-gray-700' : 'bg-white/95 border-slate-200'}`}>
+          <p className={`font-bold border-b mb-2 pb-1 ${darkMode ? 'text-white border-gray-700' : 'text-slate-800 border-slate-100'}`}>{label}</p>
           {payload.map((entry, i) => (
             <div key={i} className="flex items-center justify-between gap-4 mb-0.5">
               <div className="flex items-center gap-1.5 text-slate-600">
                 <span className="w-2 h-2 rounded-full" style={{ background: entry.fill || entry.color }} />
-                <span>{entry.name}</span>
+                <span className={darkMode ? 'text-gray-300' : 'text-slate-600'}>{entry.name}</span>
               </div>
               <div className="flex flex-col items-end">
-                <span className="font-bold" style={{ color: entry.fill || entry.color }}>{formatRupiah(entry.value)}</span>
+                <span className="font-bold" style={{ color: !darkMode ? (entry.fill || entry.color) : '' }}>{formatRupiah(entry.value)}</span>
                 <span className="text-[10px] text-green-600 font-bold">({formatUSD(entry.value)})</span>
               </div>
             </div>
@@ -717,10 +719,10 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
     const renderGroupedBar = (data, height = 130) => (
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={data} margin={{ top: 4, right: 6, bottom: 6, left: -4 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-          <XAxis dataKey="rp" tick={{ fontSize: 7, fill: '#64748b', fontWeight: 700 }} axisLine={{ stroke: '#cbd5e1' }} tickLine={false} />
-          <YAxis tickFormatter={formatRupiah} tick={{ fontSize: 6, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={52} />
-          <Tooltip cursor={{ fill: 'rgba(241,245,249,0.5)' }} content={tooltipContent} />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={darkMode ? 'rgba(148, 163, 184, 0.1)' : '#f1f5f9'} />
+          <XAxis dataKey="rp" tick={{ fontSize: 7, fill: darkMode ? '#94a3b8' : '#64748b', fontWeight: 700 }} axisLine={{ stroke: darkMode ? '#475569' : '#cbd5e1' }} tickLine={false} />
+          <YAxis tickFormatter={formatRupiah} tick={{ fontSize: 6, fill: darkMode ? '#64748b' : '#94a3b8' }} axisLine={false} tickLine={false} width={52} />
+          <Tooltip cursor={{ fill: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(241,245,249,0.5)' }} content={tooltipContent} />
           <Bar dataKey="ncc" name="Non CC" fill="#3b82f6" radius={[3, 3, 0, 0]} maxBarSize={26} />
           <Bar dataKey="cc"  name="CC"     fill="#f97316" radius={[3, 3, 0, 0]} maxBarSize={26} />
         </BarChart>
@@ -734,8 +736,8 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
 
     return (
       <div className="px-4 pt-3 pb-2 flex flex-col gap-3">
-        <div className="text-[8px] font-extrabold text-slate-500 tracking-widest uppercase flex items-center gap-1">
-          <BarChart2 size={10} className="text-blue-600" />
+        <div className={`text-[8px] font-extrabold tracking-widest uppercase flex items-center gap-1 ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>
+          <BarChart2 size={10} className={darkMode ? 'text-blue-400' : 'text-blue-600'} />
           Direct Loss Sawah — {selectedKota}
         </div>
 
@@ -754,7 +756,7 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
               const isActive = selectedSawahYear === key;
               const data = perCityMaps[key];
               return (
-                <div key={key} className={`flex flex-col gap-0.5 rounded-lg p-1.5 transition-colors ${isActive ? 'bg-green-50/60 border border-green-100/50' : ''}`}>
+                <div key={key} className={`flex flex-col gap-0.5 rounded-lg p-1.5 transition-colors ${isActive ? 'bg-white border border-green-100/50' : ''}`}>
                   <div className="flex items-center justify-between">
                     <span className={`text-[9px] font-bold ${isActive ? 'text-green-700' : 'text-slate-600'}`}>Sawah {label}</span>
                     <span className="text-[6px] text-slate-400 cursor-pointer hover:text-blue-600 transition-colors"
@@ -819,16 +821,16 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
   const tooltipAllCities = ({ active, payload, label: l }) => {
     if (!active || !payload?.length) return null;
     return (
-      <div className="bg-white/95 backdrop-blur border border-blue-200 p-3 rounded-xl shadow-xl text-xs max-w-xs">
-        <p className="font-bold text-slate-800 mb-2 border-b pb-1">{l}</p>
+      <div className={`backdrop-blur border p-3 rounded-xl shadow-xl text-xs max-w-xs ${darkMode ? 'bg-gray-900/95 border-gray-700' : 'bg-white/95 border-blue-200'}`}>
+        <p className={`font-bold border-b mb-2 pb-1 ${darkMode ? 'text-white border-gray-700' : 'text-slate-800 border-slate-100'}`}>{l}</p>
         {payload.map((entry, i) => (
           <div key={i} className="flex items-center justify-between gap-4 mb-0.5">
-            <div className="flex items-center gap-1.5 text-slate-600">
+            <div className={`flex items-center gap-1.5 ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>
               <span className="w-2 h-2 rounded-full" style={{ background: entry.fill }} />
               <span>{rpLabels[entry.dataKey]}</span>
             </div>
             <div className="flex flex-col items-end">
-              <span className="font-bold" style={{ color: entry.fill }}>{formatRupiah(entry.value)}</span>
+              <span className="font-bold" style={{ color: !darkMode ? entry.fill : '' }}>{formatRupiah(entry.value)}</span>
               <span className="text-[10px] text-green-600 font-bold">({formatUSD(entry.value)})</span>
             </div>
           </div>
@@ -840,10 +842,10 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
   const renderMultiRpChart = (data, height = 130) => (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} margin={{ top: 2, right: 4, bottom: 32, left: -4 }}>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eff6ff" />
-        <XAxis dataKey="kota" tick={{ fontSize: 5, fill: '#64748b', fontWeight: 700 }} axisLine={{ stroke: '#cbd5e1' }} tickLine={false} interval={0} angle={-35} textAnchor="end" height={42} />
-        <YAxis tickFormatter={formatRupiah} tick={{ fontSize: 5.5, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={48} />
-        <Tooltip cursor={{ fill: 'rgba(219,234,254,0.4)' }} content={tooltipAllCities} />
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={darkMode ? 'rgba(148, 163, 184, 0.1)' : '#eff6ff'} />
+        <XAxis dataKey="kota" tick={{ fontSize: 5, fill: darkMode ? '#94a3b8' : '#64748b', fontWeight: 700 }} axisLine={{ stroke: darkMode ? '#475569' : '#cbd5e1' }} tickLine={false} interval={0} angle={-35} textAnchor="end" height={42} />
+        <YAxis tickFormatter={formatRupiah} tick={{ fontSize: 5.5, fill: darkMode ? '#64748b' : '#94a3b8' }} axisLine={false} tickLine={false} width={48} />
+        <Tooltip cursor={{ fill: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(219,234,254,0.4)' }} content={tooltipAllCities} />
         {Object.entries(rpColors).map(([key, color]) => (
           <Bar key={key} dataKey={key} name={rpLabels[key]} fill={color} radius={[2, 2, 0, 0]} maxBarSize={9} />
         ))}
@@ -859,8 +861,8 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
 
   return (
     <div className="px-4 pt-3 pb-2 flex flex-col gap-3">
-      <div className="text-[8px] font-extrabold text-slate-500 tracking-widest uppercase flex items-center gap-1">
-        <BarChart2 size={10} className="text-blue-600" />
+      <div className={`text-[8px] font-extrabold tracking-widest uppercase flex items-center gap-1 ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>
+        <BarChart2 size={10} className={darkMode ? 'text-blue-400' : 'text-blue-600'} />
         Direct Loss Sawah — Banjir
       </div>
 
@@ -873,7 +875,7 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
             {Object.entries(rpColors).map(([key, color]) => (
               <div key={key} className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
-                <span className="text-[6px] text-slate-600 font-medium">{rpLabels[key]}</span>
+                <span className={`text-[6px] font-medium ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>{rpLabels[key]}</span>
               </div>
             ))}
           </div>
@@ -883,13 +885,13 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
             const isActive = selectedSawahYear === key;
             const data = allCitiesMaps[key];
             return (
-              <div key={key} className={`flex flex-col gap-0.5 rounded-lg p-1.5 transition-colors ${isActive ? 'bg-green-50/60 border border-green-100/50' : ''}`}>
+              <div key={key} className={`flex flex-col gap-0.5 rounded-lg p-1.5 transition-colors ${isActive ? (darkMode ? 'bg-blue-900/20 border border-blue-800/50' : 'bg-white border border-green-100/50') : ''}`}>
                 <div className="flex items-center justify-between">
-                  <span className={`text-[9px] font-bold ${isActive ? 'text-green-700' : 'text-slate-600'}`}>Sawah {label} — Semua Kota</span>
-                  <span className="text-[6px] text-slate-400 cursor-pointer hover:text-blue-600 transition-colors"
+                  <span className={`text-[9px] font-bold ${isActive ? (darkMode ? 'text-blue-400' : 'text-green-700') : (darkMode ? 'text-gray-400' : 'text-slate-600')}`}>Sawah {label} — Semua Kota</span>
+                  <span className={`text-[6px] cursor-pointer transition-colors ${darkMode ? 'text-gray-500 hover:text-blue-400' : 'text-slate-400 hover:text-blue-600'}`}
                     onClick={() => setZoomedChart({ label: `Sawah ${label} — Semua Kota`, data })}>Perbesar</span>
                 </div>
-                <div className="bg-white border border-blue-100 rounded-lg p-1.5 shadow-sm cursor-pointer hover:border-blue-300 transition-colors"
+                <div className={`border rounded-lg p-1.5 shadow-sm cursor-pointer transition-colors ${darkMode ? 'bg-gray-800/40 border-gray-700 hover:border-blue-500/50' : 'bg-white border-blue-100 hover:border-blue-300'}`}
                   onClick={() => setZoomedChart({ label: `Sawah ${label} — Semua Kota`, data })}>
                   {renderMultiRpChart(data, 160)}
                 </div>
@@ -931,6 +933,7 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
 
 
 function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup, onOpenTable }) {
+  const { darkMode } = useTheme();
   const [zoomedChart, setZoomedChart] = useState(null);
 
   // Kekeringan uses its own dedicated sawah chart, not boundary data
@@ -1146,29 +1149,29 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
       // Manual Gempa additions are now handled centrally in CogHazardMap aggregator
 
       return (
-        <div key={group.exp} className="bg-slate-50 rounded-xl p-3 mb-3 border border-slate-100/50 relative">
+        <div key={group.exp} className={`rounded-xl p-3 mb-3 border relative transition-all ${darkMode ? 'bg-gray-800/40 border-gray-700/50 shadow-lg' : 'bg-white border-slate-100/50'}`}>
           <div className="flex items-center justify-center gap-2 mb-2">
-            <div className="text-[10px] font-bold text-slate-700 tracking-wide text-center">{group.label}</div>
+            <div className={`text-[10px] font-bold tracking-wide text-center ${darkMode ? 'text-gray-300' : 'text-slate-700'}`}>{group.label}</div>
             {group.exp !== 'total' && (
               <button
                 onClick={() => onOpenTable && onOpenTable(group.layerKey)}
                 title="Lihat Data Tabel"
-                className="text-slate-400 hover:text-blue-500 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded p-1 shadow-sm transition-colors"
+                className={`transition-all rounded p-1 shadow-sm border ${darkMode ? 'text-gray-400 hover:text-blue-400 bg-gray-700 border-gray-600 hover:border-blue-900/50' : 'text-slate-400 hover:text-blue-500 bg-white hover:bg-blue-50 border-slate-200 hover:border-blue-200'}`}
               >
                 <TableIcon size={12} strokeWidth={2.5} />
               </button>
             )}
           </div>
           {group.exp !== 'total' && expCount > 0 && (
-            <div className="flex justify-between items-center text-[9px] mb-3 px-2 border-b border-slate-200 pb-2">
+            <div className={`flex justify-between items-center text-[9px] mb-3 px-2 border-b pb-2 ${darkMode ? 'border-gray-700' : 'border-slate-200'}`}>
               <div className="flex flex-col">
-                <span className="text-slate-400 uppercase tracking-wider font-semibold">Bangunan</span>
-                <span className="font-bold text-slate-700">{expCount.toLocaleString('id-ID')}</span>
+                <span className={`uppercase tracking-wider font-semibold ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>Bangunan</span>
+                <span className={`font-bold ${darkMode ? 'text-gray-300' : 'text-slate-700'}`}>{expCount.toLocaleString('id-ID')}</span>
               </div>
               <div className="flex flex-col text-right">
-                <span className="text-slate-400 uppercase tracking-wider font-semibold">Nilai Aset</span>
+                <span className={`uppercase tracking-wider font-semibold ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>Nilai Aset</span>
                 <div className="flex flex-col items-end">
-                  <span className="font-bold text-slate-700">{formatRupiah(expAsset)}</span>
+                  <span className={`font-bold ${darkMode ? 'text-gray-300' : 'text-slate-700'}`}>{formatRupiah(expAsset)}</span>
                   <span className="text-[8px] text-green-600 font-bold">({formatUSD(expAsset)})</span>
                 </div>
               </div>
@@ -1183,17 +1186,17 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
   };
 
   return (
-    <div className="px-4 pb-4 border-t border-slate-100 flex flex-col items-center">
-      <div className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 mt-3 mb-1 shadow-sm flex justify-between items-center">
+    <div className={`px-4 pb-4 border-t flex flex-col items-center ${darkMode ? 'border-gray-800' : 'border-slate-100'}`}>
+      <div className={`w-full border rounded-xl p-3 mt-3 mb-1 shadow-sm flex justify-between items-center transition-all ${darkMode ? 'bg-gray-800/60 border-gray-700 shadow-black/20' : 'bg-white border-slate-100'}`}>
         <div className="flex flex-col">
-          <span className="text-[8px] font-bold text-slate-400 tracking-widest uppercase">Total Bangunan</span>
-          <span className="text-[12px] font-extrabold text-slate-800">{totalCount.toLocaleString('id-ID')}</span>
+          <span className={`text-[8px] font-bold tracking-widest uppercase ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>Total Bangunan</span>
+          <span className={`text-[12px] font-extrabold ${darkMode ? 'text-white' : 'text-slate-800'}`}>{totalCount.toLocaleString('id-ID')}</span>
         </div>
-        <div className="w-[1px] h-6 bg-slate-200"></div>
+        <div className={`w-[1px] h-6 ${darkMode ? 'bg-gray-700' : 'bg-slate-200'}`}></div>
         <div className="flex flex-col text-right">
-          <span className="text-[8px] font-bold text-slate-400 tracking-widest uppercase">Total Nilai Aset</span>
+          <span className={`text-[8px] font-bold tracking-widest uppercase ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>Total Nilai Aset</span>
           <div className="flex flex-col items-end">
-            <span className="text-[12px] font-extrabold text-slate-800">{formatRupiah(totalAsset)}</span>
+            <span className={`text-[12px] font-extrabold ${darkMode ? 'text-white' : 'text-slate-800'}`}>{formatRupiah(totalAsset)}</span>
             <span className="text-[10px] text-green-600 font-bold">({formatUSD(totalAsset)})</span>
           </div>
         </div>
@@ -1201,25 +1204,25 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
 
       {/* City Comparison Chart (Only when 'Semua Kota') */}
       {!selectedCityFeature && cityChartData.length > 0 && (
-        <div className="w-full h-[180px] bg-white border border-slate-200 rounded-xl p-2 mt-2 shadow-sm relative z-0 flex flex-col">
-          <div className="text-[8px] font-extrabold text-slate-500 tracking-widest uppercase mb-1 flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              <BarChart2 size={10} className="text-blue-500" />
+        <div className={`w-full h-[180px] border rounded-xl p-2 mt-2 shadow-sm relative z-0 flex flex-col transition-all ${darkMode ? 'bg-gray-800/40 border-gray-700 shadow-black/20' : 'bg-white border-slate-200'}`}>
+          <div className="text-[8px] font-extrabold tracking-widest uppercase mb-1 flex items-center justify-between">
+            <div className={`flex items-center gap-1 ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>
+              <BarChart2 size={10} className={darkMode ? 'text-blue-400' : 'text-blue-500'} />
               Perbandingan Direct Loss Antar Kota
             </div>
-            <span className="text-[7px] text-slate-400 font-medium">Klik untuk perbesar</span>
+            <span className={darkMode ? 'text-gray-500' : 'text-slate-400'}>Klik untuk perbesar</span>
           </div>
           <div
-            className="flex-1 w-full relative cursor-pointer group rounded border border-transparent hover:border-blue-200 hover:bg-slate-50 transition-colors"
+            className={`flex-1 w-full relative cursor-pointer group rounded border transition-colors ${darkMode ? 'border-transparent hover:border-blue-900/50 hover:bg-gray-700/50' : 'border-transparent hover:border-blue-200 hover:bg-slate-50/50'}`}
             onClick={() => setZoomedChart({ type: 'city', title: 'Perbandingan Direct Loss Antar Kota', data: cityChartData, xKey: "kota" })}
           >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={cityChartData} margin={{ top: 5, right: 10, bottom: 20, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={darkMode ? 'rgba(148, 163, 184, 0.1)' : '#f1f5f9'} />
                 <XAxis
                   dataKey="kota"
-                  tick={{ fontSize: 6, fill: '#64748b', fontWeight: 700 }}
-                  axisLine={{ stroke: '#cbd5e1' }}
+                  tick={{ fontSize: 6, fill: darkMode ? '#94a3b8' : '#64748b', fontWeight: 700 }}
+                  axisLine={{ stroke: darkMode ? '#475569' : '#cbd5e1' }}
                   tickLine={false}
                   interval={0}
                   angle={-35}
@@ -1228,26 +1231,26 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
                 />
                 <YAxis
                   tickFormatter={(val) => val >= 1e12 ? `Rp${(val / 1e12).toFixed(1)}T` : val >= 1e9 ? `Rp${(val / 1e9).toFixed(0)}M` : `Rp${(val / 1e6).toFixed(0)}Jt`}
-                  tick={{ fontSize: 7, fill: '#94a3b8' }}
+                  tick={{ fontSize: 7, fill: darkMode ? '#64748b' : '#94a3b8' }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <Tooltip
-                  cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }}
+                  cursor={{ fill: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(241, 245, 249, 0.5)' }}
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="bg-white/95 backdrop-blur border border-slate-200 p-2 rounded-lg shadow-lg">
-                          <p className="font-bold text-slate-800 text-[9px] mb-1.5 border-b border-slate-100 pb-1">{label}</p>
+                        <div className={`backdrop-blur border p-2 rounded-lg shadow-lg ${darkMode ? 'bg-gray-900/95 border-gray-700' : 'bg-white/95 border-slate-200'}`}>
+                          <p className={`font-bold text-[9px] mb-1.5 border-b pb-1 ${darkMode ? 'text-white border-gray-700' : 'text-slate-800 border-slate-100'}`}>{label}</p>
                           <div className="flex flex-col gap-1">
                             {payload.map((entry, index) => (
                               <div key={index} className="flex items-center justify-between gap-4 text-[8px]">
-                                <div className="flex items-center gap-1.5 text-slate-600">
+                                <div className={`flex items-center gap-1.5 ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>
                                   <span className="w-2 h-2 rounded-[2px]" style={{ backgroundColor: entry.color }}></span>
                                   <span>{entry.name}</span>
                                 </div>
                                 <div className="flex flex-col items-end">
-                                  <span className="font-bold text-slate-800">{formatRupiah(entry.value)}</span>
+                                  <span className={`font-bold ${darkMode ? 'text-gray-200' : 'text-slate-800'}`}>{formatRupiah(entry.value)}</span>
                                   <span className="text-[7px] text-green-600 font-bold">({formatUSD(entry.value)})</span>
                                 </div>
                               </div>
@@ -1275,25 +1278,25 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
 
       {/* Exposure Comparison Chart */}
       {exposureChartData.length > 0 && (
-        <div className="w-full h-[180px] bg-white border border-slate-200 rounded-xl p-2 mt-2 shadow-sm relative z-0 flex flex-col">
-          <div className="text-[8px] font-extrabold text-slate-500 tracking-widest uppercase mb-1 flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              <BarChart2 size={10} className="text-orange-500" />
+        <div className={`w-full h-[180px] border rounded-xl p-2 mt-2 shadow-sm relative z-0 flex flex-col transition-all ${darkMode ? 'bg-gray-800/40 border-gray-700 shadow-black/20' : 'bg-white border-slate-200'}`}>
+          <div className="text-[8px] font-extrabold tracking-widest uppercase mb-1 flex items-center justify-between">
+            <div className={`flex items-center gap-1 ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>
+              <BarChart2 size={10} className={darkMode ? 'text-orange-400' : 'text-orange-500'} />
               Perbandingan Direct Loss Antar Eksposur
             </div>
-            <span className="text-[7px] text-slate-400 font-medium">Klik untuk perbesar</span>
+            <span className={darkMode ? 'text-gray-500' : 'text-slate-400'}>Klik untuk perbesar</span>
           </div>
           <div
-            className="flex-1 w-full relative cursor-pointer group rounded border border-transparent hover:border-orange-200 hover:bg-slate-50 transition-colors"
+            className={`flex-1 w-full relative cursor-pointer group rounded border transition-colors ${darkMode ? 'border-transparent hover:border-orange-900/50 hover:bg-gray-700/50' : 'border-transparent hover:border-orange-200 hover:bg-slate-50/50'}`}
             onClick={() => setZoomedChart({ type: 'exposure', title: 'Perbandingan Direct Loss Antar Eksposur', data: exposureChartData, xKey: "exposure_name" })}
           >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={exposureChartData} margin={{ top: 5, right: 10, bottom: 20, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={darkMode ? 'rgba(148, 163, 184, 0.1)' : '#f1f5f9'} />
                 <XAxis
                   dataKey="exposure_name"
-                  tick={{ fontSize: 6, fill: '#64748b', fontWeight: 700 }}
-                  axisLine={{ stroke: '#cbd5e1' }}
+                  tick={{ fontSize: 6, fill: darkMode ? '#94a3b8' : '#64748b', fontWeight: 700 }}
+                  axisLine={{ stroke: darkMode ? '#475569' : '#cbd5e1' }}
                   tickLine={false}
                   interval={0}
                   angle={-25}
@@ -1302,26 +1305,26 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
                 />
                 <YAxis
                   tickFormatter={(val) => val >= 1e12 ? `Rp${(val / 1e12).toFixed(1)}T` : val >= 1e9 ? `Rp${(val / 1e9).toFixed(0)}M` : `Rp${(val / 1e6).toFixed(0)}Jt`}
-                  tick={{ fontSize: 7, fill: '#94a3b8' }}
+                  tick={{ fontSize: 7, fill: darkMode ? '#64748b' : '#94a3b8' }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <Tooltip
-                  cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }}
+                  cursor={{ fill: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(241, 245, 249, 0.5)' }}
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="bg-white/95 backdrop-blur border border-slate-200 p-2 rounded-lg shadow-lg">
-                          <p className="font-bold text-slate-800 text-[9px] mb-1.5 border-b border-slate-100 pb-1">{label}</p>
+                        <div className={`backdrop-blur border p-2 rounded-lg shadow-lg ${darkMode ? 'bg-gray-900/95 border-gray-700' : 'bg-white/95 border-slate-200'}`}>
+                          <p className={`font-bold text-[9px] mb-1.5 border-b pb-1 ${darkMode ? 'text-white border-gray-700' : 'text-slate-800 border-slate-100'}`}>{label}</p>
                           <div className="flex flex-col gap-1">
                             {payload.map((entry, index) => (
                               <div key={index} className="flex items-center justify-between gap-4 text-[8px]">
-                                <div className="flex items-center gap-1.5 text-slate-600">
+                                <div className={`flex items-center gap-1.5 ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>
                                   <span className="w-2 h-2 rounded-[2px]" style={{ backgroundColor: entry.color }}></span>
                                   <span>{entry.name}</span>
                                 </div>
                                 <div className="flex flex-col items-end">
-                                  <span className="font-bold text-slate-800">{formatRupiah(entry.value)}</span>
+                                  <span className={`font-bold ${darkMode ? 'text-gray-200' : 'text-slate-800'}`}>{formatRupiah(entry.value)}</span>
                                   <span className="text-[7px] text-green-600 font-bold">({formatUSD(entry.value)})</span>
                                 </div>
                               </div>
@@ -1347,27 +1350,40 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
         </div>
       )}
 
+      <div className="text-[9px] font-bold text-slate-400 tracking-widest uppercase my-3 w-full flex justify-between items-center">
+        <span>Distribusi Direct Loss per Eksposur</span>
+        {selectedGroup === 'banjir' && (
+          <div className="flex gap-2 text-[8px] font-semibold text-slate-500">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-[2px] bg-[#3b82f6]"></span> R</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-[2px] bg-[#f97316]"></span> RC</span>
+          </div>
+        )}
+      </div>
+      <div className="flex flex-col w-full px-1 pt-1 pb-2">
+        {renderCharts(EXPOSURE_GROUPS.filter(g => !(g.gempaOnly && selectedGroup !== 'earthquake')))}
+      </div>
+
       {/* Zoomed Chart Modal */}
       {zoomedChart && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 lg:p-12 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className={`fixed inset-0 z-[9999] backdrop-blur-sm flex items-center justify-center p-4 lg:p-12 animate-in fade-in duration-200 ${darkMode ? 'bg-black/60' : 'bg-slate-900/60'}`}>
+          <div className={`rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
             {/* Modal Header */}
-            <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100 bg-slate-50/50">
+            <div className={`px-6 py-4 flex items-center justify-between border-b ${darkMode ? 'border-gray-800 bg-gray-900/50' : 'border-slate-100 bg-slate-50/50'}`}>
               <div className="flex items-center gap-3">
-                <div className="bg-blue-100 p-2 rounded-lg">
-                  <BarChart2 size={24} className="text-blue-600" />
+                <div className={`p-2 rounded-lg ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+                  <BarChart2 size={24} className={darkMode ? 'text-blue-400' : 'text-blue-600'} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-800 tracking-tight">{zoomedChart.title}</h3>
-                  <p className="text-sm font-medium text-slate-500">Semua Return Period</p>
+                  <h3 className={`text-lg font-bold tracking-tight ${darkMode ? 'text-white' : 'text-slate-800'}`}>{zoomedChart.title}</h3>
+                  <p className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Semua Return Period</p>
                 </div>
               </div>
               <button
                 onClick={() => setZoomedChart(null)}
-                className="p-2 hover:bg-slate-200 rounded-full transition-colors group"
+                className={`p-2 rounded-full transition-colors group ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-slate-200'}`}
                 title="Tutup Modal"
               >
-                <X size={24} className="text-slate-400 group-hover:text-slate-600" />
+                <X size={24} className={`${darkMode ? 'text-gray-500 group-hover:text-gray-300' : 'text-slate-400 group-hover:text-slate-600'}`} />
               </button>
             </div>
 
@@ -1375,11 +1391,11 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
             <div className="flex-1 w-full p-6 relative">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={zoomedChart.data} margin={{ top: 20, right: 30, bottom: 60, left: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={darkMode ? 'rgba(148, 163, 184, 0.1)' : '#e2e8f0'} />
                   <XAxis
                     dataKey={zoomedChart.xKey}
-                    tick={{ fontSize: 11, fill: '#475569', fontWeight: 700 }}
-                    axisLine={{ stroke: '#cbd5e1', strokeWidth: 2 }}
+                    tick={{ fontSize: 11, fill: darkMode ? '#94a3b8' : '#475569', fontWeight: 700 }}
+                    axisLine={{ stroke: darkMode ? '#475569' : '#cbd5e1', strokeWidth: 2 }}
                     tickLine={false}
                     interval={0}
                     angle={-35}
@@ -1388,7 +1404,7 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
                   />
                   <YAxis
                     tickFormatter={(val) => val >= 1e12 ? `Rp ${(val / 1e12).toFixed(1)}T` : val >= 1e9 ? `Rp ${(val / 1e9).toFixed(0)}M` : `Rp ${(val / 1e6).toFixed(0)}Jt`}
-                    tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }}
+                    tick={{ fontSize: 11, fill: darkMode ? '#64748b' : '#64748b', fontWeight: 600 }}
                     axisLine={false}
                     tickLine={false}
                     tickMargin={10}
@@ -1402,20 +1418,20 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
                     formatter={(value) => <span className="text-slate-600 font-medium text-xs ml-1">{value}</span>}
                   />
                   <Tooltip
-                    cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }}
+                    cursor={{ fill: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(241, 245, 249, 0.5)' }}
                     content={({ active, payload, label }) => {
                       if (active && payload && payload.length) {
                         return (
-                          <div className="bg-white/95 backdrop-blur border border-slate-200 p-4 rounded-xl shadow-xl">
-                            <p className="font-bold text-slate-800 text-sm mb-3 border-b border-slate-100 pb-2">{label}</p>
+                          <div className={`backdrop-blur border p-4 rounded-xl shadow-xl ${darkMode ? 'bg-gray-900/95 border-gray-700' : 'bg-white/95 border-slate-200'}`}>
+                            <p className={`font-bold text-sm mb-3 border-b pb-2 ${darkMode ? 'text-white border-gray-700' : 'text-slate-800 border-slate-100'}`}>{label}</p>
                             <div className="flex flex-col gap-2">
                               {payload.map((entry, index) => (
                                 <div key={index} className="flex items-center justify-between gap-8 text-xs font-medium">
-                                  <div className="flex items-center gap-2 text-slate-600">
+                                  <div className={`flex items-center gap-2 ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>
                                     <span className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></span>
                                     <span>{entry.name}</span>
                                   </div>
-                                  <span className="font-bold text-slate-800 text-right leading-tight">
+                                  <span className={`font-bold text-right leading-tight ${darkMode ? 'text-gray-200' : 'text-slate-800'}`}>
                                     <div className="flex flex-col items-end">
                                       <span>{selectedGroup === 'earthquake' ? `${entry.value.toFixed(4)}%` : formatRupiah(entry.value)}</span>
                                       {selectedGroup !== 'earthquake' && <span className="text-[8px] text-green-600 font-bold">({formatUSD(entry.value)})</span>}
@@ -1446,20 +1462,7 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
             </div>
           </div>
         </div>
-        , document.body)}
-
-      <div className="text-[9px] font-bold text-slate-400 tracking-widest uppercase my-3 w-full flex justify-between items-center">
-        <span>Distribusi Direct Loss per Eksposur</span>
-        {selectedGroup === 'banjir' && (
-          <div className="flex gap-2 text-[8px] font-semibold text-slate-500">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-[2px] bg-[#3b82f6]"></span> R</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-[2px] bg-[#f97316]"></span> RC</span>
-          </div>
-        )}
-      </div>
-      <div className="flex flex-col w-full px-1 pt-1 pb-2">
-        {renderCharts(EXPOSURE_GROUPS.filter(g => !(g.gempaOnly && selectedGroup !== 'earthquake')))}
-      </div>
+      , document.body)}
     </div>
   );
 }
@@ -2426,7 +2429,7 @@ const ReactLegendOverlay = ({
 
           {/* Sidebar Panel */}
           <div
-            className="absolute top-0 right-0 z-[2002] h-full bg-white/95 backdrop-blur-sm shadow-[-4px_0_24px_rgb(0,0,0,0.08)] border-l border-slate-200 pointer-events-auto flex flex-col transition-transform duration-300"
+            className="absolute top-0 right-0 z-[2002] h-full bg-white backdrop-blur-sm shadow-[-4px_0_24px_rgb(0,0,0,0.08)] border-l border-slate-200 pointer-events-auto flex flex-col transition-transform duration-300"
             style={{
               width: `${sidebarWidth}px`,
               transform: isAalSidebarOpen ? 'translateX(0)' : 'translateX(100%)',

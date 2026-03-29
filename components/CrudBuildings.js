@@ -131,7 +131,9 @@ function MiniMap({ lat, lon, onLatLonChange, onLocationSelect, kode_bangunan }) 
             }
           }}
           placeholder="Cari lokasi (Taman Mini...)"
-          className={`border p-1 px-2 text-xs rounded w-full bg-white text-gray-900 border-gray-300`}
+          className={`border p-1 px-2 text-xs rounded w-full transition-colors ${
+            darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'
+          }`}
         />
         <button 
           type="button" 
@@ -140,18 +142,22 @@ function MiniMap({ lat, lon, onLatLonChange, onLocationSelect, kode_bangunan }) 
             e.stopPropagation();
             handleSearch(e);
           }} 
-          className="bg-blue-500 text-white px-3 py-1 text-xs rounded transition-colors hover:bg-blue-600" 
+          className="bg-[#1E5C9A] text-white px-3 py-1 text-xs rounded transition-colors hover:bg-[#2F6FAF] shadow-sm" 
           disabled={isSearching}
         >
           Cari
         </button>
       </div>
       {results.length > 0 && (
-        <div className="absolute bg-white border rounded shadow-lg max-h-40 overflow-y-auto z-[9000] w-full left-0 mt-[32px]">
+        <div className={`absolute border rounded shadow-lg max-h-40 overflow-y-auto z-[9000] w-full left-0 mt-[32px] ${
+          darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+        }`}>
           {results.map((r, i) => (
             <div
               key={r.place_id}
-              className="px-2 py-1 hover:bg-blue-100 cursor-pointer text-sm text-gray-900"
+              className={`px-2 py-1 cursor-pointer text-sm transition-colors ${
+                darkMode ? 'hover:bg-gray-700 text-gray-200' : 'hover:bg-[#1E5C9A] text-gray-900'
+              }`}
               onClick={() => handleResultClick(r)}
             >
               {r.display_name}
@@ -159,7 +165,7 @@ function MiniMap({ lat, lon, onLatLonChange, onLocationSelect, kode_bangunan }) 
           ))}
         </div>
       )}
-      <div ref={mapEl} style={{ height: '180px', width: '100%' }} className="rounded z-0 border border-gray-300" />
+      <div ref={mapEl} style={{ height: '180px', width: '100%' }} className={`rounded z-0 border ${darkMode ? 'border-gray-700' : 'border-gray-300'}`} />
     </div>
   )
 }
@@ -550,23 +556,25 @@ export default function CrudBuildings({
   })
 
   // Classes berdasarkan mode
-  const cardBg = 'bg-white border-0'
-  const infoBg = 'bg-gray-50 text-gray-700'
-  const theadBg = 'bg-gray-100 text-gray-700 font-bold uppercase tracking-wider'
-  const rowText = 'text-gray-800'
-  const rowHover = 'hover:bg-gray-50'
-  const inputCls = 'border p-1 text-[10px] rounded text-gray-900 bg-white border-gray-300 shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 min-w-0'
+  const cardBg = darkMode ? 'bg-[#1E2023] border-0' : 'bg-white border-0'
+  const infoBg = darkMode ? 'bg-gray-800 text-gray-300' : 'bg-gray-50 text-gray-700'
+  const theadBg = darkMode ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-700'
+  const rowText = darkMode ? 'text-gray-300' : 'text-gray-800'
+  const rowHover = darkMode ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50'
+  const inputCls = darkMode
+    ? 'border p-1 text-[10px] rounded text-white bg-gray-800 border-gray-700 shadow-sm focus:ring-1 focus:ring-[#1E5C9A] focus:border-[#1E5C9A] min-w-0 transition-colors'
+    : 'border p-1 text-[10px] rounded text-gray-900 bg-white border-gray-300 shadow-sm focus:ring-1 focus:ring-[#1E5C9A] focus:border-[#1E5C9A] min-w-0 transition-colors'
 
   // Tampilkan login prompt jika belum login
   if (!isAuthenticated) {
     return (
-      <div className="flex flex-col items-center justify-center h-full py-10 gap-3 text-center bg-white">
+      <div className={`flex flex-col items-center justify-center h-full py-10 gap-3 text-center transition-colors ${darkMode ? 'bg-[#1E2023] text-white' : 'bg-white text-gray-700'}`}>
         <div className="text-4xl">🔒</div>
-        <p className="text-sm font-semibold text-gray-700">Fitur ini memerlukan login</p>
-        <p className="text-xs text-gray-500">Silakan masuk ke akun Anda untuk mengelola data bangunan.</p>
+        <p className="text-sm font-semibold">Fitur ini memerlukan login</p>
+        <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Silakan masuk ke akun Anda untuk mengelola data bangunan.</p>
         <button
           onClick={() => router.push('/login')}
-          className="mt-2 px-5 py-2 bg-[#C6FF00] text-black text-sm font-semibold rounded-full hover:bg-[#d4ff33] transition"
+          className="mt-2 px-5 py-2 bg-[#1E5C9A] text-white text-sm font-semibold rounded-full hover:bg-[#2F6FAF] transition shadow-md"
         >
           Masuk
         </button>
@@ -604,14 +612,14 @@ export default function CrudBuildings({
           <Button
             onClick={onUpload}
             disabled={!file || isUploading}
-            className="bg-[#22D3EE] text-black rounded text-[10px] px-1.5 font-medium flex-1 h-[26px] flex items-center justify-center whitespace-nowrap overflow-hidden min-w-0"
+            className="bg-[#6FB5C2] text-white rounded text-[10px] px-1.5 font-medium flex-1 h-[26px] flex items-center justify-center whitespace-nowrap overflow-hidden min-w-0 hover:bg-[#00acc1] shadow-sm"
           >
             {isUploading && <LoadingSpinner />} Unggah
           </Button>
           <a
             href="/sample_bangunan.csv"
             download="template_data_bangunan.csv"
-            className="bg-[#C6FF00] text-black rounded text-[10px] px-1.5 font-semibold flex-1 h-[26px] flex items-center justify-center whitespace-nowrap overflow-hidden min-w-0 shadow-sm"
+            className="bg-[#1E5C9A] text-white rounded text-[10px] px-1.5 font-semibold flex-1 h-[26px] flex items-center justify-center whitespace-nowrap overflow-hidden min-w-0 shadow-sm hover:bg-[#2F6FAF]"
           >
             Template CSV
           </a>
@@ -633,7 +641,7 @@ export default function CrudBuildings({
           </div>
           <Button
             onClick={() => setModalMode('add')}
-            className="text-black px-2 text-[10px] font-medium bg-[#C084FC] rounded text-center h-[26px] flex items-center shrink-0"
+            className="text-white px-2 text-[10px] font-medium bg-[#1E5C9A] rounded text-center h-[26px] flex items-center shrink-0 hover:bg-[#2F6FAF] shadow-sm"
           >
             Tambah
           </Button>
@@ -641,12 +649,12 @@ export default function CrudBuildings({
         
       </div>
 
-      <div className="flex-1 overflow-auto mt-2 rounded shadow-sm border border-gray-200 min-w-0 min-h-0 w-full relative custom-scrollbar pb-1 bg-white">
+      <div className={`flex-1 overflow-auto mt-2 rounded shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} min-w-0 min-h-0 w-full relative custom-scrollbar pb-1 ${darkMode ? 'bg-[#1E2023]' : 'bg-white'}`}>
         <table className="w-max min-w-full text-[7px] leading-tight text-left whitespace-nowrap">
-          <thead className={`${theadBg} sticky top-0 z-10 transition-colors duration-300 outline outline-1 outline-gray-200`}>
+          <thead className={`${theadBg} sticky top-0 z-10 transition-colors duration-300 outline outline-1 ${darkMode ? 'outline-gray-700' : 'outline-gray-200'}`}>
             <tr>
               <th
-                className="py-0.5 px-0.5 cursor-pointer hover:bg-gray-200 transition-colors whitespace-nowrap"
+                className={`py-0.5 px-0.5 cursor-pointer transition-colors whitespace-nowrap ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'}`}
                 onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
               >
                 Nama Gedung {sortOrder === 'asc' ? '▲' : '▼'}
@@ -664,7 +672,7 @@ export default function CrudBuildings({
             {displayedRows.map(b => (
               <tr
                 key={b.id_bangunan}
-                className={`${rowHover} cursor-pointer transition-colors duration-150 border-b border-gray-100 last:border-0`}
+                className={`${rowHover} cursor-pointer transition-colors duration-150 border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'} last:border-0`}
                 onClick={() => onSearchBuilding({
                   lat: parseFloat(b.lat),
                   lon: parseFloat(b.lon),
@@ -685,7 +693,7 @@ export default function CrudBuildings({
                 <td className={`py-0.5 px-0.5 ${rowText}`}>{b.taxonomy}</td>
                   <td className={`py-0.5 px-0.5 ${rowText} text-center hidden md:table-cell`}>
                     <div className="flex justify-center gap-2">
-                      <button onClick={(e) => { e.stopPropagation(); setEditing(b); setModalMode('edit') }} className="text-blue-500 hover:text-blue-700 transition-colors" title="Edit">
+                      <button onClick={(e) => { e.stopPropagation(); setEditing(b); setModalMode('edit') }} className="text-[#1E5C9A] hover:text-[#004b87] transition-colors" title="Edit">
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                       </button>
                       <button onClick={(e) => { e.stopPropagation(); onDeleteClick(b) }} className="text-red-500 hover:text-red-700 transition-colors" title="Hapus">
@@ -700,17 +708,17 @@ export default function CrudBuildings({
       </div>
 
 
-      <Modal isOpen={modalMode === 'add'} onClose={() => setModalMode('')} forceLightMode={true} maxWidth="max-w-[325px]">
-        <AddForm onSave={onAdd} isSavingAdd={isSavingAdd} />
+      <Modal isOpen={modalMode === 'add'} onClose={() => setModalMode('')} maxWidth="max-w-[325px]">
+        <AddForm onSave={onAdd} isSavingAdd={isSavingAdd} darkMode={darkMode} />
       </Modal>
-      <Modal isOpen={modalMode === 'edit'} onClose={() => setModalMode('')} forceLightMode={true} maxWidth="max-w-[325px]">
-        <EditForm initial={editing} onSave={onSaveEdit} isSavingEdit={isSavingEdit} />
+      <Modal isOpen={modalMode === 'edit'} onClose={() => setModalMode('')} maxWidth="max-w-[325px]">
+        <EditForm initial={editing} onSave={onSaveEdit} isSavingEdit={isSavingEdit} darkMode={darkMode} />
       </Modal>
-      <Modal isOpen={!!deleteTarget} onClose={() => !isDeleting && setDeleteTarget(null)} forceLightMode={true} maxWidth="max-w-[400px]">
-        <h3 className="text-lg font-bold mb-3 text-gray-900">Hapus Bangunan</h3>
-        <p className="text-sm text-gray-700">Yakin ingin menghapus bangunan <strong className="text-gray-900">{deleteTarget?.nama_gedung || 'Tanpa Nama'}</strong>?</p>
+      <Modal isOpen={!!deleteTarget} onClose={() => !isDeleting && setDeleteTarget(null)} maxWidth="max-w-[400px]">
+        <h3 className={`text-lg font-bold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Hapus Bangunan</h3>
+        <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Yakin ingin menghapus bangunan <strong className={darkMode ? 'text-white' : 'text-gray-900'}>{deleteTarget?.nama_gedung || 'Tanpa Nama'}</strong>?</p>
         <div className="flex justify-end gap-3 mt-6">
-          <Button onClick={() => setDeleteTarget(null)} disabled={isDeleting} className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-lg text-sm transition-colors border border-gray-300">
+          <Button onClick={() => setDeleteTarget(null)} disabled={isDeleting} className={`px-4 py-2 rounded-lg text-sm transition-colors border ${darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300 font-medium'}`}>
             Batal
           </Button>
           <Button onClick={confirmDelete} disabled={isDeleting} className="bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg flex items-center text-sm shadow-sm transition-colors">
@@ -721,19 +729,19 @@ export default function CrudBuildings({
       </Modal>
 
       {/* MODAL PREVIEW CSV */}
-      <Modal isOpen={modalMode === 'preview'} onClose={() => setModalMode('')} maxWidth="max-w-6xl" forceLightMode={true}>
-        <h3 className="text-lg font-bold mb-4 text-gray-900">Pratinjau Data CSV</h3>
-        <p className="text-sm text-gray-600 mb-4">
+      <Modal isOpen={modalMode === 'preview'} onClose={() => setModalMode('')} maxWidth="max-w-6xl">
+        <h3 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Pratinjau Data CSV</h3>
+        <p className={`text-sm mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
           Anda dapat menyunting (edit) detail bangunan di bawah ini sebelum data disimpan.
           <br />
-          <span className="text-red-600 font-semibold">
+          <span className="text-red-500 font-semibold">
             Pastikan seluruh kolom telah terisi. Data dengan kolom yang kosong tidak dapat dilanjutkan perhitungannya.
           </span>
         </p>
 
-        <div className="overflow-x-auto overflow-y-auto max-h-[60vh] max-w-full rounded-lg border border-gray-200 block">
+        <div className={`overflow-x-auto overflow-y-auto max-h-[60vh] max-w-full rounded-lg border ${darkMode ? 'border-gray-700' : 'border-gray-200'} block`}>
           <table className="min-w-full text-sm">
-            <thead className="bg-[#475569] text-white sticky top-0 z-10">
+            <thead className={`${darkMode ? 'bg-gray-800' : 'bg-slate-600'} text-white sticky top-0 z-10`}>
               <tr>
                 {previewHeaders.map((h, i) => (
                   <th key={i} className="whitespace-nowrap px-4 py-3 text-left font-semibold uppercase tracking-wider text-xs">
@@ -743,16 +751,18 @@ export default function CrudBuildings({
                 <th className="whitespace-nowrap px-4 py-3 text-left font-semibold uppercase tracking-wider text-xs">AKSI</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
+            <tbody className={`divide-y ${darkMode ? 'divide-gray-700 bg-[#1E2023]' : 'divide-gray-200 bg-white'}`}>
               {previewData?.map(row => (
                 <tr key={row._id} className="hover:bg-gray-50 transition-colors">
                   {previewHeaders.map((h, i) => (
-                    <td key={i} className="whitespace-nowrap px-4 py-2 text-gray-700">
+                    <td key={i} className={`whitespace-nowrap px-4 py-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                       {h === 'kode_bangunan' ? (
                         <select
                           value={row[h]}
                           onChange={(e) => handlePreviewChange(row._id, h, e.target.value)}
-                          className={`border rounded p-1 bg-white border-gray-300 text-gray-900`}
+                          className={`border rounded p-1 transition-colors ${
+                            darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'
+                          }`}
                         >
                           <option value="FS">FS (Healthcare Facilities)</option>
                           <option value="FD">FD (Educational Facilities)</option>
@@ -764,7 +774,9 @@ export default function CrudBuildings({
                         <select
                           value={row[h]}
                           onChange={(e) => handlePreviewChange(row._id, h, e.target.value)}
-                          className={`border rounded p-1 ${row[h]?.trim() ? 'border-gray-300' : 'border-red-500 bg-red-50 text-black'} bg-white text-gray-900`}
+                          className={`border rounded p-1 transition-colors ${
+                            row[h]?.trim() ? (darkMode ? 'border-gray-700' : 'border-gray-300') : 'border-red-500 bg-red-50/10 text-red-500'
+                          } ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}
                         >
                           <option value="CR">CR</option>
                           <option value="MCF">MCF</option>
@@ -773,7 +785,9 @@ export default function CrudBuildings({
                         <select
                           value={row[h]}
                           onChange={(e) => handlePreviewChange(row._id, h, e.target.value)}
-                          className={`border rounded p-1 ${row[h]?.trim() ? 'border-gray-300' : 'border-red-500 bg-red-50 text-black'} bg-white text-gray-900`}
+                          className={`border rounded p-1 transition-colors ${
+                            row[h]?.trim() ? (darkMode ? 'border-gray-700' : 'border-gray-300') : 'border-red-500 bg-red-50/10 text-red-500'
+                          } ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}
                         >
                           <option value="">- Pilih Kota -</option>
                           {kotaList.map((k, idx) => (
@@ -786,7 +800,9 @@ export default function CrudBuildings({
                             type={['lon', 'lat', 'luas', 'jumlah_lantai'].includes(h) ? 'number' : 'text'}
                             value={row[h]}
                             onChange={(e) => handlePreviewChange(row._id, h, e.target.value)}
-                            className={`border rounded p-1 max-w-[200px] ${row[h]?.toString().trim() ? 'border-gray-300' : 'border-red-500 bg-red-50 text-black'} bg-white text-gray-900`}
+                            className={`border rounded p-1 max-w-[200px] transition-colors ${
+                              row[h]?.toString().trim() ? (darkMode ? 'border-gray-700' : 'border-gray-300') : 'border-red-500 bg-red-50/10 text-red-500'
+                            } ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}
                           />
                           {h === 'lat' && (
                             <button
@@ -828,13 +844,13 @@ export default function CrudBuildings({
         )}
 
         <div className="mt-4 flex justify-end gap-3">
-          <Button onClick={() => setModalMode('')} disabled={isUploading} className="bg-gray-400 text-white rounded-lg px-4 py-2">
+          <Button onClick={() => setModalMode('')} disabled={isUploading} className={`rounded-lg px-4 py-2 transition-colors ${darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-400 text-white hover:bg-gray-500'}`}>
             Batal
           </Button>
           <Button
             onClick={onConfirmUpload}
             disabled={isUploading || previewData?.some(row => previewHeaders.some(h => !row[h]?.toString().trim()))}
-            className="bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed text-white rounded-lg px-4 py-2 flex items-center"
+            className={`bg-[#1E5C9A] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg px-4 py-2 flex items-center shadow-md hover:bg-[#2F6FAF]`}
           >
             {isUploading && <LoadingSpinner />}
             Simpan & Hitung
@@ -844,8 +860,8 @@ export default function CrudBuildings({
 
       {/* MODAL MAP PICKER FOR CSV */}
       <Modal isOpen={modalMode === 'map-picker'} onClose={() => setModalMode('preview')} maxWidth="max-w-2xl">
-        <h3 className="text-lg font-bold mb-4">Pilih Lokasi</h3>
-        <p className="text-sm text-gray-500 mb-4">
+        <h3 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Pilih Lokasi</h3>
+        <p className={`text-sm mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
           Cari lokasi atau geser penanda (marker) untuk menyesuaikan koordinat.
           Nama lokasi yang dicari akan otomatis mengisi kolom Alamat.
         </p>
@@ -867,7 +883,7 @@ export default function CrudBuildings({
               e.stopPropagation();
               setModalMode('preview');
             }}
-            className="bg-gray-400 text-white rounded-lg px-4 py-2"
+            className={`rounded-lg px-4 py-2 transition-colors ${darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-400 text-white hover:bg-gray-500'}`}
           >
             Kembali
           </Button>
@@ -877,7 +893,7 @@ export default function CrudBuildings({
               e.stopPropagation();
               handleMapLocationSelect(mapPickerContext.lat, mapPickerContext.lon, null);
             }}
-            className="bg-blue-600 text-white rounded-lg px-4 py-2"
+            className="bg-[#1E5C9A] text-white rounded-lg px-4 py-2 hover:bg-[#2F6FAF] shadow-md"
           >
             Gunakan Koordinat Ini
           </Button>
@@ -903,7 +919,9 @@ function AddForm({ onSave, isSavingAdd, darkMode }) {
     setData(d => ({ ...d, lat: lat.toString(), lon: lon.toString() }))
   }
 
-  const inputCls = `border p-1 px-1.5 h-6 text-[10px] w-full rounded bg-white text-gray-900 border-gray-300`;
+  const inputCls = `border p-1 px-1.5 h-6 text-[10px] w-full rounded transition-colors ${
+    darkMode ? 'bg-gray-800 border-gray-700 text-white focus:border-[#1E5C9A]' : 'bg-white border-gray-200 text-gray-900 focus:border-[#1E5C9A]'
+  }`;
 
   const isValid = () => {
     const l = String(data.luas || '').trim();
@@ -919,10 +937,10 @@ function AddForm({ onSave, isSavingAdd, darkMode }) {
 
   return (
     <>
-      <h3 className="text-sm font-bold mb-2 text-gray-900">Tambah Bangunan</h3>
+      <h3 className={`text-sm font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Tambah Bangunan</h3>
       {['nama_gedung', 'alamat', 'luas', 'jumlah_lantai'].map(fld => (
         <div key={fld} className="mb-1">
-          <label className="block text-[9px] font-bold text-gray-900 mb-0.5">
+          <label className={`block text-[9px] font-bold mb-0.5 ${darkMode ? 'text-gray-400' : 'text-gray-900'}`}>
             {fld === 'jumlah_lantai' ? 'JUMLAH LANTAI' : fld.replace('_', ' ').toUpperCase()}
           </label>
           <input
@@ -936,26 +954,26 @@ function AddForm({ onSave, isSavingAdd, darkMode }) {
         </div>
       ))}
       <div className="mb-2">
-        <label className="block text-[9px] font-bold text-gray-900 mb-0.5 mt-2">KOTA</label>
+        <label className={`block text-[9px] font-bold mb-0.5 mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-900'}`}>KOTA</label>
         <Select id="addKota" options={localKotaList} value={data.kota} onChange={(v) => setData(d => ({ ...d, kota: v }))} placeholder="- Pilih -" className="w-full text-[10px]" />
       </div>
       <div className="grid grid-cols-2 gap-2 mb-2">
         <div>
-          <label className="block text-[9px] font-bold text-gray-900 mb-0.5 mt-2">LONGITUDE</label>
+          <label className={`block text-[9px] font-bold mb-0.5 mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-900'}`}>LONGITUDE</label>
           <input type="number" step="any" value={data.lon} onChange={e => setData(d => ({ ...d, lon: e.target.value }))} className={inputCls} />
         </div>
         <div>
-          <label className="block text-[9px] font-bold text-gray-900 mb-0.5 mt-2">LATITUDE</label>
+          <label className={`block text-[9px] font-bold mb-0.5 mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-900'}`}>LATITUDE</label>
           <input type="number" step="any" value={data.lat} onChange={e => setData(d => ({ ...d, lat: e.target.value }))} className={inputCls} />
         </div>
       </div>
       <MiniMap lat={parseFloat(data.lat)} lon={parseFloat(data.lon)} onLatLonChange={handleLatLonChange} kode_bangunan={data.kode_bangunan} />
       <div className="mb-1">
-        <label className="block text-[9px] font-bold text-gray-900 mb-0.5 mt-2">JENIS BANGUNAN</label>
+        <label className={`block text-[9px] font-bold mb-0.5 mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-900'}`}>JENIS BANGUNAN</label>
         <Select id="addKodeBangunan" options={['Healthcare Facilities', 'Educational Facilities', 'Electricity', 'Hotel', 'Airport']} value={data.kode_bangunan} onChange={(v) => setData(d => ({ ...d, kode_bangunan: v }))} className="w-full mb-2 text-[10px]" />
       </div>
       <div className="mb-2">
-        <label className="block text-[10px] font-semibold mb-0.5 text-gray-900">TAKSONOMI BANGUNAN</label>
+        <label className={`block text-[10px] font-semibold mb-0.5 ${darkMode ? 'text-gray-400' : 'text-gray-900'}`}>TAKSONOMI BANGUNAN</label>
         <Select id="addTaxonomy" options={['CR', 'MCF']} value={data.taxonomy} onChange={(v) => setData(d => ({ ...d, taxonomy: v }))} className="w-full text-xs" />
       </div>
       <div className="flex justify-end mt-2">
@@ -972,7 +990,7 @@ function AddForm({ onSave, isSavingAdd, darkMode }) {
             });
           }}
           disabled={isSavingAdd || !isValid()}
-          className={`px-3 py-1.5 text-xs rounded-md ${(!isValid() || isSavingAdd) ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+          className={`px-3 py-1.5 text-xs rounded-md ${(!isValid() || isSavingAdd) ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-[#1E5C9A] hover:bg-[#2F6FAF] text-white shadow-md'}`}
         >
           {isSavingAdd ? 'Menyimpan...' : 'Tambah'}
         </Button>
@@ -989,7 +1007,9 @@ function EditForm({ initial, onSave, isSavingEdit, darkMode }) {
     setData(d => ({ ...d, lat: lat.toString(), lon: lon.toString() }))
   }
 
-  const inputCls = `border p-1 px-1.5 h-6 text-[10px] w-full rounded bg-white text-gray-900 border-gray-300`;
+  const inputCls = `border p-1 px-1.5 h-6 text-[10px] w-full rounded transition-colors ${
+    darkMode ? 'bg-gray-800 border-gray-700 text-white focus:border-[#1E5C9A]' : 'bg-white border-gray-200 text-gray-900 focus:border-[#1E5C9A]'
+  }`;
 
   const isValid = () => {
     const l = String(data.luas || '').trim();
@@ -1002,10 +1022,10 @@ function EditForm({ initial, onSave, isSavingEdit, darkMode }) {
 
   return (
     <>
-      <h3 className="text-sm font-bold mb-2 text-gray-900">Edit Bangunan</h3>
+      <h3 className={`text-sm font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Edit Bangunan</h3>
       {['nama_gedung', 'alamat', 'lon', 'lat', 'luas', 'jumlah_lantai'].map(fld => (
         <div key={fld} className="mb-1">
-          <label className="block text-[9px] font-bold text-gray-900 mb-0.5">
+          <label className={`block text-[9px] font-bold mb-0.5 ${darkMode ? 'text-gray-400' : 'text-gray-900'}`}>
             {fld === 'jumlah_lantai' ? 'JUMLAH LANTAI' : fld.replace('_', ' ').toUpperCase()}
           </label>
           <input
@@ -1025,11 +1045,11 @@ function EditForm({ initial, onSave, isSavingEdit, darkMode }) {
         kode_bangunan={data.kode_bangunan || (data.id_bangunan ? data.id_bangunan.split('_')[0] : 'BMN')}
       />
       <div className="mb-1 mt-1">
-        <label className="block text-[9px] font-bold text-gray-900 mb-0.5 mt-2">TAKSONOMI BANGUNAN</label>
+        <label className={`block text-[9px] font-bold mb-0.5 mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-900'}`}>TAKSONOMI BANGUNAN</label>
         <select
           value={data.taxonomy || ''}
           onChange={e => setData(d => ({ ...d, taxonomy: e.target.value }))}
-          className={`${inputCls} py-0`}
+          className={`${inputCls} py-0 transition-colors ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}
         >
           <option value="">- Pilih Taksonomi -</option>
           <option value="CR">CR</option>
@@ -1049,7 +1069,7 @@ function EditForm({ initial, onSave, isSavingEdit, darkMode }) {
             });
           }}
           disabled={isSavingEdit || !isValid()}
-          className={`px-3 py-1 text-[10px] rounded ${(!isValid() || isSavingEdit) ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+          className={`px-3 py-1 text-[10px] rounded ${(!isValid() || isSavingEdit) ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-[#1E5C9A] hover:bg-[#004b87] text-white shadow-md'}`}
         >
           {isSavingEdit ? 'Menyimpan...' : 'Simpan'}
         </Button>

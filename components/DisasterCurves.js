@@ -193,7 +193,7 @@ function DisasterCurveBox({ keyProp: key, label, grouped, taxonomyList, datasets
         />
         <button
           type="submit"
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+          className="bg-[#1E5C9A] hover:bg-[#2F6FAF] text-white px-4 py-2 rounded"
         >Cek Tingkat Kerusakan</button>
       </form>
 

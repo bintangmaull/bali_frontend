@@ -117,7 +117,7 @@ export default function ExposureTableContent({
         
         {/* Context Title */}
         <div className="text-[10px] font-extrabold text-slate-700 tracking-widest uppercase mb-1 flex items-center gap-1.5">
-          <Layers size={12} className="text-blue-500" />
+          <Layers size={12} className="text-[#2F6FAF]" />
           <span>DATA DIRECT LOSS - {tabs.find(t => t.id === activeTab)?.label} - {selectedCityFeature?.properties?.id_kota || selectedCityFeature?.properties?.kota || 'Semua Kota'}</span>
         </div>
 
@@ -132,7 +132,7 @@ export default function ExposureTableContent({
               }}
               className={`px-3 py-1 text-[10px] font-bold rounded-md transition-colors whitespace-nowrap ${
                 activeTab === tab.id 
-                  ? 'bg-blue-50 text-blue-600 border border-blue-200 shadow-sm' 
+                  ? 'bg-blue-50 text-[#1E5C9A] border border-blue-200 shadow-sm' 
                   : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
               }`}
             >
@@ -148,7 +148,7 @@ export default function ExposureTableContent({
           </div>
           <input
             type="text"
-            className="block w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-md text-[10px] text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors bg-gray-50 focus:bg-white"
+            className="block w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-md text-[10px] text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#2F6FAF] focus:ring-1 focus:ring-[#2F6FAF] transition-colors bg-gray-50 focus:bg-white"
             placeholder="Cari ID / Nama Gedung..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}

@@ -13,10 +13,10 @@ import { useTheme } from '../context/ThemeContext';
 
 // Konfigurasi bencana disederhanakan, hanya butuh label dan warna
 const hazardsConfig = [
-  { key: 'pga', label: 'Gempa Bumi', color: '#2563eb' },
-  { key: 'inundansi', label: 'Tsunami', color: '#06b6d4' },
-  { key: 'r', label: 'Banjir (R)', color: '#22c55e' },
-  { key: 'rc', label: 'Banjir (RC)', color: '#10b981' },
+  { key: 'pga', label: 'Gempa Bumi', color: '#1E5C9A' },       // Deep Blue
+  { key: 'inundansi', label: 'Tsunami', color: '#6FB5C2' },     // Muted Cyan
+  { key: 'r', label: 'Banjir (R)', color: '#2FA69A' },         // Teal Green
+  { key: 'rc', label: 'Banjir (RC)', color: '#1C7C75' },       // Dark Teal
 ];
 
 const chartTypes = [
@@ -107,10 +107,10 @@ export default function ChartsSection({ provs, data, load }) {
         </h2>
         {/* Dropdown untuk memilih kota */}
         <select
-          className={`w-48 sm:w-64 rounded-4xl px-3 py-1.5 text-sm appearance-none transition-colors duration-300 text-center ${darkMode
-            ? 'bg-[#C6FF00] text-black'
-            : 'bg-[#C6FF00] text-black border border-yellow-400'
-            }`}
+          className={`w-48 sm:w-64 rounded-4xl px-3 py-1.5 text-sm appearance-none transition-colors duration-300 text-center shadow-md font-semibold ${darkMode
+            ? 'bg-[#1E5C9A] text-white border-transparent'
+            : 'bg-[#1E5C9A] text-white border-transparent'
+            } hover:bg-[#2F6FAF]`}
           defaultValue=""
           onChange={(e) => load(e.target.value)}
         >

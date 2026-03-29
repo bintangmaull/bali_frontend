@@ -26,29 +26,29 @@ export default function Header() {
 
   const isActive = (path) => router.pathname === path;
 
-  const navBtnCls = (path) => `
-    px-3 py-1 rounded-4xl transition text-sm
-    ${isActive(path)
-      ? 'bg-[#C6FF00] text-black'
-      : 'text-gray-200 hover:bg-[#C6FF00] hover:text-black'}
-  `;
+  const navBtnCls = (path) => {
+    const active = isActive(path);
+    if (active) return `px-3 py-1 rounded-4xl transition text-sm bg-[#1E5C9A] text-white shadow-md`;
+    return `px-3 py-1 rounded-4xl transition text-sm ${
+      darkMode 
+        ? 'text-gray-200 hover:bg-[#1E5C9A] hover:text-white' 
+        : 'text-slate-600 hover:text-[#1E5C9A] hover:bg-slate-50'
+    }`;
+  };
 
   return (
-    <header className="bg-[#1E2023] dark:bg-[#1E2023] light:bg-white text-white fixed top-0 left-0 w-full z-[2000] transition-colors duration-300">
+    <header className={`fixed top-0 left-0 w-full z-[2000] transition-all duration-300 border-b ${
+      darkMode 
+        ? 'bg-[#1E2023] border-[#1E5C9A]/30 text-white' 
+        : 'bg-white/90 backdrop-blur-md border-slate-200 text-slate-900 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_4px_6px_-2px_rgba(0,0,0,0.05)]'
+    }`}>
       <div className="max-w-screen-2xl mx-auto flex items-center justify-between py-1.5 px-4">
         <div className="flex items-center space-x-3 md:pl-7">
           <div className="flex items-center gap-2">
             <div className="flex flex-col lg:flex-row lg:items-baseline py-1 lg:gap-3 leading-none">
-              <h1 className="text-lg md:text-xl font-bold tracking-tight text-white">
-                Budget <span className="text-[#C6FF00] font-black">Stress Testing</span>
+              <h1 className="text-lg md:text-xl font-bold tracking-tight">
+                Bali <span className="text-[#1E5C9A] font-black">Risk Dashboard</span>
               </h1>
-              <div className="flex items-center gap-1.5 text-[10px] md:text-xs font-semibold text-slate-400 mt-1 lg:mt-0 lg:ml-2">
-                <span className="text-slate-500">(</span>
-                <span className="text-[#ff5252]">Catastrophic Model</span>
-                <span className="text-slate-600 font-normal lowercase">dan</span>
-                <span className="text-slate-300">Macro Fiscal Model</span>
-                <span className="text-slate-500">)</span>
-              </div>
             </div>
           </div>
         </div>
@@ -61,7 +61,9 @@ export default function Header() {
           <button
             onClick={toggleTheme}
             aria-label="Toggle dark/light mode"
-            className="ml-2 p-2 rounded-full bg-white/10 hover:bg-[#C6FF00] hover:text-black text-gray-200 transition-all duration-300"
+            className={`ml-2 p-2 rounded-full transition-all duration-300 ${
+              darkMode ? 'bg-white/10 hover:bg-[#1E5C9A] text-gray-200' : 'bg-slate-100 hover:bg-[#1E5C9A]/10 text-slate-600 hover:text-[#1E5C9A]'
+            }`}
             title={darkMode ? 'Beralih ke Light Mode' : 'Beralih ke Dark Mode'}
           >
             {darkMode ? <Sun size={20} /> : <Moon size={20} />}
@@ -69,15 +71,17 @@ export default function Header() {
 
           {/* Auth Section */}
           {currentUser ? (
-            <div className="flex items-center gap-2 ml-2 border-l border-gray-700 pl-4">
-              <div className="flex items-center gap-1.5 text-xs text-gray-300">
-                <User size={14} className="text-[#C6FF00]" />
-                <span>{currentUser.nama}</span>
+            <div className={`flex items-center gap-2 ml-2 border-l pl-4 ${darkMode ? 'border-gray-700' : 'border-slate-200'}`}>
+              <div className="flex items-center gap-1.5 text-xs">
+                <User size={14} className="text-[#1E5C9A]" />
+                <span className={darkMode ? 'text-gray-300' : 'text-slate-600'}>{currentUser.nama}</span>
               </div>
               <button
                 onClick={handleLogout}
                 title="Logout"
-                className="p-2 rounded-full bg-white/10 hover:bg-red-500/30 hover:text-red-400 text-gray-200 transition-all duration-300"
+                className={`p-2 rounded-full transition-all duration-300 ${
+                  darkMode ? 'bg-white/10 hover:bg-red-500/30 hover:text-red-400 text-gray-200' : 'bg-slate-100 hover:bg-red-500/10 hover:text-red-600 text-slate-600'
+                }`}
               >
                 <LogOut size={16} />
               </button>
@@ -85,7 +89,7 @@ export default function Header() {
           ) : (
             <button
               onClick={() => router.push('/login')}
-              className="ml-2 px-4 py-1.5 rounded-full bg-[#C6FF00] text-black text-sm font-semibold hover:bg-[#d4ff33] transition"
+              className="ml-2 px-4 py-1.5 rounded-full bg-[#1E5C9A] text-white text-sm font-semibold hover:bg-[#1E5C9A] transition shadow-sm"
             >
               Masuk
             </button>
@@ -97,13 +101,15 @@ export default function Header() {
           <button
             onClick={toggleTheme}
             aria-label="Toggle dark/light mode"
-            className="mr-2 p-2 rounded-full bg-white/10 hover:bg-[#C6FF00] hover:text-black text-gray-200 transition-all duration-300"
+            className={`mr-2 p-2 rounded-full transition-all duration-300 ${
+              darkMode ? 'bg-white/10 hover:bg-[#1E5C9A] text-gray-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+            }`}
           >
             {darkMode ? <Sun size={20} /> : <Moon size={20} />}
           </button>
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 text-gray-200 hover:text-white focus:outline-none"
+            className={`p-2 focus:outline-none ${darkMode ? 'text-gray-200 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
           >
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -112,34 +118,36 @@ export default function Header() {
 
       {/* Mobile Menu Dropdown */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-[#1E2023] w-full border-t border-gray-700 shadow-lg pb-4">
+        <div className={`md:hidden w-full border-t shadow-lg pb-4 transition-colors duration-300 ${
+          darkMode ? 'bg-[#1E2023] border-gray-700' : 'bg-white border-slate-200'
+        }`}>
           <div className="flex flex-col px-4 pt-2 space-y-2">
-            <button
-              onClick={() => { router.push('/'); setIsMobileMenuOpen(false); }}
-              className={`px-4 py-3 rounded-xl transition text-left font-medium ${isActive('/') ? 'bg-[#C6FF00] text-black' : 'text-gray-200 hover:bg-[#333538]'}`}
-            >
-              Home
-            </button>
-            <button
-              onClick={() => { router.push('/peta'); setIsMobileMenuOpen(false); }}
-              className={`px-4 py-3 rounded-xl transition text-left font-medium ${isActive('/peta') ? 'bg-[#C6FF00] text-black' : 'text-gray-200 hover:bg-[#333538]'}`}
-            >
-              Our Product
-            </button>
-            <button
-              onClick={() => { router.push('/about'); setIsMobileMenuOpen(false); }}
-              className={`px-4 py-3 rounded-xl transition text-left font-medium ${isActive('/about') ? 'bg-[#C6FF00] text-black' : 'text-gray-200 hover:bg-[#333538]'}`}
-            >
-              About Us
-            </button>
+            {[
+              { path: '/', label: 'Home' },
+              { path: '/peta', label: 'Our Product' },
+              { path: '/about', label: 'About Us' }
+            ].map((item) => (
+              <button
+                key={item.path}
+                onClick={() => { router.push(item.path); setIsMobileMenuOpen(false); }}
+                className={`px-4 py-3 rounded-xl transition text-left font-medium ${
+                  isActive(item.path) 
+                    ? 'bg-[#1E5C9A] text-white' 
+                    : darkMode ? 'text-gray-200 hover:bg-[#333538]' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+            
             {currentUser ? (
               <>
-                <div className="px-4 py-2 text-xs text-gray-400 border-t border-gray-700">
-                  Login sebagai: <span className="text-[#C6FF00] font-medium">{currentUser.nama}</span>
+                <div className={`px-4 py-2 text-xs border-t mt-2 ${darkMode ? 'border-gray-700 text-gray-400' : 'border-slate-100 text-[#2F6FAF]'}`}>
+                  Login sebagai: <span className="text-[#2F6FAF] font-medium">{currentUser.nama}</span>
                 </div>
                 <button
                   onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
-                  className="px-4 py-3 rounded-xl transition text-left font-medium text-red-400 hover:bg-red-500/10"
+                  className="px-4 py-3 rounded-xl transition text-left font-medium text-red-500 hover:bg-red-500/10"
                 >
                   Keluar
                 </button>
@@ -147,7 +155,7 @@ export default function Header() {
             ) : (
               <button
                 onClick={() => { router.push('/login'); setIsMobileMenuOpen(false); }}
-                className="px-4 py-3 rounded-xl bg-[#C6FF00] text-black font-semibold transition text-left"
+                className="px-4 py-3 rounded-xl bg-[#1E5C9A] text-white font-semibold transition text-left shadow-sm"
               >
                 Masuk
               </button>

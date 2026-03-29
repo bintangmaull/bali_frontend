@@ -1,4 +1,5 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
+import { useTheme } from '../context/ThemeContext'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { getKotaBoundary } from '../src/lib/api'
@@ -94,6 +95,7 @@ function getJenksBreaks(data, nClasses) {
 }
 
 export default function DirectLossMap({ geojson, cityGeojson, filters, search, selectedKota }) {
+  const { darkMode } = useTheme()
   const mapEl = useRef(null)
   const mapRef = useRef(null)
   const clusterRef = useRef(null)
@@ -247,7 +249,7 @@ export default function DirectLossMap({ geojson, cityGeojson, filters, search, s
             if (!totalVal || totalVal === 0 || !loss) return '<span class="text-gray-400 font-normal">(0%)</span>'
             const pct = (loss / totalVal) * 100
             if (pct < 0.1 && pct > 0) return '<span class="text-gray-400 font-normal">(<0.1%)</span>'
-            if (pct >= 99.9) return '<span class="text-red-500 font-normal opacity-80">(100%)</span>'
+            if (pct >= 99.9) return '<span class="text-[#2FA69A] font-normal opacity-80">(100%)</span>'
             return `<span class="text-gray-500 font-normal opacity-80">(${pct.toFixed(1)}%)</span>`
           }
 
@@ -269,8 +271,8 @@ export default function DirectLossMap({ geojson, cityGeojson, filters, search, s
 
           if (hasGempa) {
             hazardContent += `
-              <div class="flex border-l-2 border-blue-500 pl-1">
-                <div class="w-12 text-[8px] font-bold text-blue-600 shrink-0">PGA</div>
+              <div class="flex border-l-2 border-[#2F6FAF] pl-1">
+                <div class="w-12 text-[8px] font-bold text-[#1E5C9A] shrink-0">PGA</div>
                 <div class="flex-1 grid grid-cols-1 gap-y-0 text-[8px] text-gray-600 leading-tight">
                   ${['1000', '500', '250', '200', '100'].map(rp => {
                     const cityFeature = (cityGeojson?.features || []).find(f => 
@@ -335,7 +337,7 @@ export default function DirectLossMap({ geojson, cityGeojson, filters, search, s
 
            if (hasTsunami) {
              hazardContent += `
-              <div class="flex border-l-2 border-cyan-500 pl-1">
+              <div class="flex border-l-2 border-[#6FB5C2] pl-1">
                 <div class="w-12 text-[8px] font-bold text-cyan-600 shrink-0">Tsunami</div>
                 <div class="flex-1 text-[8px] text-gray-600 leading-tight">
                   ${renderRow('Total', p.direct_loss_inundansi)}
@@ -469,7 +471,9 @@ export default function DirectLossMap({ geojson, cityGeojson, filters, search, s
       <div ref={mapEl} className="h-full w-full rounded-lg" />
       {selectedBuildingHtml && (
         <div 
-          className="absolute top-24 left-[280px] z-[2000] bg-white/95 backdrop-blur-md rounded-xl shadow-2xl p-4 w-[240px] border border-gray-100 pointer-events-auto cursor-grab active:cursor-grabbing"
+          className={`absolute top-24 left-[280px] z-[2000] backdrop-blur-md rounded-xl shadow-2xl p-4 w-[240px] border pointer-events-auto cursor-grab active:cursor-grabbing transition-all ${
+            darkMode ? 'bg-[#1E2023]/95 border-gray-700 shadow-black/40' : 'bg-white/95 border-gray-100 shadow-xl'
+          }`}
           style={{ transform: `translate(${panelPos.x}px, ${panelPos.y}px)` }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}

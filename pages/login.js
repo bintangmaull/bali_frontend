@@ -44,8 +44,8 @@ export default function Login() {
   const bg = darkMode ? 'bg-[#0D0F12]' : 'bg-gray-100'
   const card = darkMode ? 'bg-[#1E2023] border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-900'
   const inputCls = darkMode
-    ? 'bg-[#2a2d31] border-gray-600 text-white placeholder-gray-400 focus:border-[#C6FF00]'
-    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-[#73b800]'
+    ? 'bg-[#2a2d31] border-gray-600 text-white placeholder-gray-400 focus:border-[#1E5C9A]'
+    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-[#1E5C9A]'
   const labelCls = darkMode ? 'text-gray-300' : 'text-gray-600'
 
   return (
@@ -53,7 +53,7 @@ export default function Login() {
       <div className={`w-full max-w-md mx-4 rounded-2xl border shadow-xl p-8 ${card}`}>
         {/* Header */}
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-[#C6FF00] tracking-tight">CardinAAL</h1>
+          <h1 className="text-3xl font-bold text-[#1E5C9A] tracking-tight">Bali Risk Dashboard</h1>
           <p className={`mt-1 text-sm ${labelCls}`}>Masuk ke akun Anda untuk mengakses Manajemen Data</p>
         </div>
 
@@ -91,7 +91,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-xl bg-[#C6FF00] text-black font-semibold text-sm hover:bg-[#d4ff33] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-2.5 rounded-xl bg-[#1E5C9A] text-white font-semibold text-sm hover:bg-[#2F6FAF] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Memproses...' : 'Masuk'}
           </button>
@@ -99,7 +99,7 @@ export default function Login() {
 
         <p className={`mt-6 text-center text-sm ${labelCls}`}>
           Belum punya akun?{' '}
-          <Link href="/register" className="text-[#C6FF00] hover:underline font-medium">
+          <Link href="/register" className="text-[#1E5C9A] hover:underline font-medium">
             Daftar di sini
           </Link>
         </p>

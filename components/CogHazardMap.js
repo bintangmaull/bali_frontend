@@ -1,5 +1,6 @@
 // components/CogHazardMap.js
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react'
+import { useTheme } from '../context/ThemeContext'
 import Script from 'next/script'
 import L from 'leaflet'
 import { ChevronRight, Layers } from 'lucide-react'
@@ -75,13 +76,13 @@ const BASE_LAYERS = {
 }
 
 const EXPOSURE_COLORS = {
-  healthcare: '#ef4444',  // Red
-  educational: '#3b82f6', // Blue
-  electricity: '#f59e0b', // Yellow
-  airport: '#8b5cf6',     // Purple
-  hotel: '#ec4899',        // Pink
-  bmn: '#10b981',          // Emerald
-  residential: '#6366f1'   // Indigo
+  healthcare: '#1E5C9A',  // Deep Blue
+  educational: '#2FA69A', // Teal Green
+  electricity: '#F2C94C', // Yellow Accent
+  airport: '#7B3F98',     // Purple
+  hotel: '#A055A1',        // Magenta-Purple
+  bmn: '#1C7C75',          // Dark Teal
+  residential: '#2F6FAF'   // Medium Blue
 }
 
 const AAL_COLORS = ['#1a9850', '#d9ef8b', '#fee08b', '#fc8d59', '#d73027', '#7f0000'];
@@ -212,6 +213,7 @@ function interpolateColor(colorStops, t) {
 
 // ─── Main component ──────────────────────────────────────────────────────────────
 export default function CogHazardMap() {
+  const { darkMode } = useTheme()
   const mapEl = useRef(null)
   const mapRef = useRef(null)
   const layerRef = useRef(null)
@@ -341,8 +343,8 @@ export default function CogHazardMap() {
 
         <div class="space-y-1.5 mt-1 border-t border-gray-100 pt-1.5 ${isBMNRes ? 'hidden' : ''}">
           <!-- Gempa Bumi -->
-          <div class="border-l-2 border-blue-500 pl-1.5">
-            <div class="text-[10px] font-bold text-blue-600 leading-none mb-1">Gempa (PGA)</div>
+          <div class="border-l-2 border-[#1E5C9A] pl-1.5">
+            <div class="text-[10px] font-bold text-[#1E5C9A] leading-none mb-1">Gempa (PGA)</div>
             <div class="grid grid-cols-1 gap-y-0.5 text-[9px] text-gray-600">
               ${['1000', '500', '250', '200', '100'].map(rp => {
                   const cityKey = (p.kota || '').toUpperCase()
@@ -361,7 +363,7 @@ export default function CogHazardMap() {
                   const ratio = catData[`pga_${rp}`];
                   const ratioStr = ratio != null ? (parseFloat(ratio) * 100).toFixed(6) + '%' : '-';
                   
-                  return `<div>${rp}th: <b class="text-blue-700">${ratioStr}</b> (Loss Ratio)</div>`;
+                  return `<div>${rp}th: <b class="text-[#1E5C9A]">${ratioStr}</b> (Loss Ratio)</div>`;
               }).join('')}
             </div>
           </div>
@@ -395,8 +397,8 @@ export default function CogHazardMap() {
           </div>
 
           <!-- Tsunami -->
-          <div class="border-l-2 border-cyan-500 pl-1.5">
-            <div class="text-[10px] font-bold text-cyan-600 leading-none mb-1">Tsunami (Inundansi)</div>
+          <div class="border-l-2 border-[#6FB5C2] pl-1.5">
+            <div class="text-[10px] font-bold text-[#6FB5C2] leading-none mb-1">Tsunami (Inundansi)</div>
             <div class="text-[9px] text-gray-600 leading-tight">
               Total: <b>${formatNumberWithUnit(p.direct_loss_inundansi || 0)}</b> ${formatPercent(p.direct_loss_inundansi, assetValue)}
             </div>
@@ -2143,13 +2145,17 @@ export default function CogHazardMap() {
           {/* Exposure Search Bar */}
           {isExposureActive && !isBangunanPanelOpen && (
             <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[2002] w-full max-w-md px-4">
-              <div className="bg-white rounded-full shadow-2xl border border-gray-100 flex items-center px-4 py-2 group focus-within:ring-2 focus-within:ring-gray-900/5 transition-all">
+              <div className={`rounded-full shadow-2xl border transition-all flex items-center px-4 py-2 group focus-within:ring-2 focus-within:ring-[#1E5C9A]/40 ${
+                darkMode ? 'bg-[#1E2023] border-gray-700' : 'bg-white border-gray-100'
+              }`}>
                 <input
                   type="text"
                   placeholder="Cari gedung, sekolah, atau infrastruktur..."
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="flex-1 bg-transparent text-[12px] font-medium outline-none text-gray-800 placeholder:text-gray-400"
+                  className={`flex-1 bg-transparent text-[12px] font-medium outline-none placeholder:text-gray-400 transition-all ${
+                    darkMode ? 'text-white' : 'text-gray-800'
+                  }`}
                 />
                 <button className="text-gray-400 group-hover:text-gray-600">
                   <Layers size={16} />
@@ -2157,7 +2163,9 @@ export default function CogHazardMap() {
               </div>
 
               {searchResults.length > 0 && (
-                <div className="mt-2 bg-white rounded-2xl shadow-2xl border border-gray-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className={`mt-2 rounded-2xl shadow-2xl border transition-all overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300 ${
+                  darkMode ? 'bg-[#1A1D21] border-gray-800' : 'bg-white border-gray-50'
+                }`}>
                   {searchResults.map((f, i) => (
                     <button
                       key={i}
@@ -2168,8 +2176,12 @@ export default function CogHazardMap() {
                         <Layers size={14} />
                       </div>
                       <div className="flex-1 overflow-hidden">
-                        <div className="text-[12px] font-bold text-gray-800 truncate">{f.properties.nama_gedung || 'Tanpa Nama'}</div>
-                        <div className="text-[10px] text-gray-400 truncate mt-0.5">{f.properties.alamat || '-'}</div>
+                        <div className={`text-[12px] font-bold truncate transition-all ${
+                          darkMode ? 'text-gray-100' : 'text-gray-800'
+                        }`}>{f.properties.nama_gedung || 'Tanpa Nama'}</div>
+                        <div className={`text-[10px] truncate mt-0.5 transition-all ${
+                          darkMode ? 'text-gray-400' : 'text-gray-400'
+                        }`}>{f.properties.alamat || '-'}</div>
                       </div>
                     </button>
                   ))}
@@ -2184,7 +2196,9 @@ export default function CogHazardMap() {
           {/* Building Detail Overlay */}
           {selectedBuildingHtml && (
             <div
-              className="absolute top-24 left-[280px] z-[2000] bg-white/95 backdrop-blur-md rounded-xl shadow-2xl p-4 w-[240px] border border-gray-100 animate-in fade-in slide-in-from-left-4 duration-300 pointer-events-auto cursor-grab active:cursor-grabbing"
+              className={`absolute top-24 left-[280px] z-[2000] backdrop-blur-md rounded-xl shadow-2xl p-4 w-[240px] border animate-in fade-in slide-in-from-left-4 duration-300 pointer-events-auto cursor-grab active:cursor-grabbing transition-all ${
+                darkMode ? 'bg-[#1E2023]/95 border-gray-700 shadow-black/40' : 'bg-white/95 border-gray-100'
+              }`}
               style={{ transform: `translate(${panelPos.x}px, ${panelPos.y}px)` }}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
@@ -2247,10 +2261,14 @@ export default function CogHazardMap() {
           )}
 
           {loading && (
-            <div className="absolute inset-0 z-[2000] flex items-center justify-center bg-white/50 backdrop-blur-[4px]">
+            <div className={`absolute inset-0 z-[2000] flex items-center justify-center backdrop-blur-[4px] transition-all ${
+              darkMode ? 'bg-[#0D0F12]/50' : 'bg-white/50'
+            }`}>
               <div className="flex flex-col items-center gap-4 animate-in fade-in duration-300">
                 <div className="w-10 h-10 border-[3px] border-gray-200 border-t-gray-800 rounded-full animate-spin" />
-                <span className="text-gray-800 text-[11px] font-bold tracking-[0.2em] bg-white px-5 py-2 rounded-full shadow-sm border border-gray-100">LOADING DATA</span>
+                <span className={`text-[11px] font-bold tracking-[0.2em] px-5 py-2 rounded-full shadow-sm border transition-all ${
+                  darkMode ? 'bg-gray-800 text-gray-200 border-gray-700' : 'bg-white text-gray-800 border-gray-100'
+                }`}>LOADING DATA</span>
               </div>
             </div>
           )}
@@ -2258,7 +2276,9 @@ export default function CogHazardMap() {
           {/* Draggable HSBGN Floating Panel */}
           {isHSBGNPanelOpen && (
             <div
-              className="absolute top-[88px] left-[290px] z-[2000] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl min-w-[310px] w-[310px] min-h-[200px] h-[300px] resize overflow-hidden border border-gray-100 animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col"
+              className={`absolute top-[88px] left-[290px] z-[2000] backdrop-blur-md rounded-2xl shadow-2xl min-w-[310px] w-[310px] min-h-[200px] h-[300px] resize overflow-hidden border animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col transition-all ${
+                darkMode ? 'bg-[#1E2023]/95 border-gray-700 shadow-black/40' : 'bg-white/95 border-gray-100'
+              }`}
               style={{ transform: `translate(${hsbgnPanelPos.x}px, ${hsbgnPanelPos.y}px)` }}
               onPointerDown={handleHsbgnPointerDown}
               onPointerMove={handleHsbgnPointerMove}
@@ -2267,12 +2287,12 @@ export default function CogHazardMap() {
             >
               <div className="flex justify-between items-center bg-transparent border-b border-gray-100 px-4 py-3 cursor-grab active:cursor-grabbing">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
+                  <div className="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center text-[#2F6FAF]">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
                   </div>
-                  <h3 className="text-[10px] font-bold text-gray-800 tracking-[0.1em] uppercase">Data HSBGN</h3>
+                  <h3 className={`text-[10px] font-bold tracking-[0.1em] uppercase ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Data HSBGN</h3>
                 </div>
                 <button
                   onClick={() => setIsHSBGNPanelOpen(false)}
@@ -2293,7 +2313,9 @@ export default function CogHazardMap() {
           {/* Draggable Bangunan Floating Panel */}
           {isBangunanPanelOpen && (
             <div
-              className="absolute top-[88px] left-[320px] z-[2000] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl min-w-[310px] w-[310px] min-h-[400px] h-[450px] resize overflow-hidden border border-gray-100 animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col"
+              className={`absolute top-[88px] left-[320px] z-[2000] backdrop-blur-md rounded-2xl shadow-2xl min-w-[310px] w-[310px] min-h-[400px] h-[450px] resize overflow-hidden border animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col transition-all ${
+                darkMode ? 'bg-[#1E2023]/95 border-gray-700 shadow-black/40' : 'bg-white/95 border-gray-100'
+              }`}
               style={{ transform: `translate(${bangunanPanelPos.x}px, ${bangunanPanelPos.y}px)` }}
               onPointerDown={handleBangunanPointerDown}
               onPointerMove={handleBangunanPointerMove}
@@ -2302,10 +2324,14 @@ export default function CogHazardMap() {
             >
               <div className="flex justify-between items-center bg-transparent border-b border-gray-100 px-4 py-3 cursor-grab active:cursor-grabbing">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${
+                    darkMode ? 'bg-orange-950/40 text-orange-400' : 'bg-orange-50 text-orange-600'
+                  }`}>
                     <Layers size={14} />
                   </div>
-                  <h3 className="text-[10px] font-bold text-gray-800 tracking-[0.1em] uppercase">Data Bangunan</h3>
+                  <h3 className={`text-[10px] font-bold tracking-[0.1em] uppercase transition-all ${
+                    darkMode ? 'text-gray-200' : 'text-gray-800'
+                  }`}>Data Bangunan</h3>
                 </div>
                 <button
                   onClick={() => setIsBangunanPanelOpen(false)}
@@ -2352,7 +2378,9 @@ export default function CogHazardMap() {
           {/* Draggable Exposure Table Floating Panel */}
           {isExposurePanelOpen && (
             <div
-              className="absolute top-[88px] left-[350px] z-[2000] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl min-w-[380px] w-[380px] min-h-[400px] h-[450px] resize overflow-hidden border border-gray-100 animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col"
+              className={`absolute top-[88px] left-[350px] z-[2000] backdrop-blur-md rounded-2xl shadow-2xl min-w-[380px] w-[380px] min-h-[400px] h-[450px] resize overflow-hidden border animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col transition-all ${
+                darkMode ? 'bg-[#1E2023]/95 border-gray-700 shadow-black/40' : 'bg-white/95 border-gray-100'
+              }`}
               style={{ transform: `translate(${exposurePanelPos.x}px, ${exposurePanelPos.y}px)` }}
               onPointerDown={handleExposurePointerDown}
               onPointerMove={handleExposurePointerMove}
@@ -2361,10 +2389,14 @@ export default function CogHazardMap() {
             >
               <div className="flex justify-between items-center bg-transparent border-b border-gray-100 px-4 py-3 cursor-grab active:cursor-grabbing">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${
+                    darkMode ? 'bg-orange-950/40 text-orange-400' : 'bg-orange-50 text-orange-600'
+                  }`}>
                     <Layers size={14} />
                   </div>
-                  <h3 className="text-[10px] font-bold text-gray-800 tracking-[0.1em] uppercase">Data Direct Loss</h3>
+                  <h3 className={`text-[10px] font-bold tracking-[0.1em] uppercase transition-all ${
+                    darkMode ? 'text-gray-200' : 'text-gray-800'
+                  }`}>Data Direct Loss</h3>
                 </div>
                 <button
                   onClick={() => setIsExposurePanelOpen(false)}

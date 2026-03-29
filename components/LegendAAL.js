@@ -55,8 +55,10 @@ export default function LegendAAL({ geojson, hazard, period, model }) {
   const { darkMode } = useTheme();
 
   // Classes berdasarkan mode
-  const cardCls = darkMode ? 'bg-gray-800/90 border-gray-700' : 'bg-white/90 border-gray-200';
-  const titleCls = darkMode ? 'text-gray-200' : 'text-gray-700';
+  const cardCls = darkMode 
+    ? 'bg-gray-900/80 backdrop-blur-md border border-gray-700 shadow-2xl' 
+    : 'bg-white/80 backdrop-blur-md border border-gray-200 shadow-xl';
+  const titleCls = darkMode ? 'text-white' : 'text-[#1E5C9A]';
   const textCls = darkMode ? 'text-gray-300' : 'text-gray-700';
 
   if (!hazard || !model) return null;

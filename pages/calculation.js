@@ -75,7 +75,7 @@ export default function Calculation() {
               />
               <div className="absolute top-4 right-4 z-[1000] transition-opacity duration-300">
                 <button
-                  className="px-4 py-1.5 bg-[#22D3EE] text-black rounded-4xl hover:bg-[#3B82F6] hover:text-white font-[SF Pro] transition text-sm shadow-lg flex items-center gap-2"
+                  className="px-4 py-1.5 bg-[#1E5C9A] text-white rounded-4xl hover:bg-[#2F6FAF] font-[SF Pro] transition text-sm shadow-lg flex items-center gap-2"
                   onClick={() => window.open('/api/aal-kota/download', '_blank')}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

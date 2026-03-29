@@ -41,7 +41,7 @@ export default function FilterDirectLoss({
   // Classes berdasarkan mode
   const inputCls = darkMode
     ? 'bg-[#2a2d31] border-gray-600 text-gray-200 placeholder-gray-500 focus:ring-blue-400 focus:border-blue-400'
-    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500';
+    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:ring-[#2F6FAF] focus:border-[#2F6FAF]';
   const dropdownBg = darkMode ? 'bg-[#2a2d31] border-gray-600' : 'bg-white border-gray-200';
   const dropdownItem = darkMode ? 'text-gray-200 hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100';
 
@@ -67,15 +67,15 @@ export default function FilterDirectLoss({
           <label
             key={type.key}
             title={type.full}
-            className="flex items-center gap-1.5 text-black px-2 py-1 bg-[#C084FC] rounded-full hover:bg-cyan-700 hover:text-black cursor-pointer whitespace-nowrap"
+            className="flex items-center gap-1.5 text-white px-2 py-1 bg-[#009688] rounded-full hover:bg-[#00796b] cursor-pointer whitespace-nowrap"
           >
             <input
               type="checkbox"
               checked={filters[type.key]}
               onChange={() => setFilters((f) => ({ ...f, [type.key]: !f[type.key] }))}
-              className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="w-3.5 h-3.5 text-[#1E5C9A] border-gray-300 rounded focus:ring-[#009688]"
             />
-            <span className="text-xs text-gray-800">{type.label}</span>
+            <span className="text-xs text-white">{type.label}</span>
           </label>
         ))}
       </div>
@@ -93,7 +93,7 @@ export default function FilterDirectLoss({
           />
           <button
             type="button"
-            className="px-2.5 py-1.5 bg-[#22D3EE] text-black text-xs rounded hover:bg-[#3B82F6] hover:text-white whitespace-nowrap transition shadow-sm"
+            className="px-2.5 py-1.5 bg-[#1E5C9A] text-white text-xs rounded hover:bg-[#2F6FAF] whitespace-nowrap transition shadow-sm font-semibold"
             onClick={() => {
               const params = new URLSearchParams();
               if (selectedProv) params.append('provinsi', selectedProv);

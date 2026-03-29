@@ -76,13 +76,13 @@ export default function AdminProcessManager() {
           <h3 className="text-xl font-bold mb-2">Konfirmasi Eksekusi</h3>
           <p className={textCls}>Apakah Anda yakin ingin menjalankan <strong>{confirmModal?.label}</strong>?</p>
           {confirmModal?.key === 'banjir' && (
-            <p className="mt-2 text-amber-500 text-sm font-semibold italic">
+            <p className="mt-2 text-[#2F6FAF] text-sm font-semibold italic">
               ⚠️ Peringatan: Proses ini dapat memakan waktu beberapa menit karena volume data yang besar.
             </p>
           )}
           <div className="flex justify-end gap-3 mt-6">
             <Button onClick={() => setConfirmModal(null)} className="bg-gray-400">Batal</Button>
-            <Button onClick={() => handleExecute(confirmModal)} className="bg-blue-600 text-white">Ya, Jalankan</Button>
+            <Button onClick={() => handleExecute(confirmModal)} className="bg-[#2F6FAF] text-white">Ya, Jalankan</Button>
           </div>
         </div>
       </Modal>

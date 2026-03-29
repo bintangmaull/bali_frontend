@@ -9,7 +9,7 @@ const CogHazardMap = dynamic(
   { ssr: false, loading: () => (
       <div className="w-full h-full flex items-center justify-center bg-[#0D0F12]">
         <div className="flex flex-col items-center gap-3 text-white">
-          <svg className="animate-spin w-10 h-10 text-[#C6FF00]" viewBox="0 0 24 24" fill="none">
+          <svg className="animate-spin w-10 h-10 text-[#1E5C9A]" viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
           </svg>

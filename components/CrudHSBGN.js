@@ -1,6 +1,7 @@
 // components/CrudHSBGN.js
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import { useRouter } from 'next/router'
+import { useTheme } from '../context/ThemeContext'
 import Modal from './ui/Modal'
 import {
   getHSBGN,
@@ -10,6 +11,7 @@ import {
 
 export default function CrudHSBGN({ onDataChanged }) {
   const router = useRouter()
+  const { darkMode } = useTheme()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [rows, setRows] = useState([])
   const [searchCity, setSearchCity] = useState('')
@@ -38,11 +40,11 @@ export default function CrudHSBGN({ onDataChanged }) {
     return (
       <div className="flex flex-col items-center justify-center py-8 gap-3 text-center">
         <div className="text-3xl">🔒</div>
-        <p className="text-sm font-semibold text-gray-700">Fitur ini memerlukan login</p>
-        <p className="text-xs text-gray-500">Silakan masuk ke akun Anda untuk mengelola data HSBGN.</p>
+        <p className={`text-sm font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>Fitur ini memerlukan login</p>
+        <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Silakan masuk ke akun Anda untuk mengelola data HSBGN.</p>
         <button
           onClick={() => router.push('/login')}
-          className="mt-2 px-5 py-2 bg-[#C6FF00] text-black text-sm font-semibold rounded-full hover:bg-[#d4ff33] transition"
+          className="mt-2 px-5 py-2 bg-[#1E5C9A] text-white text-sm font-semibold rounded-full hover:bg-[#2F6FAF] transition shadow-md"
         >
           Masuk
         </button>
@@ -86,11 +88,15 @@ export default function CrudHSBGN({ onDataChanged }) {
     }
   }
 
-  // Force light mode aesthetically to match map panel overlays
-  const inputCls = 'border p-1 text-[10px] rounded text-gray-900 bg-white border-gray-300 shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 min-w-0'
-  const rowText = 'text-gray-800'
-  const rowHover = 'hover:bg-gray-50'
-  const theadBg = 'bg-gray-100 text-gray-700 font-bold uppercase tracking-wider'
+  // Aesthetically match theme
+  const inputCls = darkMode 
+    ? 'border p-1 text-[10px] rounded text-white bg-gray-800 border-gray-700 shadow-sm focus:ring-1 focus:ring-[#1E5C9A] focus:border-[#1E5C9A] min-w-0'
+    : 'border p-1 text-[10px] rounded text-gray-900 bg-white border-gray-300 shadow-sm focus:ring-1 focus:ring-[#1E5C9A] focus:border-[#1E5C9A] min-w-0'
+  
+  const rowText = darkMode ? 'text-gray-300' : 'text-gray-800'
+  const rowHover = darkMode ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50'
+  const theadBg = darkMode ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-700'
+  const tableBorder = darkMode ? 'border-gray-700' : 'border-gray-200'
 
   return (
     <div className={`flex flex-col gap-2 transition-colors duration-300 w-full h-full`}>
@@ -106,9 +112,9 @@ export default function CrudHSBGN({ onDataChanged }) {
       </div>
 
       {/* Table */}
-      <div className="flex-1 overflow-auto mt-2 rounded shadow-sm border border-gray-200 min-w-0 min-h-0 w-full relative custom-scrollbar pb-1 bg-white">
+      <div className={`flex-1 overflow-auto mt-2 rounded shadow-sm border ${tableBorder} min-w-0 min-h-0 w-full relative custom-scrollbar pb-1 ${darkMode ? 'bg-[#1E2023]' : 'bg-white'}`}>
         <table className="w-full text-[7px] leading-tight text-left whitespace-nowrap">
-          <thead className={`${theadBg} sticky top-0 z-10 transition-colors duration-300 outline outline-1 outline-gray-200`}>
+          <thead className={`${theadBg} sticky top-0 z-10 transition-colors duration-300 outline outline-1 ${darkMode ? 'outline-gray-700' : 'outline-gray-200'}`}>
             <tr>
               <th className="py-0.5 px-0.5 whitespace-nowrap">Kota</th>
               <th className="py-0.5 px-0.5 text-right whitespace-nowrap leading-tight">Sederhana<br/><span className="text-[6px] normal-case font-normal">(Rp)</span></th>
@@ -118,7 +124,7 @@ export default function CrudHSBGN({ onDataChanged }) {
           </thead>
           <tbody>
             {filteredRows.map(r => (
-              <tr key={r.id_kota} className={`${rowHover} cursor-pointer transition-colors duration-150 border-b border-gray-100 last:border-0`}>
+              <tr key={r.id_kota} className={`${rowHover} cursor-pointer transition-colors duration-150 border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'} last:border-0`}>
                 <td className={`py-0.5 px-0.5 ${rowText} truncate max-w-[80px]`} title={r.kota}>{r.kota}</td>
                 <td className={`py-0.5 px-0.5 ${rowText} text-right tabular-nums`}>{Number(r.hsbgn_sederhana).toLocaleString('id-ID')}</td>
                 <td className={`py-0.5 px-0.5 ${rowText} text-right tabular-nums`}>{Number(r.hsbgn_tidaksederhana).toLocaleString('id-ID')}</td>
@@ -126,7 +132,7 @@ export default function CrudHSBGN({ onDataChanged }) {
                   <div className="flex justify-center gap-2">
                     <button
                       onClick={() => onEditClick(r)}
-                      className="text-blue-500 hover:text-blue-700 transition-colors"
+                      className="text-[#1E5C9A] hover:text-[#004b87] transition-colors"
                       title="Edit HSBGN"
                     >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
@@ -140,14 +146,14 @@ export default function CrudHSBGN({ onDataChanged }) {
       </div>
 
       {/* Edit Modal */}
-      <Modal isOpen={!!editing} onClose={() => setEditing(null)} forceLightMode>
-        <h3 className="text-sm font-bold mb-3 text-gray-800 border-b pb-2">Edit HSBGN</h3>
+      <Modal isOpen={!!editing} onClose={() => setEditing(null)}>
+        <h3 className={`text-sm font-bold mb-3 border-b pb-2 ${darkMode ? 'text-white border-gray-700' : 'text-gray-800 border-gray-100'}`}>Edit HSBGN</h3>
         <form onSubmit={e => { e.preventDefault(); onSave() }} className="flex flex-col gap-3">
           <div>
-            <label className="text-[11px] font-semibold text-gray-600 mb-1 block">Kota</label>
+            <label className={`text-[11px] font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-1 block`}>Kota</label>
             <input
               type="text"
-              className="border p-2 w-full rounded-md text-xs bg-gray-50 text-gray-500 cursor-not-allowed"
+              className={`border p-2 w-full rounded-md text-xs cursor-not-allowed ${darkMode ? 'bg-gray-700 border-gray-600 text-gray-400' : 'bg-gray-50 border-gray-200 text-gray-500'}`}
               value={editing?.kota || ''}
               readOnly
             />
@@ -155,20 +161,20 @@ export default function CrudHSBGN({ onDataChanged }) {
 
           <div className="grid grid-cols-1 gap-3">
             <div>
-              <label className="text-[11px] font-semibold text-gray-600 mb-1 block">HSBGN Sederhana (Rp)</label>
+              <label className={`text-[11px] font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-1 block`}>HSBGN Sederhana (Rp)</label>
               <input
                 type="number"
-                className="border p-2 w-full rounded-md text-xs outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+                className={`border p-2 w-full rounded-md text-xs outline-none transition-colors ${darkMode ? 'bg-gray-700 border-gray-600 text-white focus:border-[#1E5C9A]' : 'bg-white border-gray-200 text-gray-900 focus:border-[#1E5C9A]'}`}
                 value={hsbgnSederhana}
                 onChange={e => setHsbgnSederhana(e.target.value)}
                 required
               />
             </div>
             <div>
-              <label className="text-[11px] font-semibold text-gray-600 mb-1 block">HSBGN Tidak Sederhana (Rp)</label>
+              <label className={`text-[11px] font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-1 block`}>HSBGN Tidak Sederhana (Rp)</label>
               <input
                 type="number"
-                className="border p-2 w-full rounded-md text-xs outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+                className={`border p-2 w-full rounded-md text-xs outline-none transition-colors ${darkMode ? 'bg-gray-700 border-gray-600 text-white focus:border-[#1E5C9A]' : 'bg-white border-gray-200 text-gray-900 focus:border-[#1E5C9A]'}`}
                 value={hsbgnTidakSederhana}
                 onChange={e => setHsbgnTidakSederhana(e.target.value)}
                 required
@@ -179,7 +185,7 @@ export default function CrudHSBGN({ onDataChanged }) {
             <button
               type="button"
               onClick={() => setEditing(null)}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors"
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
               disabled={isSaving}
             >
               Batal
@@ -187,7 +193,7 @@ export default function CrudHSBGN({ onDataChanged }) {
             <button
               type="submit"
               disabled={isSaving}
-              className={`bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-xs font-semibold flex items-center justify-center transition-colors ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`bg-[#1E5C9A] hover:bg-[#2F6FAF] text-white px-3 py-1.5 rounded-md text-xs font-semibold flex items-center justify-center transition-colors ${isSaving ? 'opacity-50 cursor-not-allowed' : 'shadow-sm'}`}
             >
               {isSaving && (
                 <svg
@@ -218,7 +224,7 @@ export default function CrudHSBGN({ onDataChanged }) {
       </Modal>
 
       {/* Success Modal */}
-      <Modal isOpen={showSuccess} onClose={() => setShowSuccess(false)} forceLightMode>
+      <Modal isOpen={showSuccess} onClose={() => setShowSuccess(false)}>
         <div className="text-center p-2">
           <div className="text-4xl mb-2">✅</div>
           <h3 className="text-base font-bold mb-1">Berhasil!</h3>
