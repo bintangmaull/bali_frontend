@@ -6,7 +6,8 @@ import { useTheme } from '../context/ThemeContext'
 // Load map client-side only (Leaflet needs window)
 const CogHazardMap = dynamic(
   () => import('../components/CogHazardMap'),
-  { ssr: false, loading: () => (
+  {
+    ssr: false, loading: () => (
       <div className="w-full h-full flex items-center justify-center bg-[#0D0F12]">
         <div className="flex flex-col items-center gap-3 text-white">
           <svg className="animate-spin w-10 h-10 text-[#1E5C9A]" viewBox="0 0 24 24" fill="none">
@@ -28,7 +29,7 @@ export default function PetaHazard() {
       <Header />
 
       {/* Full-screen map area, offset by header height */}
-      <main className="flex-1 pt-[48px] overflow-hidden">
+      <main className="flex-1 pt-[40px] overflow-hidden">
         <div className="w-full h-full">
           <CogHazardMap />
         </div>

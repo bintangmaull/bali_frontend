@@ -41,76 +41,93 @@ export default function About() {
   ]
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 relative ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+    <div className={`min-h-screen transition-colors duration-300 relative overflow-x-hidden ${darkMode ? 'bg-[#040608] text-gray-200' : 'bg-slate-50 text-gray-800'}`}>
       <Header />
 
-      {/* Background Image Layer (Matching Index.js) */}
-      <div className="fixed inset-0 w-full h-full -z-10 overflow-hidden bg-[#0D0F12]">
-        <img 
-          src="/itb1%20(1).png" 
-          alt="Background" 
-          className="w-full h-full object-cover opacity-30 dark:opacity-20 grayscale blur-[2px] scale-105" 
-        />
-        <div className={`absolute inset-0 transition-colors duration-300 ${
-          darkMode ? 'bg-gradient-to-b from-[#0D0F12]/80 via-[#0D0F12]/60 to-[#0D0F12]' : 'bg-gradient-to-b from-slate-50/70 via-slate-50/40 to-slate-50'
-        }`} />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(13,15,18,0.4)_100%)]" />
+      {/* Background Decor (Matching Index.js) */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+        <div className={`absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full blur-[120px] opacity-20 ${darkMode ? 'bg-blue-600' : 'bg-blue-200'}`} />
+        <div className={`absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full blur-[120px] opacity-10 ${darkMode ? 'bg-indigo-600' : 'bg-indigo-200'}`} />
+        {/* Grid Pattern */}
+        <div className={`absolute inset-0 opacity-[0.03] ${darkMode ? 'invert' : ''}`} style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
       </div>
 
-      <main className="min-h-screen flex flex-col items-center justify-center px-6 pt-24 md:pt-32 pb-12">
-        <div className="max-w-4xl w-full flex flex-col items-center space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-          
+      <main className="max-w-7xl mx-auto px-6 pt-28 pb-20 md:pt-36 flex flex-col items-center">
+        <div className="w-full flex flex-col items-center space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+
           {/* Header Section */}
-          <section className="space-y-6 text-center">
-            <h1 className="text-3xl md:text-4xl font-extrabold font-[Outfit, sans-serif] text-[#1E5C9A] transition-colors duration-300">
-              About Us
+          <section className="text-center space-y-6 max-w-5xl">
+            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 backdrop-blur-md mb-4">
+              <span className="text-[10px] font-bold tracking-[0.3em] text-blue-400 uppercase leading-none">Visi & Misi • Dashboard Risiko</span>
+            </div>
+            <h1 className={`text-3xl md:text-4xl font-black tracking-tighter leading-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+              About <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600">Us</span>
             </h1>
-            <p className={`text-sm md:text-base leading-relaxed text-justify transition-colors duration-300 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-              <strong>Bali Multi-Hazard Risk Dashboard</strong> dikembangkan berdasarkan penelitian 
-              <span className="text-[#1E5C9A] font-bold"> catastrophe modeling </span> 
-              yang berfokus pada analisis risiko bencana di Provinsi Bali. Studi ini mengintegrasikan pemodelan hazard, data exposure, serta kurva vulnerability untuk mengestimasi dampak dan kerugian akibat berbagai jenis bencana alam.
+            <p className={`text-sm md:text-base leading-relaxed text-center italic opacity-80 ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+              Bali Multi-Hazard Risk Dashboard dikembangkan berdasarkan penelitian catastrophe modelling yang berfokus pada analisis risiko bencana di Provinsi Bali.
             </p>
           </section>
 
-          {/* Leadership Section */}
-          <section className={`p-8 rounded-2xl border transition-all ${
-            darkMode ? 'bg-slate-900/40 border-slate-700 shadow-xl' : 'bg-white/60 border-slate-200 shadow-lg backdrop-blur-sm'
-          }`}>
-            <p className={`text-base md:text-lg leading-relaxed transition-colors duration-300 ${darkMode ? 'text-slate-200' : 'text-slate-900'}`}>
-              Penelitian ini dipimpin oleh <strong>Dr. Riantini Virtriana</strong> sebagai Associate Professor di bidang Disaster Risk Assessment, Fakultas Ilmu dan Teknologi Kebumian, Institut Teknologi Bandung.
-            </p>
-          </section>
+          {/* Core Content Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl">
+            {/* Leadership Box */}
+            <div className={`p-8 rounded-[2.5rem] border transition-all duration-500 hover:scale-[1.02] flex flex-col justify-center ${darkMode ? 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10' : 'bg-white border-slate-200 text-slate-700 shadow-xl'
+              }`}>
+              <div className="h-10 w-10 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-6">
+                <span className="text-xl">🏛️</span>
+              </div>
+              <h3 className={`text-lg font-black mb-3 ${darkMode ? 'text-white' : 'text-slate-900'}`}>Leadership & Research</h3>
+              <p className="text-xs md:text-sm leading-relaxed opacity-90">
+                Penelitian ini dipimpin oleh <strong>Dr. Riantini Virtriana</strong> sebagai Associate Professor di bidang Disaster Risk Assessment, Fakultas Ilmu dan Teknologi Kebumian, Institut Teknologi Bandung.
+              </p>
+            </div>
 
-          {/* Team Section */}
-          <section className="space-y-6">
-            <h2 className={`text-xl font-bold transition-all border-l-4 border-[#1E5C9A] pl-4 py-1 ${
-              darkMode ? 'text-slate-100' : 'text-slate-900'
-            }`}>
-              Tim Penelitian
-            </h2>
-            <p className={`text-sm transition-colors duration-300 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-              Tim penelitian terdiri dari akademisi dan peneliti dengan keahlian di bidang kebencanaan, geospasial, dan analisis risiko, yaitu:
-            </p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+            {/* Methodology Box */}
+            <div className={`p-8 rounded-[2.5rem] border transition-all duration-500 hover:scale-[1.02] flex flex-col justify-center ${darkMode ? 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10' : 'bg-white border-slate-200 text-slate-700 shadow-xl'
+              }`}>
+              <div className="h-10 w-10 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-6">
+                <span className="text-xl">📊</span>
+              </div>
+              <h3 className={`text-lg font-black mb-3 ${darkMode ? 'text-white' : 'text-slate-900'}`}>Methodology</h3>
+              <p className="text-xs md:text-sm leading-relaxed opacity-90">
+                Studi ini mengintegrasikan pemodelan hazard, data exposure, serta kurva vulnerability untuk mengestimasi dampak dan kerugian finansial akibat bencana alam.
+              </p>
+            </div>
+          </div>
+
+          {/* Research Team Section */}
+          <section className="w-full max-w-5xl space-y-8">
+            <div className="flex flex-col items-center text-center space-y-2">
+              <h2 className={`text-2xl md:text-3xl font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>Research Team</h2>
+              <div className="h-1 w-20 bg-blue-600 rounded-full" />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {researchTeam.map((member, index) => (
-                <div key={index} className={`px-4 py-2.5 rounded-xl border transition-all text-sm font-medium ${
-                  darkMode ? 'bg-slate-900/20 border-slate-800 text-slate-300 hover:border-[#1E5C9A]/50 hover:bg-slate-900/40' : 'bg-white/40 border-slate-100 text-slate-700 hover:border-blue-200 hover:bg-white/60'
-                }`}>
-                  {member}
+                <div key={index} className={`group px-6 py-5 rounded-[1.5rem] border transition-all duration-300 flex items-center gap-4 ${darkMode ? 'bg-white/5 border-white/10 text-slate-300 hover:bg-blue-600/10 hover:border-blue-500/40' : 'bg-white border-slate-100 text-slate-700 shadow-sm hover:shadow-md hover:border-blue-200'
+                  }`}>
+                  <div className="h-2 w-2 rounded-full bg-blue-500 group-hover:scale-150 transition-transform" />
+                  <span className="text-xs md:text-sm font-bold tracking-tight">{member}</span>
                 </div>
               ))}
             </div>
           </section>
 
           {/* Mission Conclusion */}
-          <section className={`p-6 rounded-2xl border transition-all text-center italic ${
-            darkMode ? 'bg-blue-900/10 border-[#1E5C9A]/20 text-slate-400' : 'bg-blue-50 border-blue-100 text-[#1E5C9A]'
-          }`}>
-            <p className="text-xs md:text-sm leading-relaxed">
-              Dashboard ini merupakan bentuk pengembangan dari hasil penelitian tersebut ke dalam platform visualisasi interaktif, 
-              dengan tujuan untuk mendukung pemahaman risiko bencana serta pengambilan keputusan berbasis data dalam upaya mitigasi dan pengurangan risiko.
-            </p>
+          <section className={`w-full max-w-4xl p-10 rounded-[3rem] border transition-all text-center relative overflow-hidden group ${darkMode ? 'bg-blue-600/5 border-blue-500/20' : 'bg-blue-50 border-blue-100 shadow-inner'
+            }`}>
+            <div className="relative z-10 flex flex-col items-center space-y-4">
+              <p className={`text-sm md:text-base leading-relaxed font-medium ${darkMode ? 'text-slate-300' : 'text-blue-900'}`}>
+                Dashboard ini merupakan platform visualisasi interaktif untuk mendukung pemahaman risiko bencana serta pengambilan keputusan berbasis data di Provinsi Bali.
+              </p>
+              <div className="flex items-center gap-4 pt-2">
+                <div className="h-[1px] w-12 bg-blue-500/30" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-blue-500">Project Mission</span>
+                <div className={`h-[1px] w-12 bg-blue-500/30`} />
+              </div>
+            </div>
+            {/* Soft decorative glow */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-blue-600/10 blur-[60px] rounded-full pointer-events-none group-hover:bg-blue-600/20 transition-all duration-700" />
           </section>
 
         </div>

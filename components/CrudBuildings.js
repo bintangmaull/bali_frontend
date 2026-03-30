@@ -1,6 +1,12 @@
 // components/CrudBuildings.js
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/router'
+import { 
+  Building2, Upload, Search, Plus, Table, MapPin, 
+  Trash2, Edit2, Download, FileText, ChevronRight,
+  Stethoscope, GraduationCap, Zap, Plane, Bed, Home,
+  Database, AlertCircle, X, Loader2, Filter, Save, CheckCircle2, Info
+} from 'lucide-react'
 import Select from './ui/Select'
 import Button from './ui/Button'
 import Modal from './ui/Modal'
@@ -23,7 +29,7 @@ import {
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
-// Definisi ikon untuk tiap tipe bangunan
+// Definisi ikon untuk tiap tipe bangunan (Leaflet)
 const icons = {
   FS: L.icon({ iconUrl: 'icons/healthcare.svg', iconSize: [20, 20], iconAnchor: [6, 20], popupAnchor: [0, -20], className: 'rounded-icon' }),
   FD: L.icon({ iconUrl: 'icons/education.svg', iconSize: [20, 20], iconAnchor: [6, 20], popupAnchor: [0, -20], className: 'rounded-icon' }),
@@ -33,12 +39,7 @@ const icons = {
 }
 
 function LoadingSpinner() {
-  return (
-    <svg className="animate-spin h-5 w-5 inline-block mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-    </svg>
-  )
+  return <Loader2 className="animate-spin h-4 w-4 inline-block mr-2" />
 }
 
 function MiniMap({ lat, lon, onLatLonChange, onLocationSelect, kode_bangunan }) {
@@ -52,12 +53,12 @@ function MiniMap({ lat, lon, onLatLonChange, onLocationSelect, kode_bangunan }) 
 
   useEffect(() => {
     if (mapRef.current) return
-    const map = L.map(mapEl.current).setView([lat || -6.2, lon || 106.8], 13)
+    const map = L.map(mapEl.current).setView([lat || -8.4095, lon || 115.1889], 13)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map)
     mapRef.current = map
-    markerRef.current = L.marker([lat || -6.2, lon || 106.8], {
+    markerRef.current = L.marker([lat || -8.4095, lon || 115.1889], {
       draggable: true,
       icon: icons[kode_bangunan] || icons.FD
     })
@@ -70,8 +71,8 @@ function MiniMap({ lat, lon, onLatLonChange, onLocationSelect, kode_bangunan }) 
 
   useEffect(() => {
     if (mapRef.current && markerRef.current) {
-      mapRef.current.setView([lat || -6.2, lon || 106.8], 13)
-      markerRef.current.setLatLng([lat || -6.2, lon || 106.8])
+      mapRef.current.setView([lat || -8.4095, lon || 115.1889], 13)
+      markerRef.current.setLatLng([lat || -8.4095, lon || 115.1889])
       markerRef.current.setIcon(icons[kode_bangunan] || icons.FD)
     }
   }, [lat, lon, kode_bangunan])
@@ -117,46 +118,48 @@ function MiniMap({ lat, lon, onLatLonChange, onLocationSelect, kode_bangunan }) 
   }
 
   return (
-    <div>
-      <div className="mb-2 flex gap-2 relative z-[9500]">
-        <input
-          type="text"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          onKeyDown={(e) => { 
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              e.stopPropagation();
-              handleSearch(e); 
-            }
-          }}
-          placeholder="Cari lokasi (Taman Mini...)"
-          className={`border p-1 px-2 text-xs rounded w-full transition-colors ${
-            darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'
-          }`}
-        />
+    <div className="space-y-3">
+      <div className="flex gap-2 relative z-[9500]">
+        <div className="relative flex-1 group">
+          <MapPin size={14} className={`absolute left-2.5 top-1/2 -translate-y-1/2 ${darkMode ? 'text-gray-500' : 'text-slate-400'}`} />
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            onKeyDown={(e) => { 
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                handleSearch(e); 
+              }
+            }}
+            placeholder="Cari lokasi (Taman Mini...)"
+            className={`w-full h-9 pl-8 pr-3 text-xs rounded-xl border outline-none transition-all ${
+              darkMode 
+                ? 'bg-white/5 border-white/10 text-white focus:bg-white/10 focus:border-blue-500/50' 
+                : 'bg-slate-50 border-slate-200 text-slate-900 focus:bg-white focus:border-blue-500 shadow-sm'
+            }`}
+          />
+        </div>
         <button 
           type="button" 
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            handleSearch(e);
-          }} 
-          className="bg-[#1E5C9A] text-white px-3 py-1 text-xs rounded transition-colors hover:bg-[#2F6FAF] shadow-sm" 
+          onClick={handleSearch} 
+          className="h-9 px-4 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95 disabled:opacity-50" 
           disabled={isSearching}
         >
-          Cari
+          {isSearching ? <Loader2 size={14} className="animate-spin" /> : 'Cari'}
         </button>
       </div>
+      
       {results.length > 0 && (
-        <div className={`absolute border rounded shadow-lg max-h-40 overflow-y-auto z-[9000] w-full left-0 mt-[32px] ${
-          darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+        <div className={`absolute border rounded-xl shadow-2xl max-h-40 overflow-y-auto z-[9000] w-full left-0 mt-[40px] backdrop-blur-xl ${
+          darkMode ? 'bg-[#1E2023]/90 border-white/10' : 'bg-white border-slate-200'
         }`}>
           {results.map((r, i) => (
             <div
               key={r.place_id}
-              className={`px-2 py-1 cursor-pointer text-sm transition-colors ${
-                darkMode ? 'hover:bg-gray-700 text-gray-200' : 'hover:bg-[#1E5C9A] text-gray-900'
+              className={`px-3 py-2 cursor-pointer text-[11px] font-medium transition-colors ${
+                darkMode ? 'hover:bg-white/10 text-gray-200' : 'hover:bg-blue-50 text-slate-700'
               }`}
               onClick={() => handleResultClick(r)}
             >
@@ -165,77 +168,22 @@ function MiniMap({ lat, lon, onLatLonChange, onLocationSelect, kode_bangunan }) 
           ))}
         </div>
       )}
-      <div ref={mapEl} style={{ height: '180px', width: '100%' }} className={`rounded z-0 border ${darkMode ? 'border-gray-700' : 'border-gray-300'}`} />
+      <div ref={mapEl} style={{ height: '200px', width: '100%' }} className={`rounded-xl z-0 border overflow-hidden ${darkMode ? 'border-white/10 shadow-inner' : 'border-slate-200 shadow-sm'}`} />
     </div>
-  )
-}
-
-const buildingNameToCode = {
-  'Healthcare Facilities': 'FS',
-  'Educational Facilities': 'FD',
-  'Electricity': 'ELECTRICITY',
-  'Hotel': 'HOTEL',
-  'Airport': 'AIRPORT',
-}
-
-// ── Icons for Building Categories ────────────────────────────────────────────────
-const CategoryIcons = {
-  hotel: (
-    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-[#d11141]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" title="Hotel">
-      <path d="M3 21h18"></path>
-      <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path>
-      <path d="M9 21v-4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4"></path>
-      <path d="M10 9h.01"></path>
-      <path d="M14 9h.01"></path>
-      <path d="M10 13h.01"></path>
-      <path d="M14 13h.01"></path>
-    </svg>
-  ),
-  electricity: (
-    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-[#ffc425]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" title="Electricity">
-      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
-    </svg>
-  ),
-  educational: (
-    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-[#00aedb]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" title="Educational">
-      <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
-      <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
-    </svg>
-  ),
-  healthcare: (
-    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-[#f37735]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" title="Healthcare">
-      <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"></path>
-      <path d="M12 8v8"></path>
-      <path d="M8 12h8"></path>
-    </svg>
-  ),
-  airport: (
-    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-[#8c52ff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" title="Airport">
-      <path d="M17.8 19.2 16 11 l3.5 -3.5 C21 6 21.5 4 21.5 4 c0 0 -2 .5 -3.5 2 L14.5 9.5 6 7 l-2 2 5.3 4.2 L6 16.5 l-2.5 -1 -1.5 1.5 3.5 2 2 3.5 1.5 -1 -2.5 3.3 -3.3 4.2 5.3 2 -2 L11 16 l8.2 -1.8 c1.5 -1.5 2 -3.5 2 -3.5 z"></path>
-    </svg>
-  ),
-  default: (
-    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" title="Bangunan">
-      <path d="M3 21h18"></path>
-      <path d="M9 8h1"></path>
-      <path d="M9 12h1"></path>
-      <path d="M9 16h1"></path>
-      <path d="M14 8h1"></path>
-      <path d="M14 12h1"></path>
-      <path d="M14 16h1"></path>
-      <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path>
-    </svg>
   )
 }
 
 function getCategoryIcon(id_bangunan, taxonomy) {
   const tax = (id_bangunan || taxonomy || '').toLowerCase()
-  if (tax.includes('hotel')) return CategoryIcons.hotel
-  if (tax.includes('electricity') || tax.includes('listrik')) return CategoryIcons.electricity
-  if (tax.includes('education') || tax.includes('sekolah') || tax.includes('kampus') || tax.startsWith('fd')) return CategoryIcons.educational
-  if (tax.includes('health') || tax.includes('rs') || tax.includes('puskesmas') || tax.includes('hospital') || tax.startsWith('fs')) return CategoryIcons.healthcare
-  if (tax.includes('airport') || tax.includes('bandara')) return CategoryIcons.airport
-  return CategoryIcons.default
+  const iconProps = { size: 14, strokeWidth: 2.5 };
+  
+  if (tax.includes('hotel')) return <Bed {...iconProps} className="text-pink-500" />;
+  if (tax.includes('electricity') || tax.includes('listrik')) return <Zap {...iconProps} className="text-yellow-500" />;
+  if (tax.includes('education') || tax.includes('sekolah') || tax.includes('kampus') || tax.startsWith('fd')) return <GraduationCap {...iconProps} className="text-blue-500" />;
+  if (tax.includes('health') || tax.includes('rs') || tax.includes('puskesmas') || tax.includes('hospital') || tax.startsWith('fs')) return <Stethoscope {...iconProps} className="text-rose-500" />;
+  if (tax.includes('airport') || tax.includes('bandara')) return <Plane {...iconProps} className="text-purple-500" />;
+  
+  return <Building2 {...iconProps} className="text-slate-400" />;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────────
@@ -263,6 +211,11 @@ export default function CrudBuildings({
   }, [])
 
   const [file, setFile] = useState(null)
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
   const fileInputRef = useRef(null)
   const [uploadSuccessMsg, setUploadSuccessMsg] = useState('')
   const [uploadErrorMsg, setUploadErrorMsg] = useState('')
@@ -597,186 +550,299 @@ export default function CrudBuildings({
         </div>
       )}
 
-      {/* Upload & Filter Section (Ultra Compact) */}
-      <div className="flex flex-col gap-1.5 w-full min-w-0 shrink-0">
-        
-        {/* Row 1: File Upload */}
-        <div className="flex gap-1 items-center w-full min-w-0">
-          <input
-            type="file"
-            accept=".csv"
-            ref={fileInputRef}
-            onChange={e => setFile(e.target.files[0])}
-            className={`${inputCls} w-2/5 text-[10px] h-[26px] !py-1 overflow-hidden`}
-          />
-          <Button
-            onClick={onUpload}
-            disabled={!file || isUploading}
-            className="bg-[#6FB5C2] text-white rounded text-[10px] px-1.5 font-medium flex-1 h-[26px] flex items-center justify-center whitespace-nowrap overflow-hidden min-w-0 hover:bg-[#00acc1] shadow-sm"
-          >
-            {isUploading && <LoadingSpinner />} Unggah
-          </Button>
-          <a
-            href="/sample_bangunan.csv"
-            download="template_data_bangunan.csv"
-            className="bg-[#1E5C9A] text-white rounded text-[10px] px-1.5 font-semibold flex-1 h-[26px] flex items-center justify-center whitespace-nowrap overflow-hidden min-w-0 shadow-sm hover:bg-[#2F6FAF]"
-          >
-            Template CSV
-          </a>
-        </div>
+      {/* Upload & Filter Section (Premium Toolbar) */}
+      <div className={`p-4 rounded-3xl mb-4 border transition-all duration-300 ${
+        darkMode ? 'bg-white/[0.03] border-white/10' : 'bg-slate-50 border-slate-200 shadow-sm'
+      }`}>
+        <div className="flex flex-col gap-2">
+          {/* Row 1: Upload & Templates */}
+          <div className={`p-2.5 rounded-xl flex flex-col sm:flex-row gap-2 items-center border ${darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
+            {/* Custom File Input */}
+            <div className={`relative flex-1 group ${darkMode ? 'text-gray-300' : 'text-slate-600'}`}>
+              <input
+                type="file"
+                accept=".csv"
+                id="file-upload"
+                onChange={handleFileChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              />
+              <div className={`flex items-center gap-2.5 px-3 h-8 rounded-lg border-2 border-dashed transition-all ${
+                file 
+                  ? (darkMode ? 'bg-blue-500/10 border-blue-500/50 text-blue-300' : 'bg-blue-50 border-blue-300 text-blue-700')
+                  : (darkMode ? 'bg-white/5 border-white/10 hover:border-white/20' : 'bg-white border-slate-200 hover:border-slate-300')
+              }`}>
+                <FileText size={14} className={file ? 'text-blue-500' : 'text-gray-400'} />
+                <span className="text-[9px] font-bold truncate max-w-[350px]">
+                  {file ? file.name : 'Pilih File .CSV'}
+                </span>
+                {!file && (
+                  <span className={`ml-auto text-[7px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded bg-blue-500 text-white animate-pulse`}>
+                    Browse
+                  </span>
+                )}
+              </div>
+            </div>
 
-        {/* Row 2: Filter & Search */}
-        <div className="flex gap-1 items-center w-full min-w-0">
-          <div className="w-[35%] min-w-0">
-            <Select id="kotaFilter" value={activeKotaFilter} onChange={(val) => doSetKotaFilter(val)} options={kotaList} placeholder="Kota" className="w-full text-[10px] !p-1 h-[26px] rounded !leading-tight text-ellipsis overflow-hidden" />
+            <button
+              onClick={onUpload}
+              disabled={!file || isUploading}
+              className={`h-8 px-4 rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center gap-2 transition-all shadow-lg active:scale-95 ${
+                file && !isUploading
+                  ? 'bg-emerald-600 text-white shadow-emerald-600/20 hover:bg-emerald-700'
+                  : (darkMode ? 'bg-white/5 text-gray-500' : 'bg-slate-200 text-slate-400')
+              }`}
+            >
+              {isUploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+              Unggah Data
+            </button>
+
+            <a
+              href="/sample_bangunan.csv"
+              download="template_data_bangunan.csv"
+              className={`h-8 px-4 rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all ${
+                darkMode 
+                  ? 'bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10' 
+                  : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'
+              }`}
+            >
+              <Download size={13} />
+              Template
+            </a>
           </div>
-          <div className="flex-1 min-w-0">
-            <input
-              type="text"
-              placeholder="Cari..."
-              value={search}
-              onChange={e => doSetSearch(e.target.value)}
-              className={`${inputCls} w-full h-[26px]`}
-            />
+
+          {/* Row 2: Search & Actions */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <div className="w-[85px]">
+              <Select 
+                id="kotaFilter" 
+                value={activeKotaFilter} 
+                onChange={(val) => doSetKotaFilter(val)} 
+                options={kotaList} 
+                placeholder="KOTA" 
+                className="w-full text-[9px] font-black h-8 rounded-xl !bg-transparent border-0" 
+              />
+            </div>
+            <div className="relative group flex-1 min-w-[100px]">
+              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${darkMode ? 'text-gray-500 group-focus-within:text-blue-400' : 'text-slate-400 group-focus-within:text-blue-600'}`} size={11} />
+              <input
+                type="text"
+                placeholder="Cari..."
+                value={search}
+                onChange={e => doSetSearch(e.target.value)}
+                className={`w-full h-8 pl-8 pr-3 rounded-xl border transition-all duration-300 text-[9px] font-medium outline-none ${
+                  darkMode 
+                    ? 'bg-white/5 border-white/10 text-white focus:bg-white/10 focus:border-blue-500/50' 
+                    : 'bg-white border-slate-200 text-slate-900 focus:bg-white focus:border-blue-500 shadow-inner'
+                }`}
+              />
+            </div>
+            <button
+              onClick={() => setModalMode('add')}
+              className="h-8 px-4 bg-blue-600 text-white rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+            >
+              <Plus size={12} strokeWidth={3} />
+              Data
+            </button>
           </div>
-          <Button
-            onClick={() => setModalMode('add')}
-            className="text-white px-2 text-[10px] font-medium bg-[#1E5C9A] rounded text-center h-[26px] flex items-center shrink-0 hover:bg-[#2F6FAF] shadow-sm"
-          >
-            Tambah
-          </Button>
         </div>
-        
       </div>
 
-      <div className={`flex-1 overflow-auto mt-2 rounded shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} min-w-0 min-h-0 w-full relative custom-scrollbar pb-1 ${darkMode ? 'bg-[#1E2023]' : 'bg-white'}`}>
-        <table className="w-max min-w-full text-[7px] leading-tight text-left whitespace-nowrap">
-          <thead className={`${theadBg} sticky top-0 z-10 transition-colors duration-300 outline outline-1 ${darkMode ? 'outline-gray-700' : 'outline-gray-200'}`}>
-            <tr>
-              <th
-                className={`py-0.5 px-0.5 cursor-pointer transition-colors whitespace-nowrap ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'}`}
-                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-              >
-                Nama Gedung {sortOrder === 'asc' ? '▲' : '▼'}
-              </th>
-              <th className="py-0.5 px-0.5 w-[20px] text-center" title="Kategori"></th>
-              <th className="py-0.5 px-0.5">Kota</th>
-              <th className="py-0.5 px-0.5">Lon</th>
-              <th className="py-0.5 px-0.5">Lat</th>
-              <th className="py-0.5 px-0.5">Lantai</th>
-              <th className="py-0.5 px-0.5">Taxonomy</th>
-              <th className="py-0.5 px-0.5 text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {displayedRows.map(b => (
-              <tr
-                key={b.id_bangunan}
-                className={`${rowHover} cursor-pointer transition-colors duration-150 border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'} last:border-0`}
-                onClick={() => onSearchBuilding({
-                  lat: parseFloat(b.lat),
-                  lon: parseFloat(b.lon),
-                  name: b.nama_gedung,
-                  type: (b.id_bangunan || '').split('_')[0]
-                })}
-              >
-                <td className={`py-0.5 px-0.5 ${rowText} truncate min-w-[140px]`} title={b.nama_gedung}>{b.nama_gedung}</td>
-                <td className="py-0.5 px-1 w-[20px] text-center" title="Kategori">
-                  <div className="flex justify-center items-center w-full h-full">
-                    {getCategoryIcon(b.id_bangunan, b.taxonomy)}
+      {/* Table Container */}
+      <div className={`flex-1 overflow-hidden rounded-[32px] border ${
+        darkMode ? 'border-white/5 bg-white/[0.02]' : 'border-slate-200 bg-white shadow-xl'
+      } flex flex-col min-h-0`}>
+        <div className="overflow-auto custom-scrollbar flex-1 relative">
+          <table className="w-full text-left border-collapse min-w-[800px]">
+            <thead className={`sticky top-0 z-20 backdrop-blur-xl ${
+              darkMode ? 'bg-[#0D0F12]/80 border-b border-white/5 shadow-lg' : 'bg-slate-50/90 border-b border-slate-200 shadow-sm'
+            }`}>
+              <tr>
+                <th
+                  className={`py-1.5 px-4 text-[8.5px] font-black uppercase tracking-wider cursor-pointer group whitespace-nowrap ${darkMode ? 'text-gray-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'}`}
+                  onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                >
+                  <div className="flex items-center gap-2">
+                    Nama Gedung {sortOrder === 'asc' ? '▲' : '▼'}
                   </div>
-                </td>
-                <td className={`py-0.5 px-0.5 ${rowText}`}>{b.kota}</td>
-                <td className={`py-0.5 px-0.5 ${rowText}`}>{parseFloat(b.lon).toFixed(6)}</td>
-                <td className={`py-0.5 px-0.5 ${rowText}`}>{parseFloat(b.lat).toFixed(6)}</td>
-                <td className={`py-0.5 px-0.5 ${rowText}`}>{b.jumlah_lantai}</td>
-                <td className={`py-0.5 px-0.5 ${rowText}`}>{b.taxonomy}</td>
-                  <td className={`py-0.5 px-0.5 ${rowText} text-center hidden md:table-cell`}>
-                    <div className="flex justify-center gap-2">
-                      <button onClick={(e) => { e.stopPropagation(); setEditing(b); setModalMode('edit') }} className="text-[#1E5C9A] hover:text-[#004b87] transition-colors" title="Edit">
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                </th>
+                <th className={`py-1.5 px-2 w-[40px] text-center text-[8.5px] font-black uppercase tracking-wider ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Tipe</th>
+                <th className={`py-1.5 px-4 text-[8.5px] font-black uppercase tracking-wider ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Kota</th>
+                <th className={`py-1.5 px-4 text-[8.5px] font-black uppercase tracking-wider ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Kordinat</th>
+                <th className={`py-1.5 px-4 text-[8.5px] font-black uppercase tracking-wider ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Lantai</th>
+                <th className={`py-1.5 px-4 text-[8.5px] font-black uppercase tracking-wider ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Taxonomy</th>
+                <th className={`py-1.5 px-5 text-[8.5px] font-black uppercase tracking-wider text-center ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Kelola</th>
+              </tr>
+            </thead>
+            <tbody className={`divide-y ${darkMode ? 'divide-white/5' : 'divide-slate-100'}`}>
+              {displayedRows.length > 0 ? displayedRows.map(b => (
+                <tr
+                  key={b.id_bangunan}
+                  className={`group transition-all duration-300 cursor-pointer ${
+                    darkMode ? 'hover:bg-white/[0.04]' : 'hover:bg-blue-50/50'
+                  }`}
+                  onClick={() => onSearchBuilding({
+                    lat: parseFloat(b.lat),
+                    lon: parseFloat(b.lon),
+                    name: b.nama_gedung,
+                    type: (b.id_bangunan || '').split('_')[0]
+                  })}
+                >
+                  <td className="py-1.5 px-4">
+                    <div className={`text-[9.5px] font-bold leading-tight ${darkMode ? 'text-gray-200 group-hover:text-white' : 'text-slate-800'}`}>
+                      {b.nama_gedung || 'Tanpa Nama'}
+                    </div>
+                  </td>
+                  <td className="py-2.5 px-2">
+                    <div className="flex justify-center transition-transform duration-300 group-hover:scale-110">
+                      {getCategoryIcon(b.id_bangunan, b.taxonomy)}
+                    </div>
+                  </td>
+                  <td className={`py-2.5 px-4 text-[10px] font-semibold ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>{b.kota}</td>
+                  <td className={`py-2.5 px-4 text-[10px] font-mono font-medium ${darkMode ? 'text-blue-400/80' : 'text-blue-600/80'}`}>
+                    {parseFloat(b.lon).toFixed(5)}, {parseFloat(b.lat).toFixed(5)}
+                  </td>
+                  <td className={`py-3.5 px-4 text-xs font-bold ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>{b.jumlah_lantai}</td>
+                  <td className={`py-3.5 px-4 text-xs uppercase font-black tracking-tighter ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>{b.taxonomy}</td>
+                  <td className="py-3.5 px-5">
+                    <div className="flex justify-center gap-3">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setEditing(b); setModalMode('edit') }} 
+                        className={`p-2 rounded-lg transition-all duration-300 ${
+                          darkMode ? 'text-gray-500 hover:text-white hover:bg-white/10' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'
+                        }`} 
+                        title="Sunting Data"
+                      >
+                        <Edit2 size={16} />
                       </button>
-                      <button onClick={(e) => { e.stopPropagation(); onDeleteClick(b) }} className="text-red-500 hover:text-red-700 transition-colors" title="Hapus">
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); onDeleteClick(b) }} 
+                        className={`p-2 rounded-lg transition-all duration-300 ${
+                          darkMode ? 'text-gray-500 hover:text-rose-500 hover:bg-rose-500/10' : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'
+                        }`} 
+                        title="Hapus Data"
+                      >
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   </td>
                 </tr>
-            ))}
-          </tbody>
-        </table>
+              )) : (
+                <tr>
+                  <td colSpan="7" className="py-20 text-center">
+                    <div className="flex flex-col items-center gap-3 opacity-30">
+                      <Table size={48} />
+                      <p className="text-sm font-bold uppercase tracking-widest">Data Tidak Ditemukan</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
 
-      <Modal isOpen={modalMode === 'add'} onClose={() => setModalMode('')} maxWidth="max-w-[325px]">
+      <Modal isOpen={modalMode === 'add'} onClose={() => setModalMode('')} maxWidth="max-w-md">
         <AddForm onSave={onAdd} isSavingAdd={isSavingAdd} darkMode={darkMode} />
       </Modal>
-      <Modal isOpen={modalMode === 'edit'} onClose={() => setModalMode('')} maxWidth="max-w-[325px]">
+
+      <Modal isOpen={modalMode === 'edit'} onClose={() => setModalMode('')} maxWidth="max-w-md">
         <EditForm initial={editing} onSave={onSaveEdit} isSavingEdit={isSavingEdit} darkMode={darkMode} />
       </Modal>
-      <Modal isOpen={!!deleteTarget} onClose={() => !isDeleting && setDeleteTarget(null)} maxWidth="max-w-[400px]">
-        <h3 className={`text-lg font-bold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Hapus Bangunan</h3>
-        <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Yakin ingin menghapus bangunan <strong className={darkMode ? 'text-white' : 'text-gray-900'}>{deleteTarget?.nama_gedung || 'Tanpa Nama'}</strong>?</p>
-        <div className="flex justify-end gap-3 mt-6">
-          <Button onClick={() => setDeleteTarget(null)} disabled={isDeleting} className={`px-4 py-2 rounded-lg text-sm transition-colors border ${darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300 font-medium'}`}>
-            Batal
-          </Button>
-          <Button onClick={confirmDelete} disabled={isDeleting} className="bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg flex items-center text-sm shadow-sm transition-colors">
-            {isDeleting && <LoadingSpinner />}
-            Hapus
-          </Button>
+
+      <Modal isOpen={!!deleteTarget} onClose={() => !isDeleting && setDeleteTarget(null)} maxWidth="max-w-sm">
+        <div className="flex flex-col items-center text-center py-4">
+          <div className="w-16 h-16 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center mb-4">
+            <Trash2 size={32} strokeWidth={2.5} />
+          </div>
+          <h3 className={`text-xl font-black tracking-tight mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+            Hapus Bangunan
+          </h3>
+          <p className={`text-sm leading-relaxed mb-8 ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>
+            Yakin ingin menghapus <span className="font-bold text-rose-500">{deleteTarget?.nama_gedung || 'Tanpa Nama'}</span>? Tindakan ini tidak dapat dibatalkan.
+          </p>
+          <div className="flex gap-3 w-full">
+            <button
+              onClick={() => setDeleteTarget(null)}
+              disabled={isDeleting}
+              className={`flex-1 h-12 rounded-xl text-sm font-bold transition-all ${
+                darkMode ? 'bg-white/5 text-gray-300 hover:bg-white/10' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              Batal
+            </button>
+            <button
+              onClick={confirmDelete}
+              disabled={isDeleting}
+              className="flex-1 h-12 bg-rose-600 text-white rounded-xl text-sm font-bold hover:bg-rose-700 transition-all shadow-lg shadow-rose-600/20 active:scale-95 flex items-center justify-center gap-2"
+            >
+              {isDeleting ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+              Hapus
+            </button>
+          </div>
         </div>
       </Modal>
 
       {/* MODAL PREVIEW CSV */}
-      <Modal isOpen={modalMode === 'preview'} onClose={() => setModalMode('')} maxWidth="max-w-6xl">
-        <h3 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Pratinjau Data CSV</h3>
-        <p className={`text-sm mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-          Anda dapat menyunting (edit) detail bangunan di bawah ini sebelum data disimpan.
-          <br />
-          <span className="text-red-500 font-semibold">
-            Pastikan seluruh kolom telah terisi. Data dengan kolom yang kosong tidak dapat dilanjutkan perhitungannya.
-          </span>
-        </p>
+      <Modal isOpen={modalMode === 'preview'} onClose={() => setModalMode('')} maxWidth="max-w-7xl">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500">
+            <Table size={20} strokeWidth={2.5} />
+          </div>
+          <div>
+            <h3 className={`text-lg font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-800'}`}>
+              Pratinjau Data CSV
+            </h3>
+            <p className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>
+              Selesaikan penyuntingan sebelum menyimpan data ke database. <span className="text-rose-500">Kolom merah wajib diisi.</span>
+            </p>
+          </div>
+        </div>
 
-        <div className={`overflow-x-auto overflow-y-auto max-h-[60vh] max-w-full rounded-lg border ${darkMode ? 'border-gray-700' : 'border-gray-200'} block`}>
-          <table className="min-w-full text-sm">
-            <thead className={`${darkMode ? 'bg-gray-800' : 'bg-slate-600'} text-white sticky top-0 z-10`}>
+        <div className={`overflow-auto max-h-[60vh] rounded-2xl border ${
+          darkMode ? 'border-white/5 bg-white/[0.02]' : 'border-slate-200 bg-white'
+        } relative custom-scrollbar`}>
+          <table className="w-full text-left border-collapse min-w-[1200px]">
+            <thead className={`sticky top-0 z-20 backdrop-blur-md ${
+              darkMode ? 'bg-[#0D0F12]/90 border-b border-white/5' : 'bg-slate-100/90 border-b border-slate-200'
+            }`}>
               <tr>
                 {previewHeaders.map((h, i) => (
-                  <th key={i} className="whitespace-nowrap px-4 py-3 text-left font-semibold uppercase tracking-wider text-xs">
+                  <th key={i} className={`py-3 px-4 text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>
                     {h.replace(/_/g, ' ')}
                   </th>
                 ))}
-                <th className="whitespace-nowrap px-4 py-3 text-left font-semibold uppercase tracking-wider text-xs">AKSI</th>
+                <th className={`py-3 px-4 text-[10px] font-black uppercase tracking-widest text-center ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Aksi</th>
               </tr>
             </thead>
-            <tbody className={`divide-y ${darkMode ? 'divide-gray-700 bg-[#1E2023]' : 'divide-gray-200 bg-white'}`}>
+            <tbody className={`divide-y ${darkMode ? 'divide-white/5' : 'divide-slate-100'}`}>
               {previewData?.map(row => (
-                <tr key={row._id} className="hover:bg-gray-50 transition-colors">
+                <tr key={row._id} className={`transition-colors ${darkMode ? 'hover:bg-white/[0.03]' : 'hover:bg-blue-50/30'}`}>
                   {previewHeaders.map((h, i) => (
-                    <td key={i} className={`whitespace-nowrap px-4 py-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    <td key={i} className="py-2 px-3">
                       {h === 'kode_bangunan' ? (
                         <select
                           value={row[h]}
                           onChange={(e) => handlePreviewChange(row._id, h, e.target.value)}
-                          className={`border rounded p-1 transition-colors ${
-                            darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'
+                          className={`w-full h-8 px-2 rounded-lg border text-[11px] font-bold outline-none transition-all ${
+                            darkMode ? 'bg-white/5 border-white/10 text-white focus:bg-white/10' : 'bg-white border-slate-200 text-slate-800'
                           }`}
                         >
-                          <option value="FS">FS (Healthcare Facilities)</option>
-                          <option value="FD">FD (Educational Facilities)</option>
-                          <option value="ELECTRICITY">ELECTRICITY (Electricity)</option>
-                          <option value="HOTEL">HOTEL (Hotel)</option>
-                          <option value="AIRPORT">AIRPORT (Airport)</option>
+                          <option value="FS">Healthcare</option>
+                          <option value="FD">Education</option>
+                          <option value="ELECTRICITY">Electricity</option>
+                          <option value="HOTEL">Hotel</option>
+                          <option value="AIRPORT">Airport</option>
                         </select>
                       ) : h === 'taxonomy' ? (
                         <select
                           value={row[h]}
                           onChange={(e) => handlePreviewChange(row._id, h, e.target.value)}
-                          className={`border rounded p-1 transition-colors ${
-                            row[h]?.trim() ? (darkMode ? 'border-gray-700' : 'border-gray-300') : 'border-red-500 bg-red-50/10 text-red-500'
-                          } ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}
+                          className={`w-full h-8 px-2 rounded-lg border text-[11px] font-bold outline-none transition-all ${
+                            row[h]?.trim() 
+                              ? (darkMode ? 'bg-white/5 border-white/10 text-white' : 'bg-white border-slate-200') 
+                              : 'border-rose-500 bg-rose-500/10 text-rose-500'
+                          }`}
                         >
                           <option value="CR">CR</option>
                           <option value="MCF">MCF</option>
@@ -785,9 +851,11 @@ export default function CrudBuildings({
                         <select
                           value={row[h]}
                           onChange={(e) => handlePreviewChange(row._id, h, e.target.value)}
-                          className={`border rounded p-1 transition-colors ${
-                            row[h]?.trim() ? (darkMode ? 'border-gray-700' : 'border-gray-300') : 'border-red-500 bg-red-50/10 text-red-500'
-                          } ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}
+                          className={`w-full h-8 px-2 rounded-lg border text-[11px] font-bold outline-none transition-all ${
+                            row[h]?.trim() 
+                              ? (darkMode ? 'bg-white/5 border-white/10 text-white' : 'bg-white border-slate-200') 
+                              : 'border-rose-500 bg-rose-500/10 text-rose-500'
+                          }`}
                         >
                           <option value="">- Pilih Kota -</option>
                           {kotaList.map((k, idx) => (
@@ -800,35 +868,37 @@ export default function CrudBuildings({
                             type={['lon', 'lat', 'luas', 'jumlah_lantai'].includes(h) ? 'number' : 'text'}
                             value={row[h]}
                             onChange={(e) => handlePreviewChange(row._id, h, e.target.value)}
-                            className={`border rounded p-1 max-w-[200px] transition-colors ${
-                              row[h]?.toString().trim() ? (darkMode ? 'border-gray-700' : 'border-gray-300') : 'border-red-500 bg-red-50/10 text-red-500'
-                            } ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}
+                            className={`flex-1 h-8 px-2 rounded-lg border text-[11px] font-bold outline-none transition-all ${
+                              row[h]?.toString().trim() 
+                                ? (darkMode ? 'bg-white/5 border-white/10 text-white' : 'bg-white border-slate-200') 
+                                : 'border-rose-500 bg-rose-500/10 text-rose-500'
+                            }`}
                           />
                           {h === 'lat' && (
                             <button
                               type="button"
                               onClick={() => openMapPicker(row)}
-                              title="Pilih di peta"
-                              className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
+                              className={`p-1.5 rounded-lg transition-all ${darkMode ? 'hover:bg-white/10 text-blue-400' : 'hover:bg-blue-50 text-blue-600'}`}
                             >
-                              📍
+                              <MapPin size={14} />
                             </button>
                           )}
                         </div>
                       ) : (
-                        <span>{row[h]}</span>
+                        <span className="text-[11px] font-medium opacity-60 px-2">{row[h]}</span>
                       )}
                     </td>
                   ))}
-                  <td className="whitespace-nowrap px-4 py-2">
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteRow(row._id)}
-                      className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors"
-                      title="Hapus Baris"
-                    >
-                      🗑️
-                    </button>
+                  <td className="py-2 px-3">
+                    <div className="flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteRow(row._id)}
+                        className={`p-2 rounded-lg transition-all ${darkMode ? 'text-gray-500 hover:text-rose-500 hover:bg-rose-500/10' : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'}`}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -836,67 +906,82 @@ export default function CrudBuildings({
           </table>
         </div>
 
-        {/* Validation Warning Messages */}
+        {/* Validation Warning */}
         {previewData?.some(row => previewHeaders.some(h => !row[h]?.toString().trim())) && (
-          <div className="mt-3 text-red-600 font-semibold text-sm">
-            ⚠️ Terdapat isian kosong. Harap lengkapi semua data bersampul merah di atas sebelum menyimpan.
+          <div className={`mt-4 p-4 rounded-xl border flex items-center gap-3 animate-pulse ${
+            darkMode ? 'bg-rose-500/5 border-rose-500/20 text-rose-400' : 'bg-rose-50 border-rose-200 text-rose-600'
+          }`}>
+            <AlertCircle size={18} />
+            <p className="text-xs font-bold uppercase tracking-wider">
+              Terdapat isian kosong. Harap lengkapi semua data bersampul merah di atas sebelum menyimpan.
+            </p>
           </div>
         )}
 
-        <div className="mt-4 flex justify-end gap-3">
-          <Button onClick={() => setModalMode('')} disabled={isUploading} className={`rounded-lg px-4 py-2 transition-colors ${darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-400 text-white hover:bg-gray-500'}`}>
+        <div className="mt-6 flex justify-end gap-3 border-t border-white/5 pt-6">
+          <button
+            onClick={() => setModalMode('')}
+            className={`px-8 h-12 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+              darkMode ? 'bg-white/5 text-gray-300 hover:bg-white/10' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
             Batal
-          </Button>
-          <Button
+          </button>
+          <button
             onClick={onConfirmUpload}
             disabled={isUploading || previewData?.some(row => previewHeaders.some(h => !row[h]?.toString().trim()))}
-            className={`bg-[#1E5C9A] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg px-4 py-2 flex items-center shadow-md hover:bg-[#2F6FAF]`}
+            className={`px-10 h-12 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-3 hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed`}
           >
-            {isUploading && <LoadingSpinner />}
-            Simpan & Hitung
-          </Button>
+            {isUploading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+            Simpan & Hitung AAL
+          </button>
         </div>
       </Modal>
 
       {/* MODAL MAP PICKER FOR CSV */}
       <Modal isOpen={modalMode === 'map-picker'} onClose={() => setModalMode('preview')} maxWidth="max-w-2xl">
-        <h3 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Pilih Lokasi</h3>
-        <p className={`text-sm mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-          Cari lokasi atau geser penanda (marker) untuk menyesuaikan koordinat.
-          Nama lokasi yang dicari akan otomatis mengisi kolom Alamat.
-        </p>
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500">
+            <MapPin size={20} strokeWidth={2.5} />
+          </div>
+          <div>
+            <h3 className={`text-lg font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-800'}`}>
+              Pilih Lokasi Di Peta
+            </h3>
+            <p className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>
+              Cari lokasi atau geser marker untuk akurasi presisi.
+            </p>
+          </div>
+        </div>
+
         {mapPickerContext && (
-          <MiniMap
-            lat={mapPickerContext.lat}
-            lon={mapPickerContext.lon}
-            kode_bangunan={mapPickerContext.kode_bangunan}
-            onLatLonChange={(lat, lon) => {
-              setMapPickerContext(prev => ({ ...prev, lat, lon }))
-            }}
-            onLocationSelect={handleMapLocationSelect}
-          />
+          <div className="rounded-2xl overflow-hidden border border-white/10">
+            <MiniMap
+              lat={mapPickerContext.lat}
+              lon={mapPickerContext.lon}
+              kode_bangunan={mapPickerContext.kode_bangunan}
+              onLatLonChange={(lat, lon) => {
+                setMapPickerContext(prev => ({ ...prev, lat, lon }))
+              }}
+              onLocationSelect={handleMapLocationSelect}
+            />
+          </div>
         )}
-        <div className="mt-6 flex justify-end gap-3">
-          <Button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setModalMode('preview');
-            }}
-            className={`rounded-lg px-4 py-2 transition-colors ${darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-400 text-white hover:bg-gray-500'}`}
+        <div className="mt-8 flex justify-end gap-3 border-t border-white/5 pt-6">
+          <button
+            onClick={() => setModalMode('preview')}
+            className={`px-6 h-11 rounded-xl text-xs font-bold transition-all ${
+              darkMode ? 'bg-white/5 text-gray-300 hover:bg-white/10' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
           >
             Kembali
-          </Button>
-          <Button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleMapLocationSelect(mapPickerContext.lat, mapPickerContext.lon, null);
-            }}
-            className="bg-[#1E5C9A] text-white rounded-lg px-4 py-2 hover:bg-[#2F6FAF] shadow-md"
+          </button>
+          <button
+            onClick={() => handleMapLocationSelect(mapPickerContext.lat, mapPickerContext.lon, null)}
+            className="px-8 h-11 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-blue-700 transition-all shadow-lg"
           >
-            Gunakan Koordinat Ini
-          </Button>
+            Gunakan Koordinat
+          </button>
         </div>
       </Modal>
     </div >
@@ -906,11 +991,10 @@ export default function CrudBuildings({
 function AddForm({ onSave, isSavingAdd, darkMode }) {
   const [data, setData] = useState({
     nama_gedung: '', alamat: '', luas: '', jumlah_lantai: '',
-    provinsi: 'BALI', kota: '', lon: '115.2', lat: '-8.4', taxonomy: '', kode_bangunan: ''
+    provinsi: 'BALI', kota: '', lon: '115.1889', lat: '-8.4095', taxonomy: '', kode_bangunan: ''
   })
   const [localKotaList, setLocalKotaList] = useState([])
 
-  // Load daftar kota Bali saat mount dari master list HSBGN
   useEffect(() => {
     getKotaAll().then(kl => setLocalKotaList(kl))
   }, [])
@@ -919,68 +1003,101 @@ function AddForm({ onSave, isSavingAdd, darkMode }) {
     setData(d => ({ ...d, lat: lat.toString(), lon: lon.toString() }))
   }
 
-  const inputCls = `border p-1 px-1.5 h-6 text-[10px] w-full rounded transition-colors ${
-    darkMode ? 'bg-gray-800 border-gray-700 text-white focus:border-[#1E5C9A]' : 'bg-white border-gray-200 text-gray-900 focus:border-[#1E5C9A]'
-  }`;
-
   const isValid = () => {
-    const l = String(data.luas || '').trim();
-    const jl = String(data.jumlah_lantai || '').trim();
-
-    return (
-      l !== '' && jl !== '' &&
-      data.kota !== '' &&
-      data.taxonomy !== '' &&
-      data.kode_bangunan !== ''
-    );
+    return data.nama_gedung && data.luas && data.jumlah_lantai && data.kota && data.taxonomy && data.kode_bangunan;
   };
 
   return (
-    <>
-      <h3 className={`text-sm font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Tambah Bangunan</h3>
-      {['nama_gedung', 'alamat', 'luas', 'jumlah_lantai'].map(fld => (
-        <div key={fld} className="mb-1">
-          <label className={`block text-[9px] font-bold mb-0.5 ${darkMode ? 'text-gray-400' : 'text-gray-900'}`}>
-            {fld === 'jumlah_lantai' ? 'JUMLAH LANTAI' : fld.replace('_', ' ').toUpperCase()}
-          </label>
+    <div className="flex flex-col h-full">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500">
+          <Plus size={20} strokeWidth={2.5} />
+        </div>
+        <h3 className={`text-lg font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-800'}`}>
+          Tambah Bangunan Baru
+        </h3>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="col-span-2 space-y-1.5">
+          <label className={`text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Nama Gedung</label>
           <input
-            type={['luas', 'jumlah_lantai'].includes(fld) ? 'number' : 'text'}
-            step={fld === 'luas' ? 'any' : undefined}
-            value={data[fld]}
-            onChange={e => setData(d => ({ ...d, [fld]: e.target.value }))}
-            className={inputCls}
-            placeholder={fld === 'luas' ? 'Harus angka > 0' : fld === 'jumlah_lantai' ? 'Bulat positif (contoh: 2)' : ''}
+            type="text"
+            value={data.nama_gedung}
+            onChange={e => setData(d => ({ ...d, nama_gedung: e.target.value }))}
+            className={`w-full h-10 px-3 rounded-xl border text-sm font-medium outline-none transition-all ${
+              darkMode ? 'bg-white/5 border-white/10 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-200'
+            }`}
+            placeholder="Contoh: RSUD Bali Mandara"
           />
         </div>
-      ))}
-      <div className="mb-2">
-        <label className={`block text-[9px] font-bold mb-0.5 mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-900'}`}>KOTA</label>
-        <Select id="addKota" options={localKotaList} value={data.kota} onChange={(v) => setData(d => ({ ...d, kota: v }))} placeholder="- Pilih -" className="w-full text-[10px]" />
-      </div>
-      <div className="grid grid-cols-2 gap-2 mb-2">
-        <div>
-          <label className={`block text-[9px] font-bold mb-0.5 mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-900'}`}>LONGITUDE</label>
-          <input type="number" step="any" value={data.lon} onChange={e => setData(d => ({ ...d, lon: e.target.value }))} className={inputCls} />
+        <div className="col-span-2 space-y-1.5">
+          <label className={`text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Alamat</label>
+          <input
+            type="text"
+            value={data.alamat}
+            onChange={e => setData(d => ({ ...d, alamat: e.target.value }))}
+            className={`w-full h-10 px-3 rounded-xl border text-sm font-medium outline-none transition-all ${
+              darkMode ? 'bg-white/5 border-white/10 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-200'
+            }`}
+          />
         </div>
-        <div>
-          <label className={`block text-[9px] font-bold mb-0.5 mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-900'}`}>LATITUDE</label>
-          <input type="number" step="any" value={data.lat} onChange={e => setData(d => ({ ...d, lat: e.target.value }))} className={inputCls} />
+        <div className="space-y-1.5">
+          <label className={`text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Luas Lantai (m²)</label>
+          <input
+            type="number"
+            value={data.luas}
+            onChange={e => setData(d => ({ ...d, luas: e.target.value }))}
+            className={`w-full h-10 px-3 rounded-xl border text-sm font-mono outline-none transition-all ${
+              darkMode ? 'bg-white/5 border-white/10 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-200'
+            }`}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label className={`text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Jumlah Lantai</label>
+          <input
+            type="number"
+            value={data.jumlah_lantai}
+            onChange={e => setData(d => ({ ...d, jumlah_lantai: e.target.value }))}
+            className={`w-full h-10 px-3 rounded-xl border text-sm font-mono outline-none transition-all ${
+              darkMode ? 'bg-white/5 border-white/10 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-200'
+            }`}
+          />
         </div>
       </div>
-      <MiniMap lat={parseFloat(data.lat)} lon={parseFloat(data.lon)} onLatLonChange={handleLatLonChange} kode_bangunan={data.kode_bangunan} />
-      <div className="mb-1">
-        <label className={`block text-[9px] font-bold mb-0.5 mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-900'}`}>JENIS BANGUNAN</label>
-        <Select id="addKodeBangunan" options={['Healthcare Facilities', 'Educational Facilities', 'Electricity', 'Hotel', 'Airport']} value={data.kode_bangunan} onChange={(v) => setData(d => ({ ...d, kode_bangunan: v }))} className="w-full mb-2 text-[10px]" />
+
+      <div className="space-y-4">
+        <div className="space-y-1.5">
+          <label className={`text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Lokasi & Koordinat</label>
+          <div className="flex gap-2 mb-2">
+            <input type="number" step="any" value={data.lon} onChange={e => setData(d => ({ ...d, lon: e.target.value }))} className={`flex-1 h-9 px-3 rounded-xl border text-[11px] font-mono ${darkMode ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200'}`} placeholder="Lon" />
+            <input type="number" step="any" value={data.lat} onChange={e => setData(d => ({ ...d, lat: e.target.value }))} className={`flex-1 h-9 px-3 rounded-xl border text-[11px] font-mono ${darkMode ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200'}`} placeholder="Lat" />
+          </div>
+          <div className="rounded-2xl overflow-hidden border border-white/5 h-[180px]">
+            <MiniMap lat={parseFloat(data.lat)} lon={parseFloat(data.lon)} onLatLonChange={handleLatLonChange} kode_bangunan={data.kode_bangunan} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <label className={`text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Kota</label>
+            <Select id="addKota" options={localKotaList} value={data.kota} onChange={(v) => setData(d => ({ ...d, kota: v }))} placeholder="- Pilih -" className="w-full text-xs font-bold" />
+          </div>
+          <div className="space-y-1.5">
+            <label className={`text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Taksonomi</label>
+            <Select id="addTaxonomy" options={['CR', 'MCF']} value={data.taxonomy} onChange={(v) => setData(d => ({ ...d, taxonomy: v }))} placeholder="Pilih..." className="w-full text-xs font-bold" />
+          </div>
+        </div>
+        
+        <div className="space-y-1.5">
+          <label className={`text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Kategori Bangunan</label>
+          <Select id="addKodeBangunan" options={['Healthcare Facilities', 'Educational Facilities', 'Electricity', 'Hotel', 'Airport']} value={data.kode_bangunan} onChange={(v) => setData(d => ({ ...d, kode_bangunan: v }))} className="w-full text-xs font-bold" />
+        </div>
       </div>
-      <div className="mb-2">
-        <label className={`block text-[10px] font-semibold mb-0.5 ${darkMode ? 'text-gray-400' : 'text-gray-900'}`}>TAKSONOMI BANGUNAN</label>
-        <Select id="addTaxonomy" options={['CR', 'MCF']} value={data.taxonomy} onChange={(v) => setData(d => ({ ...d, taxonomy: v }))} className="w-full text-xs" />
-      </div>
-      <div className="flex justify-end mt-2">
-        <Button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
+
+      <div className="mt-8 flex justify-end border-t border-white/5 pt-6">
+        <button
+          onClick={() => {
             onSave({ 
               ...data, 
               lon: parseFloat(String(data.lon).replace(',', '.')),
@@ -990,12 +1107,13 @@ function AddForm({ onSave, isSavingAdd, darkMode }) {
             });
           }}
           disabled={isSavingAdd || !isValid()}
-          className={`px-3 py-1.5 text-xs rounded-md ${(!isValid() || isSavingAdd) ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-[#1E5C9A] hover:bg-[#2F6FAF] text-white shadow-md'}`}
+          className={`px-10 h-12 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-lg active:scale-95 disabled:opacity-50`}
         >
-          {isSavingAdd ? 'Menyimpan...' : 'Tambah'}
-        </Button>
+          {isSavingAdd ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+          Tambah Bangunan
+        </button>
       </div>
-    </>
+    </div>
   )
 }
 
@@ -1007,60 +1125,94 @@ function EditForm({ initial, onSave, isSavingEdit, darkMode }) {
     setData(d => ({ ...d, lat: lat.toString(), lon: lon.toString() }))
   }
 
-  const inputCls = `border p-1 px-1.5 h-6 text-[10px] w-full rounded transition-colors ${
-    darkMode ? 'bg-gray-800 border-gray-700 text-white focus:border-[#1E5C9A]' : 'bg-white border-gray-200 text-gray-900 focus:border-[#1E5C9A]'
-  }`;
-
   const isValid = () => {
-    const l = String(data.luas || '').trim();
-    const jl = String(data.jumlah_lantai || '').trim();
-    return (
-      l !== '' && jl !== '' &&
-      (data.taxonomy || '') !== ''
-    );
+    return data.nama_gedung && data.luas && data.jumlah_lantai && data.taxonomy;
   };
 
   return (
-    <>
-      <h3 className={`text-sm font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Edit Bangunan</h3>
-      {['nama_gedung', 'alamat', 'lon', 'lat', 'luas', 'jumlah_lantai'].map(fld => (
-        <div key={fld} className="mb-1">
-          <label className={`block text-[9px] font-bold mb-0.5 ${darkMode ? 'text-gray-400' : 'text-gray-900'}`}>
-            {fld === 'jumlah_lantai' ? 'JUMLAH LANTAI' : fld.replace('_', ' ').toUpperCase()}
-          </label>
+    <div className="flex flex-col h-full">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-2.5 rounded-xl bg-orange-500/10 text-orange-500">
+          <Edit2 size={20} strokeWidth={2.5} />
+        </div>
+        <h3 className={`text-lg font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-800'}`}>
+          Sunting Bangunan
+        </h3>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="col-span-2 space-y-1.5">
+          <label className={`text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Nama Gedung</label>
           <input
-            type={['lon', 'lat', 'luas', 'jumlah_lantai'].includes(fld) ? 'number' : 'text'}
-            step={['lon', 'lat', 'luas'].includes(fld) ? 'any' : undefined}
-            value={data[fld] ?? ''}
-            onChange={e => setData(d => ({ ...d, [fld]: e.target.value }))}
-            className={inputCls}
-            placeholder={fld === 'luas' ? 'Harus angka > 0' : fld === 'jumlah_lantai' ? 'Bulat genap positif (contoh: 2)' : ''}
+            type="text"
+            value={data.nama_gedung ?? ''}
+            onChange={e => setData(d => ({ ...d, nama_gedung: e.target.value }))}
+            className={`w-full h-10 px-3 rounded-xl border text-sm font-medium outline-none transition-all ${
+              darkMode ? 'bg-white/5 border-white/10 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-200'
+            }`}
           />
         </div>
-      ))}
-      <MiniMap
-        lat={parseFloat(data.lat)}
-        lon={parseFloat(data.lon)}
-        onLatLonChange={handleLatLonChange}
-        kode_bangunan={data.kode_bangunan || (data.id_bangunan ? data.id_bangunan.split('_')[0] : 'BMN')}
-      />
-      <div className="mb-1 mt-1">
-        <label className={`block text-[9px] font-bold mb-0.5 mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-900'}`}>TAKSONOMI BANGUNAN</label>
-        <select
-          value={data.taxonomy || ''}
-          onChange={e => setData(d => ({ ...d, taxonomy: e.target.value }))}
-          className={`${inputCls} py-0 transition-colors ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}
-        >
-          <option value="">- Pilih Taksonomi -</option>
-          <option value="CR">CR</option>
-          <option value="MCF">MCF</option>
-        </select>
+        <div className="col-span-2 space-y-1.5">
+          <label className={`text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Alamat</label>
+          <input
+            type="text"
+            value={data.alamat ?? ''}
+            onChange={e => setData(d => ({ ...d, alamat: e.target.value }))}
+            className={`w-full h-10 px-3 rounded-xl border text-sm font-medium outline-none transition-all ${
+              darkMode ? 'bg-white/5 border-white/10 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-200'
+            }`}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label className={`text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Luas Lantai (m²)</label>
+          <input
+            type="number"
+            value={data.luas ?? ''}
+            onChange={e => setData(d => ({ ...d, luas: e.target.value }))}
+            className={`w-full h-10 px-3 rounded-xl border text-sm font-mono outline-none transition-all ${
+              darkMode ? 'bg-white/5 border-white/10 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-200'
+            }`}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label className={`text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Jumlah Lantai</label>
+          <input
+            type="number"
+            value={data.jumlah_lantai ?? ''}
+            onChange={e => setData(d => ({ ...d, jumlah_lantai: e.target.value }))}
+            className={`w-full h-10 px-3 rounded-xl border text-sm font-mono outline-none transition-all ${
+              darkMode ? 'bg-white/5 border-white/10 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-200'
+            }`}
+          />
+        </div>
       </div>
-      <div className="flex justify-end gap-2 mt-2">
-        <Button
+
+      <div className="space-y-4">
+        <div className="space-y-1.5">
+          <label className={`text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Lokasi & Koordinat</label>
+          <div className="flex gap-2 mb-2">
+            <input type="number" step="any" value={data.lon ?? ''} onChange={e => setData(d => ({ ...d, lon: e.target.value }))} className={`flex-1 h-9 px-3 rounded-xl border text-[11px] font-mono ${darkMode ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200'}`} placeholder="Lon" />
+            <input type="number" step="any" value={data.lat ?? ''} onChange={e => setData(d => ({ ...d, lat: e.target.value }))} className={`flex-1 h-9 px-3 rounded-xl border text-[11px] font-mono ${darkMode ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200'}`} placeholder="Lat" />
+          </div>
+          <div className="rounded-2xl overflow-hidden border border-white/5 h-[180px]">
+             <MiniMap
+              lat={parseFloat(data.lat)}
+              lon={parseFloat(data.lon)}
+              onLatLonChange={handleLatLonChange}
+              kode_bangunan={data.kode_bangunan || (data.id_bangunan ? data.id_bangunan.split('_')[0] : 'BMN')}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className={`text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Taksonomi Bangunan</label>
+          <Select id="editTaxonomy" options={['CR', 'MCF']} value={data.taxonomy} onChange={(v) => setData(d => ({ ...d, taxonomy: v }))} placeholder="Pilih..." className="w-full text-xs font-bold" />
+        </div>
+      </div>
+
+      <div className="mt-8 flex justify-end gap-3 border-t border-white/5 pt-6">
+        <button
           onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
             onSave({
               nama_gedung: data.nama_gedung, alamat: data.alamat,
               lon: parseFloat(String(data.lon).replace(',', '.')), lat: parseFloat(String(data.lat).replace(',', '.')),
@@ -1069,11 +1221,12 @@ function EditForm({ initial, onSave, isSavingEdit, darkMode }) {
             });
           }}
           disabled={isSavingEdit || !isValid()}
-          className={`px-3 py-1 text-[10px] rounded ${(!isValid() || isSavingEdit) ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-[#1E5C9A] hover:bg-[#004b87] text-white shadow-md'}`}
+          className={`px-10 h-12 bg-orange-600 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-orange-700 transition-all shadow-lg active:scale-95 disabled:opacity-50`}
         >
-          {isSavingEdit ? 'Menyimpan...' : 'Simpan'}
-        </Button>
+          {isSavingEdit ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+          Simpan Perubahan
+        </button>
       </div>
-    </>
+    </div>
   )
 }

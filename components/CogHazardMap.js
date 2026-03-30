@@ -3,7 +3,7 @@ import { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { useTheme } from '../context/ThemeContext'
 import Script from 'next/script'
 import L from 'leaflet'
-import { ChevronRight, Layers } from 'lucide-react'
+import { ChevronRight, Layers, Database, Building2, Activity, Info, X } from 'lucide-react'
 import 'leaflet/dist/leaflet.css'
 // Note: markercluster CSS and JS will be handled via CDN for simplicity or if normally installed
 import LayerServices from './LayerServices'
@@ -76,13 +76,13 @@ const BASE_LAYERS = {
 }
 
 const EXPOSURE_COLORS = {
-  healthcare: '#1E5C9A',  // Deep Blue
-  educational: '#2FA69A', // Teal Green
-  electricity: '#F2C94C', // Yellow Accent
-  airport: '#7B3F98',     // Purple
-  hotel: '#A055A1',        // Magenta-Purple
-  bmn: '#1C7C75',          // Dark Teal
-  residential: '#2F6FAF'   // Medium Blue
+  healthcare: '#EF4444',  // Red
+  educational: '#3B82F6', // Blue
+  electricity: '#F59E0B', // Amber
+  airport: '#10B981',     // Emerald
+  hotel: '#8B5CF6',        // Violet
+  bmn: '#EC4899',          // Pink
+  residential: '#06B6D4'   // Cyan
 }
 
 const AAL_COLORS = ['#1a9850', '#d9ef8b', '#fee08b', '#fc8d59', '#d73027', '#7f0000'];
@@ -194,6 +194,51 @@ function hexToRgb(hex) {
   return [r, g, b]
 }
 
+// ── SVG Icon Helper for Map ───────────────────────────────────────────────────
+function createExposureIcon(type, activeColor) {
+  const size = 10;
+  const iconSize = 6;
+  
+  const svgPaths = {
+    healthcare: 'M11 2a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2H4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h4a2 2 0 0 1 2 2v1a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-1a2 2 0 0 1 2-2h4a2 2 0 0 0 2-2v-5a2 2 0 0 0-2-2h-3a2 2 0 0 1-2-2V4a2 2 0 0 0-2-2h-2z M18 9h1 M14 9h.01 M10 9h.01 M5 9h1 M18 15h1 M14 15h.01 M10 15h.01 M5 15h1',
+    educational: 'M22 10v6M2 10l10-5 10 5-10 5z M6 12v5c0 2 2 3 6 3s6-1 6-3v-5',
+    electricity: 'M13 2 3 14h9l-1 8 10-12h-9l1-8z',
+    airport: 'M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z',
+    hotel: 'M2 4v16M2 11h20M2 17h20M22 4v16M11 4v7M15 4v7',
+    bmn: 'M3 22h18M6 18v-7M10 18v-7M14 18v-7M18 18v-7M3 11c0-1.7 1.3-3 3-3h12c1.7 0 3 1.3 3 3v0H3v0zM12 2l10 6H2l10-6z',
+    sawah: 'm12 10 1 1h3l1 1M12 22V10M12 10c0-2.8-2.2-5-5-5M17 2l-3 3M2 2l3 3M7 2 4 5M12 2v3',
+    residential: 'm3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22 9 12 15 12 15 22'
+  };
+
+  const path = svgPaths[type] || '';
+  
+  const html = `
+    <div style="
+      width: ${size}px; 
+      height: ${size}px; 
+      background: ${activeColor}; 
+      border: 1px solid white; 
+      border-radius: 50%; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      transform: translate(-50%, -50%);
+    ">
+      <svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round">
+        <path d="${path}" />
+      </svg>
+    </div>
+  `;
+
+  return L.divIcon({
+    className: 'custom-svg-marker',
+    html: html,
+    iconSize: [size, size],
+    iconAnchor: [size/2, size/2]
+  });
+}
+
 function interpolateColor(colorStops, t) {
   for (let i = 0; i < colorStops.length - 1; i++) {
     const [t0, c0] = colorStops[i]
@@ -214,6 +259,8 @@ function interpolateColor(colorStops, t) {
 // ─── Main component ──────────────────────────────────────────────────────────────
 export default function CogHazardMap() {
   const { darkMode } = useTheme()
+  // Track map zoom for performance optimization
+  const [currentZoom, setCurrentZoom] = useState(9.5);
   const mapEl = useRef(null)
   const mapRef = useRef(null)
   const layerRef = useRef(null)
@@ -312,40 +359,51 @@ export default function CogHazardMap() {
       if (value >= 1e9) return (value / 1e9).toFixed(2) + ' M'
       if (value >= 1e6) return (value / 1e6).toFixed(2) + ' jt'
       if (value >= 1e3) return (value / 1e3).toFixed(2) + ' rb'
-      return value.toString()
+      return value.toLocaleString()
     }
 
     const formatPercent = (loss, totalVal) => {
-      if (!totalVal || totalVal === 0 || !loss) return '<span class="text-gray-400 font-normal">(0%)</span>'
+      if (!totalVal || totalVal === 0 || !loss) return '<span class="opacity-40 font-normal">(0%)</span>'
       const pct = (loss / totalVal) * 100
-      if (pct < 0.1 && pct > 0) return '<span class="text-gray-400 font-normal">(<0.1%)</span>'
-      if (pct >= 99.9) return '<span class="text-red-500 font-normal opacity-80">(100%)</span>'
-      return `<span class="text-gray-500 font-normal opacity-80">(${pct.toFixed(1)}%)</span>`
+      if (pct < 0.1 && pct > 0) return '<span class="opacity-40 font-normal">(<0.1%)</span>'
+      if (pct >= 99.9) return '<span class="text-rose-500 font-bold">(100%)</span>'
+      return `<span class="opacity-60 font-bold">(${pct.toFixed(1)}%)</span>`
     }
 
     const assetStr = assetValue > 0 ? formatNumberWithUnit(assetValue) : '-'
     const isBMNRes = id.startsWith('BMN') || id.startsWith('RESIDENTIAL')
 
     return `
-      <div class="flex flex-col gap-2 font-[SF Pro] text-left">
+      <div class="flex flex-col gap-3 font-[Inter] text-left p-1">
         <!-- Header -->
-        <div>
-          <h3 class="font-bold text-[13px] text-gray-800 leading-tight">${p.nama_gedung || 'Tanpa Nama'}</h3>
-          <p class="text-[10px] text-gray-500 italic mt-0.5">${p.taxonomy || '-'} • Lt: ${p.jumlah_lantai || '-'} • ${p.kota || ''}</p>
-          <p class="text-[9px] text-gray-400 leading-tight mt-0.5 truncate">${p.alamat || '-'}</p>
+        <div class="border-b ${darkMode ? 'border-white/10' : 'border-slate-200'} pb-2">
+          <h3 class="font-black text-[14px] leading-tight ${darkMode ? 'text-white' : 'text-slate-900'}">${p.nama_gedung || 'Tanpa Nama'}</h3>
+          <p class="text-[10px] font-bold uppercase tracking-widest ${darkMode ? 'text-gray-400' : 'text-slate-500'} mt-1">
+            ${p.taxonomy || '-'} • LT: ${p.jumlah_lantai || '-'} • ${p.kota || ''}
+          </p>
+          <p class="text-[10px] ${darkMode ? 'text-gray-400' : 'text-slate-400'} mt-1 truncate">${p.alamat || '-'}</p>
         </div>
         
         <!-- Core Attrs -->
-        <div class="grid grid-cols-2 gap-1 text-[10px] bg-slate-50 p-1.5 rounded-md border border-slate-100">
-          <div class="text-gray-500 flex flex-col leading-tight"><span>Luas</span><span class="font-semibold text-gray-700">${p.luas || '-'} m²</span></div>
-          <div class="text-gray-500 flex flex-col leading-tight"><span>Nilai Aset</span><span class="font-semibold text-gray-700">Rp ${assetStr}</span></div>
+        <div class="grid grid-cols-2 gap-2">
+          <div class="p-2 rounded-xl border ${darkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}">
+            <span class="block text-[9px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-500' : 'text-slate-400'}">Luas</span>
+            <span class="text-[11px] font-black ${darkMode ? 'text-white' : 'text-slate-800'}">${p.luas || '-'} <span class="text-[9px] opacity-60">m²</span></span>
+          </div>
+          <div class="p-2 rounded-xl border ${darkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}">
+            <span class="block text-[9px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-500' : 'text-slate-400'}">Aset</span>
+            <span class="text-[11px] font-black ${darkMode ? 'text-white' : 'text-slate-800'}">Rp ${assetStr}</span>
+          </div>
         </div>
 
-        <div class="space-y-1.5 mt-1 border-t border-gray-100 pt-1.5 ${isBMNRes ? 'hidden' : ''}">
+        <div class="space-y-3 mt-1 ${isBMNRes ? 'hidden' : ''}">
           <!-- Gempa Bumi -->
-          <div class="border-l-2 border-[#1E5C9A] pl-1.5">
-            <div class="text-[10px] font-bold text-[#1E5C9A] leading-none mb-1">Gempa (PGA)</div>
-            <div class="grid grid-cols-1 gap-y-0.5 text-[9px] text-gray-600">
+          <div class="p-2.5 rounded-xl border ${darkMode ? 'bg-blue-500/5 border-blue-500/10' : 'bg-blue-50/50 border-blue-100'}">
+            <div class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1.5 flex items-center justify-between">
+              <span>Gempa (PGA)</span>
+              <span class="text-[9px] opacity-60">Loss Ratio</span>
+            </div>
+            <div class="grid grid-cols-1 gap-1">
               ${['1000', '500', '250', '200', '100'].map(rp => {
                   const cityKey = (p.kota || '').toUpperCase()
                   const cityFeature = boundaryLookup.get(cityKey);
@@ -361,52 +419,54 @@ export default function CogHazardMap() {
                   
                   const catData = dlExp[category] || {};
                   const ratio = catData[`pga_${rp}`];
-                  const ratioStr = ratio != null ? (parseFloat(ratio) * 100).toFixed(6) + '%' : '-';
+                  const ratioStr = ratio != null ? (parseFloat(ratio) * 100).toFixed(4) + '%' : '-';
                   
-                  return `<div>${rp}th: <b class="text-[#1E5C9A]">${ratioStr}</b> (Loss Ratio)</div>`;
+                  return `
+                    <div class="flex justify-between items-center text-[10px]">
+                      <span class="${darkMode ? 'text-gray-300' : 'text-slate-500'} font-medium">${rp} Yr</span>
+                      <b class="text-blue-500 font-black font-mono">${ratioStr}</b>
+                    </div>
+                  `;
               }).join('')}
             </div>
           </div>
 
-          <!-- Banjir R -->
-          <div class="border-l-2 border-green-500 pl-1.5">
-            <div class="text-[10px] font-bold text-green-600 leading-none mb-1">Banjir (R)</div>
-            <div class="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[9px] text-gray-600">
-              <div>250th: <b>${formatNumberWithUnit(p.direct_loss_r_250 || 0)}</b> ${formatPercent(p.direct_loss_r_250, assetValue)}</div>
-              <div>100th: <b>${formatNumberWithUnit(p.direct_loss_r_100 || 0)}</b> ${formatPercent(p.direct_loss_r_100, assetValue)}</div>
-              <div>50th: <b>${formatNumberWithUnit(p.direct_loss_r_50 || 0)}</b> ${formatPercent(p.direct_loss_r_50, assetValue)}</div>
-              <div>25th: <b>${formatNumberWithUnit(p.direct_loss_r_25 || 0)}</b> ${formatPercent(p.direct_loss_r_25, assetValue)}</div>
-              <div>10th: <b>${formatNumberWithUnit(p.direct_loss_r_10 || 0)}</b> ${formatPercent(p.direct_loss_r_10, assetValue)}</div>
-              <div>5th: <b>${formatNumberWithUnit(p.direct_loss_r_5 || 0)}</b> ${formatPercent(p.direct_loss_r_5, assetValue)}</div>
-              <div class="col-span-2">2th: <b>${formatNumberWithUnit(p.direct_loss_r_2 || 0)}</b> ${formatPercent(p.direct_loss_r_2, assetValue)}</div>
+          <div class="grid grid-cols-2 gap-2">
+            <!-- Banjir (R) -->
+            <div class="p-2.5 rounded-xl border ${darkMode ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-emerald-50/50 border-emerald-100'}">
+              <div class="text-[9px] font-black text-emerald-500 uppercase tracking-widest mb-1.5">Banjir (R)</div>
+              <div class="grid grid-cols-1 gap-1 font-mono text-[9px] ${darkMode ? 'text-gray-300' : 'text-slate-600'}">
+                <div>250: <b>${formatNumberWithUnit(p.direct_loss_r_250 || 0)}</b> ${formatPercent(p.direct_loss_r_250, assetValue)}</div>
+                <div>100: <b>${formatNumberWithUnit(p.direct_loss_r_100 || 0)}</b> ${formatPercent(p.direct_loss_r_100, assetValue)}</div>
+                <div>50:  <b>${formatNumberWithUnit(p.direct_loss_r_50 || 0)}</b> ${formatPercent(p.direct_loss_r_50, assetValue)}</div>
+              </div>
             </div>
-          </div>
-
-          <!-- Banjir RC -->
-          <div class="border-l-2 border-emerald-500 pl-1.5">
-            <div class="text-[10px] font-bold text-emerald-600 leading-none mb-1">Banjir (RC)</div>
-            <div class="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[9px] text-gray-600">
-              <div>250th: <b>${formatNumberWithUnit(p.direct_loss_rc_250 || 0)}</b> ${formatPercent(p.direct_loss_rc_250, assetValue)}</div>
-              <div>100th: <b>${formatNumberWithUnit(p.direct_loss_rc_100 || 0)}</b> ${formatPercent(p.direct_loss_rc_100, assetValue)}</div>
-              <div>50th: <b>${formatNumberWithUnit(p.direct_loss_rc_50 || 0)}</b> ${formatPercent(p.direct_loss_rc_50, assetValue)}</div>
-              <div>25th: <b>${formatNumberWithUnit(p.direct_loss_rc_25 || 0)}</b> ${formatPercent(p.direct_loss_rc_25, assetValue)}</div>
-              <div>10th: <b>${formatNumberWithUnit(p.direct_loss_rc_10 || 0)}</b> ${formatPercent(p.direct_loss_rc_10, assetValue)}</div>
-              <div>5th: <b>${formatNumberWithUnit(p.direct_loss_rc_5 || 0)}</b> ${formatPercent(p.direct_loss_rc_5, assetValue)}</div>
-              <div class="col-span-2">2th: <b>${formatNumberWithUnit(p.direct_loss_rc_2 || 0)}</b> ${formatPercent(p.direct_loss_rc_2, assetValue)}</div>
+            <!-- Banjir (RC) -->
+            <div class="p-2.5 rounded-xl border ${darkMode ? 'bg-teal-500/5 border-teal-500/10' : 'bg-teal-50/50 border-teal-100'}">
+              <div class="text-[9px] font-black text-teal-400 uppercase tracking-widest mb-1.5">Banjir (RC)</div>
+              <div class="grid grid-cols-1 gap-1 font-mono text-[9px] ${darkMode ? 'text-gray-300' : 'text-slate-600'}">
+                <div>250: <b>${formatNumberWithUnit(p.direct_loss_rc_250 || 0)}</b> ${formatPercent(p.direct_loss_rc_250, assetValue)}</div>
+                <div>100: <b>${formatNumberWithUnit(p.direct_loss_rc_100 || 0)}</b> ${formatPercent(p.direct_loss_rc_100, assetValue)}</div>
+                <div>50:  <b>${formatNumberWithUnit(p.direct_loss_rc_50 || 0)}</b> ${formatPercent(p.direct_loss_rc_50, assetValue)}</div>
+              </div>
             </div>
           </div>
 
           <!-- Tsunami -->
-          <div class="border-l-2 border-[#6FB5C2] pl-1.5">
-            <div class="text-[10px] font-bold text-[#6FB5C2] leading-none mb-1">Tsunami (Inundansi)</div>
-            <div class="text-[9px] text-gray-600 leading-tight">
-              Total: <b>${formatNumberWithUnit(p.direct_loss_inundansi || 0)}</b> ${formatPercent(p.direct_loss_inundansi, assetValue)}
+          <div class="p-2.5 rounded-xl border ${darkMode ? 'bg-amber-500/5 border-amber-500/10' : 'bg-amber-50/50 border-amber-100'}">
+            <div class="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1 flex items-center justify-between">
+              <span>Tsunami</span>
+              <span class="text-[9px] opacity-60">Inundansi</span>
+            </div>
+            <div class="text-[11px] font-black ${darkMode ? 'text-white' : 'text-slate-800'} flex items-baseline gap-2">
+              <span>Rp ${formatNumberWithUnit(p.direct_loss_inundansi || 0)}</span>
+              <span class="text-[9px] font-black text-amber-500">${formatPercent(p.direct_loss_inundansi, assetValue)}</span>
             </div>
           </div>
         </div>
       </div>
     `
-  }, [boundaryLookup])
+  }, [boundaryLookup, darkMode])
 
   useEffect(() => {
     if (!selectedBuildingId || exposureLookup.size === 0) return
@@ -880,6 +940,10 @@ export default function CogHazardMap() {
 
     L.control.zoom({ position: 'topright' }).addTo(map)
 
+    map.on('zoomend', () => {
+      setCurrentZoom(map.getZoom());
+    });
+
     mapRef.current = map
 
     return () => {
@@ -1148,15 +1212,27 @@ export default function CogHazardMap() {
 
       if (type) {
         const [lon, lat] = f.geometry.coordinates
-        const marker = L.circleMarker([lat, lon], {
-          radius: 3,
-          fillColor: EXPOSURE_COLORS[type],
-          color: '#fff',
-          weight: 1,
-          opacity: 1,
-          fillOpacity: 0.8,
-          pane: 'markerPane'
-        })
+        let marker;
+
+        if (currentZoom < 14) {
+          // Performance mode: fast Canvas circleMarkers for broad views
+          marker = L.circleMarker([lat, lon], {
+            radius: 3,
+            fillColor: EXPOSURE_COLORS[type],
+            color: 'white',
+            weight: 0.5,
+            opacity: 0.8,
+            fillOpacity: 1,
+            pane: 'markerPane'
+          });
+        } else {
+          // Beauty mode: hi-res SVG divIcons for detailed views
+          marker = L.marker([lat, lon], {
+            icon: createExposureIcon(type, EXPOSURE_COLORS[type]),
+            pane: 'markerPane'
+          });
+        }
+
         marker.bindTooltip(`<strong>${f.properties.nama_gedung || 'Tanpa Nama'}</strong>`, {
           direction: 'top',
           offset: [0, -5],
@@ -1181,7 +1257,7 @@ export default function CogHazardMap() {
       }
     })
     markers.forEach(m => exposureCluster.current.addLayer(m))
-  }, [infraLayers, scriptsReady, exposureData, kotaFilter, isBangunanPanelOpen, selectedCityFeature])
+  }, [infraLayers, scriptsReady, exposureData, kotaFilter, isBangunanPanelOpen, selectedCityFeature, currentZoom])
 
   // ── Effect to update Panel Buildings Zoom Bounds ─────────────────────────────
   useEffect(() => {
@@ -2196,8 +2272,8 @@ export default function CogHazardMap() {
           {/* Building Detail Overlay */}
           {selectedBuildingHtml && (
             <div
-              className={`absolute top-24 left-[280px] z-[2000] backdrop-blur-md rounded-xl shadow-2xl p-4 w-[240px] border animate-in fade-in slide-in-from-left-4 duration-300 pointer-events-auto cursor-grab active:cursor-grabbing transition-all ${
-                darkMode ? 'bg-[#1E2023]/95 border-gray-700 shadow-black/40' : 'bg-white/95 border-gray-100'
+              className={`absolute top-24 left-[280px] z-[2000] backdrop-blur-xl rounded-2xl shadow-2xl p-4 w-[280px] border animate-in fade-in slide-in-from-left-4 duration-300 pointer-events-auto cursor-grab active:cursor-grabbing transition-all ${
+                darkMode ? 'bg-[#0D0F12]/95 border-white/10 shadow-black/60' : 'bg-white/95 border-slate-200 shadow-slate-200/50'
               }`}
               style={{ transform: `translate(${panelPos.x}px, ${panelPos.y}px)` }}
               onPointerDown={handlePointerDown}
@@ -2205,11 +2281,18 @@ export default function CogHazardMap() {
               onPointerUp={handlePointerUp}
               onPointerCancel={handlePointerUp}
             >
-              <div className="flex justify-end pb-1 mb-1 border-b border-gray-100">
-                <button onClick={() => { setSelectedBuildingHtml(null); setSelectedBuildingId(null); }} className="close-btn text-gray-400 hover:text-gray-800 focus:outline-none cursor-pointer transition-colors bg-gray-50 hover:bg-gray-100 rounded-full p-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+              <div className="flex justify-between items-center pb-2 mb-4 border-b border-white/5">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-500">
+                    <Info size={12} strokeWidth={2.5} />
+                  </div>
+                  <span className={`text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-300' : 'text-slate-500'}`}>Building Info</span>
+                </div>
+                <button 
+                  onClick={() => { setSelectedBuildingHtml(null); setSelectedBuildingId(null); }} 
+                  className={`close-btn transition-all p-1.5 rounded-lg ${darkMode ? 'text-gray-500 hover:text-white hover:bg-white/10' : 'text-slate-400 hover:text-slate-800 hover:bg-slate-100'}`}
+                >
+                  <X size={14} strokeWidth={2.5} />
                 </button>
               </div>
               <div className="pointer-events-none" dangerouslySetInnerHTML={{ __html: selectedBuildingHtml }} />
@@ -2276,8 +2359,8 @@ export default function CogHazardMap() {
           {/* Draggable HSBGN Floating Panel */}
           {isHSBGNPanelOpen && (
             <div
-              className={`absolute top-[88px] left-[290px] z-[2000] backdrop-blur-md rounded-2xl shadow-2xl min-w-[310px] w-[310px] min-h-[200px] h-[300px] resize overflow-hidden border animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col transition-all ${
-                darkMode ? 'bg-[#1E2023]/95 border-gray-700 shadow-black/40' : 'bg-white/95 border-gray-100'
+              className={`absolute top-[64px] left-[290px] z-[2000] backdrop-blur-xl rounded-[24px] shadow-2xl min-w-[340px] w-[500px] min-h-[300px] h-[400px] resize overflow-hidden border animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col transition-all ${
+                darkMode ? 'bg-[#0D0F12]/95 border-white/10 shadow-black/60' : 'bg-white/95 border-slate-200 shadow-slate-200/50'
               }`}
               style={{ transform: `translate(${hsbgnPanelPos.x}px, ${hsbgnPanelPos.y}px)` }}
               onPointerDown={handleHsbgnPointerDown}
@@ -2285,36 +2368,35 @@ export default function CogHazardMap() {
               onPointerUp={handleHsbgnPointerUp}
               onPointerCancel={handleHsbgnPointerUp}
             >
-              <div className="flex justify-between items-center bg-transparent border-b border-gray-100 px-4 py-3 cursor-grab active:cursor-grabbing">
+              <div className="flex justify-between items-center px-4 py-3 cursor-grab active:cursor-grabbing border-b border-white/5">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center text-[#2F6FAF]">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
+                  <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                    <Database size={14} strokeWidth={2.5} />
                   </div>
-                  <h3 className={`text-[10px] font-bold tracking-[0.1em] uppercase ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Data HSBGN</h3>
+                  <h3 className={`text-[10px] font-black tracking-[0.12em] uppercase ${darkMode ? 'text-white' : 'text-slate-800'}`}>Data HSBGN</h3>
                 </div>
                 <button
                   onClick={() => setIsHSBGNPanelOpen(false)}
-                  className="no-drag text-gray-400 hover:text-gray-800 transition-colors p-1 bg-gray-50 hover:bg-gray-100 rounded-full"
+                  className="no-drag text-gray-500 hover:text-rose-500 transition-all p-2 rounded-xl hover:bg-rose-500/10"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <X size={18} strokeWidth={2.5} />
                 </button>
               </div>
 
-              <div className="no-drag p-2 flex-1 overflow-hidden w-full flex flex-col">
+              <div className="no-drag p-2 flex-1 overflow-hidden w-full flex flex-col scroll-container">
                 <CrudHSBGN onDataChanged={refreshAALData} />
               </div>
+              
+              {/* Resize Handle Indicator */}
+              <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-white/10 rounded-br-md pointer-events-none" />
             </div>
           )}
 
           {/* Draggable Bangunan Floating Panel */}
           {isBangunanPanelOpen && (
             <div
-              className={`absolute top-[88px] left-[320px] z-[2000] backdrop-blur-md rounded-2xl shadow-2xl min-w-[310px] w-[310px] min-h-[400px] h-[450px] resize overflow-hidden border animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col transition-all ${
-                darkMode ? 'bg-[#1E2023]/95 border-gray-700 shadow-black/40' : 'bg-white/95 border-gray-100'
+              className={`absolute top-[64px] left-[320px] z-[2000] backdrop-blur-xl rounded-[24px] shadow-2xl min-w-[360px] w-[640px] min-h-[400px] h-[550px] resize overflow-hidden border animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col transition-all ${
+                darkMode ? 'bg-[#0D0F12]/95 border-white/10 shadow-black/60' : 'bg-white/95 border-slate-200 shadow-slate-200/50'
               }`}
               style={{ transform: `translate(${bangunanPanelPos.x}px, ${bangunanPanelPos.y}px)` }}
               onPointerDown={handleBangunanPointerDown}
@@ -2322,28 +2404,24 @@ export default function CogHazardMap() {
               onPointerUp={handleBangunanPointerUp}
               onPointerCancel={handleBangunanPointerUp}
             >
-              <div className="flex justify-between items-center bg-transparent border-b border-gray-100 px-4 py-3 cursor-grab active:cursor-grabbing">
+              <div className="flex justify-between items-center px-4 py-3 cursor-grab active:cursor-grabbing border-b border-white/5">
                 <div className="flex items-center gap-2.5">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${
-                    darkMode ? 'bg-orange-950/40 text-orange-400' : 'bg-orange-50 text-orange-600'
-                  }`}>
-                    <Layers size={14} />
+                  <div className="w-7 h-7 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center">
+                    <Building2 size={14} strokeWidth={2.5} />
                   </div>
-                  <h3 className={`text-[10px] font-bold tracking-[0.1em] uppercase transition-all ${
-                    darkMode ? 'text-gray-200' : 'text-gray-800'
+                  <h3 className={`text-[10px] font-black tracking-[0.12em] uppercase transition-all ${
+                    darkMode ? 'text-white' : 'text-slate-800'
                   }`}>Data Bangunan</h3>
                 </div>
                 <button
                   onClick={() => setIsBangunanPanelOpen(false)}
-                  className="no-drag text-gray-400 hover:text-gray-800 transition-colors p-1 bg-gray-50 hover:bg-gray-100 rounded-full"
+                  className="no-drag text-gray-500 hover:text-rose-500 transition-all p-2 rounded-xl hover:bg-rose-500/10"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <X size={18} strokeWidth={2.5} />
                 </button>
               </div>
 
-              <div className="no-drag p-0 flex-1 overflow-hidden w-full flex flex-col justify-center">
+              <div className="no-drag p-0 flex-1 overflow-hidden w-full flex flex-col justify-center scroll-container">
                 <CrudBuildings
                   onDataChanged={refreshAALData}
                   kotaFilter={kotaFilter}
@@ -2359,27 +2437,23 @@ export default function CogHazardMap() {
                     mapRef.current.setView([lat, lon], 18, { animate: true });
 
                     setTimeout(() => {
-                      L.popup({ autoClose: true, closeOnClick: true })
+                      L.popup({ autoClose: true, closeOnClick: true, className: 'compact-popup' })
                         .setLatLng([lat, lon])
-                        .setContent(`
-                            <div style="font-family: inherit; min-width: 200px;">
-                              <div style="font-weight: 700; color: #1f2937; margin-bottom: 4px;">${b.name || 'Tanpa Nama'}</div>
-                              <div style="font-size: 11px; color: #6b7280; font-style: italic; margin-bottom: 8px;">Tipe: ${b.type || '-'}</div>
-                            </div>
-                          `)
+                        .setContent(getBuildingPopupHtml(b))
                         .openOn(mapRef.current)
                     }, 500);
                   }}
                 />
               </div>
+              <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-white/10 rounded-br-md pointer-events-none" />
             </div>
           )}
 
           {/* Draggable Exposure Table Floating Panel */}
           {isExposurePanelOpen && (
             <div
-              className={`absolute top-[88px] left-[350px] z-[2000] backdrop-blur-md rounded-2xl shadow-2xl min-w-[380px] w-[380px] min-h-[400px] h-[450px] resize overflow-hidden border animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col transition-all ${
-                darkMode ? 'bg-[#1E2023]/95 border-gray-700 shadow-black/40' : 'bg-white/95 border-gray-100'
+              className={`absolute top-[64px] left-[350px] z-[2000] backdrop-blur-xl rounded-[24px] shadow-2xl min-w-[420px] w-[500px] min-h-[400px] h-[550px] resize overflow-hidden border animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col transition-all ${
+                darkMode ? 'bg-[#0D0F12]/95 border-white/10 shadow-black/60' : 'bg-white/95 border-slate-200 shadow-slate-200/50'
               }`}
               style={{ transform: `translate(${exposurePanelPos.x}px, ${exposurePanelPos.y}px)` }}
               onPointerDown={handleExposurePointerDown}
@@ -2387,28 +2461,24 @@ export default function CogHazardMap() {
               onPointerUp={handleExposurePointerUp}
               onPointerCancel={handleExposurePointerUp}
             >
-              <div className="flex justify-between items-center bg-transparent border-b border-gray-100 px-4 py-3 cursor-grab active:cursor-grabbing">
+              <div className="flex justify-between items-center px-4 py-3 cursor-grab active:cursor-grabbing border-b border-white/5">
                 <div className="flex items-center gap-2.5">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${
-                    darkMode ? 'bg-orange-950/40 text-orange-400' : 'bg-orange-50 text-orange-600'
-                  }`}>
-                    <Layers size={14} />
+                  <div className="w-7 h-7 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center">
+                    <Activity size={14} strokeWidth={2.5} />
                   </div>
-                  <h3 className={`text-[10px] font-bold tracking-[0.1em] uppercase transition-all ${
-                    darkMode ? 'text-gray-200' : 'text-gray-800'
+                  <h3 className={`text-[10px] font-black tracking-[0.12em] uppercase transition-all ${
+                    darkMode ? 'text-white' : 'text-slate-800'
                   }`}>Data Direct Loss</h3>
                 </div>
                 <button
                   onClick={() => setIsExposurePanelOpen(false)}
-                  className="no-drag text-gray-400 hover:text-gray-800 transition-colors p-1 bg-gray-50 hover:bg-gray-100 rounded-full"
+                  className="no-drag text-gray-500 hover:text-rose-500 transition-all p-2 rounded-xl hover:bg-rose-500/10"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <X size={18} strokeWidth={2.5} />
                 </button>
               </div>
 
-              <div className="no-drag p-0 flex-1 overflow-hidden w-full flex flex-col">
+              <div className="no-drag p-0 flex-1 overflow-hidden w-full flex flex-col scroll-container">
                 <ExposureTableContent
                   exposureData={exposureData}
                   selectedGroup={selectedGroup}
@@ -2428,6 +2498,7 @@ export default function CogHazardMap() {
                   }}
                 />
               </div>
+              <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-white/10 rounded-br-md pointer-events-none" />
             </div>
           )}
 

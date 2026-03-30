@@ -88,20 +88,23 @@ const formatYAxisShort = (val) => {
 };
 
 const ComparisonTooltip = ({ active, payload, label }) => {
+  const { darkMode } = useTheme();
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white/95 backdrop-blur border border-slate-200 p-2 rounded-lg shadow-lg">
-        <p className="font-bold text-slate-800 text-[9px] mb-1.5 border-b border-slate-100 pb-1">{label}</p>
+      <div className={`backdrop-blur border p-2 rounded-lg shadow-lg transition-colors duration-300 ${
+        darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white/95 border-slate-200'
+      }`}>
+        <p className={`font-bold text-[9px] mb-1.5 border-b pb-1 ${darkMode ? 'text-white border-gray-800' : 'text-slate-800 border-slate-100'}`}>{label}</p>
         <div className="flex flex-col gap-1">
           {payload.map((entry, index) => (
             <div key={index} className="flex items-center justify-between gap-4 text-[8px]">
-              <div className="flex items-center gap-1.5 text-slate-600">
+              <div className={`flex items-center gap-1.5 ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>
                 <span className="w-2 h-2 rounded-[2px]" style={{ backgroundColor: entry.color }}></span>
                 <span>{entry.name.replace('\n', ' ')}</span>
               </div>
               <div className="flex flex-col items-end">
-                <span className="font-bold text-slate-800">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(entry.value)}</span>
-                <span className="text-[7px] text-green-600 font-bold">({formatUSD(entry.value)})</span>
+                <span className={`font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(entry.value)}</span>
+                <span className={`text-[7px] font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>({formatUSD(entry.value)})</span>
               </div>
             </div>
           ))}
@@ -132,6 +135,7 @@ function MiniBarChart({ data, maxVal, expAsset = 0 }) {
   const W = 230, H = 84, PAD = { l: 26, r: 8, t: 10, b: 24 };
   const chartW = W - PAD.l - PAD.r;
   const chartH = H - PAD.t - PAD.b;
+  const { darkMode } = useTheme();
   const barW = Math.floor(chartW / data.length) - 8;
   const fmtM = v => {
     if (v >= 1e9) return (v / 1e9).toFixed(1) + 'T';
@@ -156,8 +160,8 @@ function MiniBarChart({ data, maxVal, expAsset = 0 }) {
           const y = PAD.t + chartH * (1 - t);
           return (
             <g key={t}>
-              <line x1={PAD.l} x2={PAD.l + chartW} y1={y} y2={y} stroke="#e2e8f0" strokeWidth="1" strokeDasharray="3,3" />
-              <text x={PAD.l - 4} y={y + 3} textAnchor="end" fontSize="8" fill="#94a3b8">{fmtM(maxVal * t)}</text>
+              <line x1={PAD.l} x2={PAD.l + chartW} y1={y} y2={y} stroke={darkMode ? 'rgba(255,255,255,0.1)' : '#e2e8f0'} strokeWidth="1" strokeDasharray="3,3" />
+              <text x={PAD.l - 4} y={y + 3} textAnchor="end" fontSize="8" fill={darkMode ? '#64748b' : '#94a3b8'}>{fmtM(maxVal * t)}</text>
             </g>
           );
         })}
@@ -184,7 +188,7 @@ function MiniBarChart({ data, maxVal, expAsset = 0 }) {
               {d.label.split('\n').map((line, li) => {
                 if (line.trim() === '') return null;
                 return (
-                  <text key={li} x={x + barW / 2} y={PAD.t + chartH + 11 + li * 9} textAnchor="middle" fontSize="6.5" fill="#64748b" fontWeight="600">{line}</text>
+                  <text key={li} x={x + barW / 2} y={PAD.t + chartH + 11 + li * 9} textAnchor="middle" fontSize="6.5" fill={darkMode ? '#94a3b8' : '#64748b'} fontWeight="600">{line}</text>
                 );
               })}
             </g>
@@ -352,12 +356,14 @@ function DroughtSawahChartPanel({ selectedGroup, selectedCityFeature }) {
             {/* ── Chart 1: Per Sawah Year (all RPs) ── */}
             <div className="flex flex-col gap-1">
               <div className="flex items-center justify-between">
-                <span className="text-[7px] font-bold text-slate-600">Semua Return Period per Tahun Eksposur</span>
-                <span className="text-[6px] text-slate-400 cursor-pointer hover:text-green-600 transition-colors"
+                <span className={`text-[7px] font-bold ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>Semua Return Period per Tahun Eksposur</span>
+                <span className={`text-[6px] cursor-pointer transition-colors ${darkMode ? 'text-gray-500 hover:text-green-400' : 'text-slate-400 hover:text-green-600'}`}
                   onClick={() => setZoomedChart({ type: 'year' })}>Perbesar</span>
               </div>
               {dotLegend}
-              <div className="bg-white border border-slate-200 rounded-lg p-1.5 shadow-sm cursor-pointer hover:border-green-300 transition-colors"
+              <div className={`border rounded-lg p-1.5 shadow-sm cursor-pointer transition-colors ${
+                darkMode ? 'bg-gray-800 border-gray-700 hover:border-green-500/50' : 'bg-white border-slate-200 hover:border-green-300'
+              }`}
                 onClick={() => setZoomedChart({ type: 'year' })}>
                 {renderYearComparison(170)}
               </div>
@@ -390,9 +396,9 @@ function DroughtSawahChartPanel({ selectedGroup, selectedCityFeature }) {
         {/* Zoomed modal */}
         {zoomedChart && createPortal(
           <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-6" onClick={() => setZoomedChart(null)}>
-            <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-3xl" onClick={e => e.stopPropagation()}>
+            <div className={`rounded-2xl shadow-2xl p-6 w-full max-w-3xl ${darkMode ? 'bg-gray-900 border border-gray-800' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold text-slate-800 text-sm">
+                <h3 className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-slate-800'}`}>
                   Direct Loss Sawah — {selectedKota} — {zoomedChart.type === 'year' ? 'Semua Return Period per Tahun' : zoomedChart.label}
                 </h3>
                 <button onClick={() => setZoomedChart(null)} className="text-slate-400 hover:text-slate-700"><X size={18} /></button>
@@ -482,7 +488,7 @@ function DroughtSawahChartPanel({ selectedGroup, selectedCityFeature }) {
       {Object.entries(yearColors).map(([key, color]) => (
         <div key={key} className="flex items-center gap-1">
           <span className="w-3 h-2 rounded-sm" style={{ background: color }} />
-          <span className="text-[7px] text-slate-600 font-semibold">Sawah {yearLabels[key]}</span>
+          <span className={`text-[7px] font-semibold ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>Sawah {yearLabels[key]}</span>
         </div>
       ))}
     </div>
@@ -590,7 +596,7 @@ function DroughtSawahChartPanel({ selectedGroup, selectedCityFeature }) {
                         <span className={`text-[6px] cursor-pointer transition-colors ${darkMode ? 'text-gray-500 hover:text-green-400' : 'text-slate-400 hover:text-green-600'}`}
                           onClick={() => setZoomedChart({ yearKey, label, data, rpColors, rpLabels, tooltipContent, renderMultiRpChart })}>Perbesar</span>
                       </div>
-                      <div className={`border rounded-lg p-1.5 shadow-sm cursor-pointer transition-colors ${darkMode ? 'bg-gray-800/40 border-gray-700 hover:border-green-500/50' : 'bg-white border-green-100/50 hover:border-green-300'}`}
+                      <div className={`border rounded-lg p-1.5 shadow-sm cursor-pointer transition-colors ${darkMode ? 'bg-gray-800 border-gray-700 hover:border-green-500/50' : 'bg-white border-green-100/50 hover:border-green-300'}`}
                         onClick={() => setZoomedChart({ yearKey, label, data, rpColors, rpLabels, tooltipContent, renderMultiRpChart })}>
                         {data.length === 0
                           ? <div className="text-[8px] text-slate-400 text-center py-3">Tidak ada data</div>
@@ -609,9 +615,9 @@ function DroughtSawahChartPanel({ selectedGroup, selectedCityFeature }) {
       {/* Zoomed modal */}
       {zoomedChart && createPortal(
         <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-6" onClick={() => setZoomedChart(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-3xl" onClick={e => e.stopPropagation()}>
+          <div className={`rounded-2xl shadow-2xl p-6 w-full max-w-3xl transition-colors duration-300 ${darkMode ? 'bg-gray-900 border border-gray-800' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-slate-800 text-sm">
+              <h3 className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-slate-800'}`}>
                 Direct Loss Sawah — {zoomedChart.label} — Semua Kota
               </h3>
               <button onClick={() => setZoomedChart(null)} className="text-slate-400 hover:text-slate-700"><X size={18} /></button>
@@ -747,8 +753,8 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
           <div className="flex flex-col gap-3">
             {/* NCC vs CC legend */}
             <div className="flex gap-4 mb-1">
-              <div className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-sm bg-[#3b82f6]" /><span className="text-[7px] text-slate-600 font-semibold">Non CC</span></div>
-              <div className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-sm bg-[#f97316]" /><span className="text-[7px] text-slate-600 font-semibold">Climate Change</span></div>
+              <div className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-sm bg-[#3b82f6]" /><span className={`text-[7px] font-semibold ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>Non CC</span></div>
+              <div className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-sm bg-[#f97316]" /><span className={`text-[7px] font-semibold ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>Climate Change</span></div>
             </div>
 
             {/* Multiple charts for 2022, 2025, 2028 */}
@@ -762,7 +768,9 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
                     <span className="text-[6px] text-slate-400 cursor-pointer hover:text-blue-600 transition-colors"
                       onClick={() => setZoomedChart({ label: `Sawah ${label} — ${selectedKota}`, data })}>Perbesar</span>
                   </div>
-                  <div className="bg-white border border-slate-200 rounded-lg p-1.5 shadow-sm cursor-pointer hover:border-blue-300 transition-colors"
+                  <div className={`border rounded-lg p-1.5 shadow-sm cursor-pointer transition-colors ${
+                    darkMode ? 'bg-gray-800 border-gray-700 hover:border-blue-500/50' : 'bg-white border-slate-200 hover:border-blue-300'
+                  }`}
                     onClick={() => setZoomedChart({ label: `Sawah ${label} — ${selectedKota}`, data })}>
                     {renderGroupedBar(data, 130)}
                   </div>
@@ -1468,6 +1476,7 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
 }
 
 function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTable, selectedGroup }) {
+  const { darkMode } = useTheme();
   const [zoomedChart, setZoomedChart] = useState(null);
   const [pmlData, setPmlData] = useState([]);
 
@@ -1576,29 +1585,29 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
     }
 
     return (
-      <div key={group.exp} className="bg-slate-50 rounded-xl p-3 mb-3 border border-slate-100/50 relative">
+      <div key={group.exp} className={`rounded-xl p-3 mb-3 border relative transition-all ${darkMode ? 'bg-gray-800/40 border-gray-700/50 shadow-lg' : 'bg-slate-50 border-slate-100/50'}`}>
         <div className="flex items-center justify-center gap-2 mb-2">
-          <div className="text-[10px] font-bold text-slate-700 tracking-wide text-center">{group.label}</div>
+          <div className={`text-[10px] font-bold tracking-wide text-center ${darkMode ? 'text-gray-300' : 'text-slate-700'}`}>{group.label}</div>
           {group.exp !== 'total' && (
             <button
               onClick={() => onOpenTable && onOpenTable(group.layerKey)}
               title="Lihat Data Tabel"
-              className="text-slate-400 hover:text-blue-500 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded p-1 shadow-sm transition-colors"
+              className={`transition-all rounded p-1 shadow-sm border ${darkMode ? 'text-gray-400 hover:text-blue-400 bg-gray-700 border-gray-600 hover:border-blue-900/50' : 'text-slate-400 hover:text-blue-500 bg-white hover:bg-blue-50 border-slate-200 hover:border-blue-200'}`}
             >
               <TableIcon size={12} strokeWidth={2.5} />
             </button>
           )}
         </div>
         {group.exp !== 'total' && expCount > 0 && (
-          <div className="flex justify-between items-center text-[9px] mb-3 px-2 border-b border-slate-200 pb-2">
+          <div className={`flex justify-between items-center text-[9px] mb-3 px-2 border-b pb-2 ${darkMode ? 'border-gray-700' : 'border-slate-200'}`}>
             <div className="flex flex-col">
-              <span className="text-slate-400 uppercase tracking-wider font-semibold">Bangunan</span>
-              <span className="font-bold text-slate-700">{expCount.toLocaleString('id-ID')}</span>
+              <span className={`uppercase tracking-wider font-semibold ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>Bangunan</span>
+              <span className={`font-bold ${darkMode ? 'text-gray-300' : 'text-slate-700'}`}>{expCount.toLocaleString('id-ID')}</span>
             </div>
             <div className="flex flex-col text-right">
-              <span className="text-slate-400 uppercase tracking-wider font-semibold">Nilai Aset</span>
+              <span className={`uppercase tracking-wider font-semibold ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>Nilai Aset</span>
               <div className="flex flex-col items-end">
-                <span className="font-bold text-slate-700">{formatRupiah(expAsset)}</span>
+                <span className={`font-bold ${darkMode ? 'text-gray-300' : 'text-slate-700'}`}>{formatRupiah(expAsset)}</span>
                 <span className="text-[8px] text-green-600 font-bold">({formatUSD(expAsset)})</span>
               </div>
             </div>
@@ -1609,8 +1618,8 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
         </div>
 
         {selectedGroup === 'earthquake' && pmlData.length > 0 && (
-          <div className="mt-4 pt-3 border-t border-slate-200/60 text-center">
-            <div className="text-[8px] font-bold text-slate-400 tracking-widest uppercase mb-2">PML Gempa (Probabilistic Loss)</div>
+          <div className={`mt-4 pt-3 border-t text-center ${darkMode ? 'border-gray-700/60' : 'border-slate-200/60'}`}>
+            <div className={`text-[8px] font-bold tracking-widest uppercase mb-2 ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>PML Gempa (Probabilistic Loss)</div>
             <div className="flex justify-center">
               <MiniBarChart 
                 data={getPmlChartData(group)}
@@ -2012,6 +2021,7 @@ const ReactLegendOverlay = ({
   setDroughtLossYear,
   droughtSawahData,
 }) => {
+  const { darkMode } = useTheme();
   const [inputMode, setInputMode] = useState('pick'); // 'pick' or 'manual'
   const [manualIntensity, setManualIntensity] = useState('');
   const [isAalSidebarOpen, setIsAalSidebarOpen] = useState(true);
@@ -2230,23 +2240,23 @@ const ReactLegendOverlay = ({
         {/* Vulnerability Curve Section */}
         {showCurve && availableGroups.length > 0 && availableGroups.map((group, idx) => (
           <div key={idx} className="flex flex-col items-center">
-            <h4 className="text-[10px] font-bold text-slate-800 mb-2 truncate max-w-[90px]">{group.title}</h4>
+            <h4 className={`text-[10px] font-bold mb-2 truncate max-w-[90px] ${darkMode ? 'text-gray-300' : 'text-slate-800'}`}>{group.title}</h4>
             <div className={`flex flex-row items-center ${availableGroups.length > 1 ? 'gap-1' : 'gap-6'}`}>
               {/* Chart SVG */}
               <div className="flex flex-col items-center">
                 <svg width={svgW} height={svgH} style={{ fontFamily: 'inherit', overflow: 'visible' }}>
-                  <line x1={padding.left} y1={getY(0)} x2={padding.left + chartW} y2={getY(0)} stroke="#e2e8f0" strokeWidth="1" />
-                  <line x1={padding.left} y1={getY(0.5)} x2={padding.left + chartW} y2={getY(0.5)} stroke="#f1f5f9" strokeDasharray="2,2" />
-                  <line x1={padding.left} y1={getY(1)} x2={padding.left + chartW} y2={getY(1)} stroke="#f1f5f9" strokeDasharray="2,2" />
-                  <line x1={padding.left} y1={padding.top} x2={padding.left} y2={padding.top + chartH} stroke="#cbd5e1" strokeWidth="1" />
-                  <line x1={padding.left} y1={padding.top + chartH} x2={padding.left + chartW} y2={padding.top + chartH} stroke="#cbd5e1" strokeWidth="1" />
+                  <line x1={padding.left} y1={getY(0)} x2={padding.left + chartW} y2={getY(0)} stroke={darkMode ? 'rgba(255,255,255,0.1)' : '#e2e8f0'} strokeWidth="1" />
+                  <line x1={padding.left} y1={getY(0.5)} x2={padding.left + chartW} y2={getY(0.5)} stroke={darkMode ? 'rgba(255,255,255,0.05)' : '#f1f5f9'} strokeDasharray="2,2" />
+                  <line x1={padding.left} y1={getY(1)} x2={padding.left + chartW} y2={getY(1)} stroke={darkMode ? 'rgba(255,255,255,0.05)' : '#f1f5f9'} strokeDasharray="2,2" />
+                  <line x1={padding.left} y1={padding.top} x2={padding.left} y2={padding.top + chartH} stroke={darkMode ? '#475569' : '#cbd5e1'} strokeWidth="1" />
+                  <line x1={padding.left} y1={padding.top + chartH} x2={padding.left + chartW} y2={padding.top + chartH} stroke={darkMode ? '#475569' : '#cbd5e1'} strokeWidth="1" />
                   {group.polylines}
-                  <text x={padding.left - 3} y={getY(0) + 2} textAnchor="end" fontSize="6px" fill="#64748b" fontWeight="600">0</text>
-                  <text x={padding.left - 3} y={getY(1) + 2} textAnchor="end" fontSize="6px" fill="#64748b" fontWeight="600">1.0</text>
-                  <text x={padding.left} y={padding.top + chartH + 8} textAnchor="middle" fontSize="6px" fill="#64748b" fontWeight="600">0</text>
-                  <text x={padding.left + chartW} y={padding.top + chartH + 8} textAnchor="middle" fontSize="6px" fill="#64748b" fontWeight="600">{maxX.toFixed(1)}</text>
-                  <text x={padding.left + chartW / 2} y={padding.top + chartH + 16} textAnchor="middle" fontSize="6.5px" fill="#94a3b8" fontWeight="700">{config?.xTitle}</text>
-                  <text x={6} y={padding.top + chartH / 2} textAnchor="middle" fontSize="6.5px" fill="#94a3b8" fontWeight="700" transform={`rotate(-90, 6, ${padding.top + chartH / 2})`}>Damage</text>
+                  <text x={padding.left - 3} y={getY(0) + 2} textAnchor="end" fontSize="6px" fill={darkMode ? '#94a3b8' : '#64748b'} fontWeight="600">0</text>
+                  <text x={padding.left - 3} y={getY(1) + 2} textAnchor="end" fontSize="6px" fill={darkMode ? '#94a3b8' : '#64748b'} fontWeight="600">1.0</text>
+                  <text x={padding.left} y={padding.top + chartH + 8} textAnchor="middle" fontSize="6px" fill={darkMode ? '#94a3b8' : '#64748b'} fontWeight="600">0</text>
+                  <text x={padding.left + chartW} y={padding.top + chartH + 8} textAnchor="middle" fontSize="6px" fill={darkMode ? '#94a3b8' : '#64748b'} fontWeight="600">{maxX.toFixed(1)}</text>
+                  <text x={padding.left + chartW / 2} y={padding.top + chartH + 16} textAnchor="middle" fontSize="6.5px" fill={darkMode ? '#475569' : '#94a3b8'} fontWeight="700">{config?.xTitle}</text>
+                  <text x={6} y={padding.top + chartH / 2} textAnchor="middle" fontSize="6.5px" fill={darkMode ? '#475569' : '#94a3b8'} fontWeight="700" transform={`rotate(-90, 6, ${padding.top + chartH / 2})`}>Damage</text>
                 </svg>
               </div>
 
@@ -2261,21 +2271,21 @@ const ReactLegendOverlay = ({
         {!isEarthquake && (
           <>
             {/* Divider SVG -> Controls */}
-            <div className="w-[1px] h-12 bg-slate-200 self-center mx-1 rounded-full"></div>
+            <div className={`w-[1px] h-12 self-center mx-1 rounded-full ${darkMode ? 'bg-gray-800' : 'bg-slate-200'}`}></div>
 
             {/* Column 3: Controls & Results */}
             <div className="flex flex-row items-center gap-4">
               {/* Controls sub-column */}
               <div className="flex flex-col w-[100px]">
-                <div className="flex bg-slate-200 rounded p-0.5 mb-2.5">
+                <div className={`flex rounded p-0.5 mb-2.5 ${darkMode ? 'bg-gray-800' : 'bg-slate-200'}`}>
                   <button
-                    className={`flex-1 text-[7px] font-bold py-1 rounded transition-colors ${inputMode === 'pick' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    className={`flex-1 text-[7px] font-bold py-1 rounded transition-colors ${inputMode === 'pick' ? (darkMode ? 'bg-gray-700 text-white shadow-sm' : 'bg-white text-slate-800 shadow-sm') : (darkMode ? 'text-gray-500 hover:text-gray-400' : 'text-slate-500 hover:text-slate-700')}`}
                     onClick={() => handleModeChange('pick')}
                   >
                     PICK POINT
                   </button>
                   <button
-                    className={`flex-1 text-[7px] font-bold py-1 rounded transition-colors ${inputMode === 'manual' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    className={`flex-1 text-[7px] font-bold py-1 rounded transition-colors ${inputMode === 'manual' ? (darkMode ? 'bg-gray-700 text-white shadow-sm' : 'bg-white text-slate-800 shadow-sm') : (darkMode ? 'text-gray-500 hover:text-gray-400' : 'text-slate-500 hover:text-slate-700')}`}
                     onClick={() => handleModeChange('manual')}
                   >
                     MANUAL
@@ -2288,10 +2298,12 @@ const ReactLegendOverlay = ({
                     placeholder="Ketik angka..."
                     value={manualIntensity}
                     onChange={(e) => setManualIntensity(e.target.value)}
-                    className="w-full text-[10px] p-1.5 font-bold border border-orange-500 rounded outline-none shadow-sm text-slate-800"
+                    className={`w-full text-[10px] p-1.5 font-bold border rounded outline-none shadow-sm transition-colors ${
+                      darkMode ? 'bg-gray-800 border-orange-700 text-white focus:border-orange-500' : 'border-orange-500 text-slate-800 bg-white'
+                    }`}
                   />
                 ) : (
-                  <div className="w-full text-[9px] p-1.5 font-semibold text-slate-400 border border-transparent text-center">
+                  <div className={`w-full text-[9px] p-1.5 font-semibold border border-transparent text-center ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>
                     Klik peta...
                   </div>
                 )}
@@ -2300,10 +2312,10 @@ const ReactLegendOverlay = ({
               {/* Results sub-column */}
               <div className="flex flex-col gap-1.5 w-[110px]">
                 <div className="flex justify-between items-center">
-                  <span className="text-[7.5px] text-slate-500 font-semibold">
+                  <span className={`text-[7.5px] font-semibold ${darkMode ? 'text-gray-500' : 'text-slate-500'}`}>
                     Intensity: {displayIntensity != null ? (inputMode === 'manual' ? '(Manual)' : '') : ''}
                   </span>
-                  <span className="text-[9px] text-slate-800 font-bold">
+                  <span className={`text-[9px] font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>
                     {displayIntensity != null ? displayIntensity.toFixed(3) + ' ' + (hazardInfo.unit || '') : '-'}
                   </span>
                 </div>
@@ -2327,8 +2339,8 @@ const ReactLegendOverlay = ({
                       }
                       return (
                         <div key={tax} className="flex justify-between items-center mt-0.5">
-                          <span className="text-[7.5px] text-slate-500">Loss {label}:</span>
-                          <span className="text-[9px] font-bold" style={{ color: group?.colors[tax] || '#1e293b' }}>
+                          <span className={`text-[7.5px] ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Loss {label}:</span>
+                          <span className="text-[9px] font-bold" style={{ color: group?.colors[tax] || (darkMode ? '#e2e8f0' : '#1e293b') }}>
                             {(val * 100).toFixed(2)}%
                           </span>
                         </div>
@@ -2350,20 +2362,26 @@ const ReactLegendOverlay = ({
     <>
       {(hasHazard || hasExposure) && (
         <div className="absolute bottom-6 left-[260px] right-0 lg:right-[320px] pointer-events-none z-[2002] flex justify-center">
-          <div className={`bg-white/95 backdrop-blur-sm px-4 lg:px-5 py-3 rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 pointer-events-auto transition-all duration-300 max-w-(full) min-w-max flex flex-row items-center overflow-x-auto custom-scrollbar ${(hazardKey && (hazardKey.includes('flood') || hazardKey.includes('drought'))) ? 'gap-3 lg:gap-4' : 'gap-4 lg:gap-6'}`}>
+          <div className={`backdrop-blur-sm px-4 lg:px-5 py-3 rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border pointer-events-auto transition-all duration-300 max-w-(full) min-w-max flex flex-row items-center overflow-x-auto custom-scrollbar ${
+            darkMode ? 'bg-gray-900/95 border-gray-800 shadow-black/40' : 'bg-white/95 border-slate-200'
+          } ${(hazardKey && (hazardKey.includes('flood') || hazardKey.includes('drought'))) ? 'gap-3 lg:gap-4' : 'gap-4 lg:gap-6'}`}>
             {/* 1. Hazard Base Info */}
             {hasHazard && (
               <div className={`flex flex-col justify-center ${(hazardKey && (hazardKey.includes('flood') || hazardKey.includes('drought'))) ? 'min-w-[90px]' : 'min-w-[140px]'}`}>
-                <div className={`font-extrabold mb-1.5 text-slate-700 tracking-widest uppercase truncate ${(hazardKey && (hazardKey.includes('flood') || hazardKey.includes('drought'))) ? 'text-[7px]' : 'text-[8px]'}`}>
+                <div className={`font-extrabold mb-1.5 tracking-widest uppercase truncate ${
+                  darkMode ? 'text-gray-300' : 'text-slate-700'
+                } ${(hazardKey && (hazardKey.includes('flood') || hazardKey.includes('drought'))) ? 'text-[7px]' : 'text-[8px]'}`}>
                   Hazard: {hazardInfo.label} ({hazardInfo.unit || 'Index'})
                 </div>
                 <div
-                  className="h-1.5 w-full rounded-full mb-1 shadow-sm border border-slate-200/50"
+                  className={`h-1.5 w-full rounded-full mb-1 shadow-sm border ${darkMode ? 'border-gray-700/50' : 'border-slate-200/50'}`}
                   style={{
                     background: `linear-gradient(to right, ${hazardInfo.colorStops.map(s => s[1]).join(',')})`
                   }}
                 ></div>
-                <div className={`flex justify-between text-slate-900 font-bold ${(hazardKey && (hazardKey.includes('flood') || hazardKey.includes('drought'))) ? 'text-[8px]' : 'text-[9px]'}`}>
+                <div className={`flex justify-between font-bold ${
+                  darkMode ? 'text-white' : 'text-slate-900'
+                } ${(hazardKey && (hazardKey.includes('flood') || hazardKey.includes('drought'))) ? 'text-[8px]' : 'text-[9px]'}`}>
                   <span>{format(rasterStats.min)} {hazardInfo.unit}</span>
                   <span>{format(rasterStats.max)} {hazardInfo.unit}</span>
                 </div>
@@ -2372,7 +2390,7 @@ const ReactLegendOverlay = ({
 
             {/* Divider 1 to 2 */}
             {hasHazard && (
-              <div className="w-[1px] bg-slate-200 self-stretch my-1 rounded-full"></div>
+              <div className={`w-[1px] self-stretch my-1 rounded-full ${darkMode ? 'bg-gray-800' : 'bg-slate-200'}`}></div>
             )}
 
             {/* 2. Curve / Interaction Panel */}
@@ -2384,7 +2402,7 @@ const ReactLegendOverlay = ({
 
             {/* Divider 2 to 3 */}
             {hasHazard && hasExposure && (
-              <div className="w-[1px] bg-slate-200 self-stretch my-1 rounded-full"></div>
+              <div className={`w-[1px] self-stretch my-1 rounded-full ${darkMode ? 'bg-gray-800' : 'bg-slate-200'}`}></div>
             )}
 
             {/* 3. Eksposur */}
@@ -2393,14 +2411,14 @@ const ReactLegendOverlay = ({
                 <div className="font-bold mb-1.5 text-[8px] text-slate-400 tracking-widest uppercase">
                   Eksposur
                 </div>
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                <div className={`grid grid-cols-2 gap-x-3 gap-y-1 ${darkMode ? 'text-gray-300' : 'text-slate-600'}`}>
                   {['healthcare', 'educational', 'electricity', 'airport', 'hotel', 'bmn', 'residential'].map(type => (
                     <div key={type} className="flex items-center gap-1.5">
                       <div
-                        className="w-1.5 h-1.5 rounded-full border border-white ring-[0.5px] ring-slate-200"
+                        className={`w-1.5 h-1.5 rounded-full border border-white ring-[0.5px] ${darkMode ? 'ring-gray-700' : 'ring-slate-200'}`}
                         style={{ backgroundColor: EXPOSURE_COLORS[type] }}
                       ></div>
-                      <span className="text-[8px] text-slate-600 font-semibold capitalize whitespace-nowrap">{type}</span>
+                      <span className="text-[8px] font-semibold capitalize whitespace-nowrap">{type}</span>
                     </div>
                   ))}
                 </div>
@@ -2429,7 +2447,9 @@ const ReactLegendOverlay = ({
 
           {/* Sidebar Panel */}
           <div
-            className="absolute top-0 right-0 z-[2002] h-full bg-white backdrop-blur-sm shadow-[-4px_0_24px_rgb(0,0,0,0.08)] border-l border-slate-200 pointer-events-auto flex flex-col transition-transform duration-300"
+            className={`absolute top-0 right-0 z-[2002] h-full flex flex-col backdrop-blur-sm shadow-[-4px_0_24px_rgb(0,0,0,0.08)] border-l transition-transform duration-300 ${
+              darkMode ? 'bg-[#1E2023] border-gray-800' : 'bg-white border-slate-200'
+            }`}
             style={{
               width: `${sidebarWidth}px`,
               transform: isAalSidebarOpen ? 'translateX(0)' : 'translateX(100%)',
@@ -2443,31 +2463,39 @@ const ReactLegendOverlay = ({
             />
 
             {/* ─── Header ─── */}
-            <div className="px-4 py-3 border-b border-slate-100 flex items-start justify-between gap-2">
+            <div className={`px-4 py-3 border-b flex items-start justify-between gap-2 ${darkMode ? 'border-gray-800' : 'border-slate-100'}`}>
               <div className="flex-1 pr-1">
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setIsAalSidebarOpen(false)}
-                    className="text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 p-1 rounded-sm transition-colors"
+                    className={`p-1 rounded-sm transition-colors ${
+                      darkMode ? 'text-gray-500 hover:text-gray-300 bg-gray-800 hover:bg-gray-700' : 'text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100'
+                    }`}
                     title="Sembunyikan Panel AAL"
                   >
                     <ChevronRight size={14} strokeWidth={2.5} />
                   </button>
-                  <div className="font-extrabold text-[10px] text-slate-700 tracking-widest uppercase truncate leading-tight mt-0.5">{hasAAL ? 'Kalkulasi AAL' : 'Direct Loss'}</div>
+                  <div className={`font-extrabold text-[10px] tracking-widest uppercase truncate leading-tight mt-0.5 ${darkMode ? 'text-gray-200' : 'text-slate-700'}`}>{hasAAL ? 'Kalkulasi AAL' : 'Direct Loss'}</div>
                 </div>
                 {selectedCityFeature ? (
                   <div className="flex items-center gap-1 mt-1 flex-wrap">
-                    <span className="text-[10px] font-bold text-slate-500 leading-tight mr-1 truncate max-w-[100px]">{selectedCityFeature.properties.id_kota || 'Kota'}</span>
-                    <button onClick={onClearCity} className="text-[8px] text-slate-400 hover:text-red-500 bg-slate-50 border border-slate-100 hover:bg-red-50 hover:border-red-100 px-1.5 py-0.5 rounded transition-colors flex-shrink-0">✕ Reset</button>
+                    <span className={`text-[10px] font-bold leading-tight mr-1 truncate max-w-[100px] ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>{selectedCityFeature.properties.id_kota || 'Kota'}</span>
+                    <button onClick={onClearCity} className={`text-[8px] border px-1.5 py-0.5 rounded transition-colors flex-shrink-0 ${
+                      darkMode ? 'text-gray-400 hover:text-red-400 bg-gray-800 border-gray-700 hover:bg-red-900/20 hover:border-red-900/30' : 'text-slate-400 hover:text-red-500 bg-slate-50 border-slate-100 hover:bg-red-50 hover:border-red-100'
+                    }`}>✕ Reset</button>
                   </div>
                 ) : (
-                  <div className="text-[9px] text-slate-400 mt-1 truncate">Total Semua Kota/Kabupaten</div>
+                  <div className={`text-[9px] mt-1 truncate ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>Total Semua Kota/Kabupaten</div>
                 )}
               </div>
               <div className="flex flex-col gap-2 flex-shrink-0 items-end">
                 <select
-                  className="bg-white border border-slate-200 text-slate-700 text-[10px] font-semibold py-1 pl-2.5 pr-6 rounded-md focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 appearance-none cursor-pointer w-full shadow-sm transition-all"
-                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 4px center', backgroundSize: '10px' }}
+                  className={`text-[10px] font-semibold py-1 pl-2.5 pr-6 rounded-md focus:outline-none focus:ring-1 appearance-none cursor-pointer w-full shadow-sm transition-all border ${
+                    darkMode 
+                      ? 'bg-gray-800 border-gray-700 text-gray-200 focus:border-blue-500 focus:ring-blue-500' 
+                      : 'bg-white border-slate-200 text-slate-700 focus:border-blue-400 focus:ring-blue-400'
+                  }`}
+                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23${darkMode ? '94a3b8' : '64748b'}' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 4px center', backgroundSize: '10px' }}
                   value={selectedCityFeature ? selectedCityFeature.properties.id_kota : ""}
                   onChange={(e) => {
                     const val = e.target.value;
@@ -2564,10 +2592,10 @@ const ReactLegendOverlay = ({
                 }
 
                 if (vals.length === 0) return (
-                  <div className="flex items-center gap-1.5 opacity-60">
-                    <span className="inline-block w-4 h-2 rounded-[2px] bg-slate-200" />
-                    <span className="text-[8px] font-semibold tracking-wider text-slate-400 italic">
-                      {!selectedRpId ? 'Pilih Return Period...' : 'Rp 0 - Rp 0'}
+                  <div className={`flex items-center gap-1.5 ${darkMode ? 'opacity-40' : 'opacity-60'}`}>
+                    <span className={`inline-block w-4 h-2 rounded-[2px] ${darkMode ? 'bg-gray-700' : 'bg-slate-200'}`} />
+                    <span className={`text-[8px] font-semibold tracking-wider italic ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>
+                      {!selectedRpId ? (darkMode ? 'Pilih Return Period...' : 'Pilih Return Period...') : 'Rp 0 - Rp 0'}
                     </span>
                   </div>
                 );
@@ -2593,7 +2621,7 @@ const ReactLegendOverlay = ({
                   const item = (
                     <div key={i} className="flex items-center gap-2">
                       <span className="inline-block w-5 h-2.5 rounded-[2px] shadow-sm" style={{ background: colorsAAL[i] }} />
-                      <span className="text-[8px] font-semibold tracking-wider text-slate-600 whitespace-nowrap">{lowDisplay} - {highDisplay}</span>
+                      <span className={`text-[8px] font-semibold tracking-wider whitespace-nowrap ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>{lowDisplay} - {highDisplay}</span>
                     </div>
                   );
                   if (i < halfCount) col1.push(item); else col2.push(item);
@@ -2608,8 +2636,12 @@ const ReactLegendOverlay = ({
 
               {/* Proportional Map Note */}
               {infraLayers?.modelHazard && (hasDirectLoss || hasAAL) && (
-                <div className="mt-3 text-[8px] text-slate-500 bg-orange-50/50 p-2 rounded border border-orange-100/50 flex items-start gap-1.5 leading-relaxed">
-                  <Info size={10} className="text-orange-400 mt-[1px] shrink-0" />
+                <div className={`mt-3 text-[8px] p-2 rounded border flex items-start gap-1.5 leading-relaxed ${
+                  darkMode 
+                    ? 'text-orange-300/80 bg-orange-950/20 border-orange-900/30' 
+                    : 'text-slate-500 bg-orange-50/50 border-orange-100/50'
+                }`}>
+                  <Info size={10} className={`${darkMode ? 'text-orange-500/70' : 'text-orange-400'} mt-[1px] shrink-0`} />
                   <span>Area kotak batas diubah menjadi transparan. Warna dan ukuran <strong>lingkaran di tengah batas</strong> merepresentasikan besaran nilai AAL/Direct Loss secara proporsional.</span>
                 </div>
               )}

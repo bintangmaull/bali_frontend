@@ -1,4 +1,5 @@
 import Select from './ui/Select'
+import { useTheme } from '../context/ThemeContext';
 
 const layerGroups = [
   {
@@ -28,8 +29,11 @@ const layerGroups = [
 ]
 
 export default function FilterPetaBencana({ layer, setLayer }) {
+  const { darkMode } = useTheme();
   return (
-    <div className="rounded-lg p-2 shadow flex flex-col md:flex-row gap-2 items-center w-fit">
+    <div className={`rounded-lg p-2 shadow flex flex-col md:flex-row gap-2 items-center w-fit border transition-colors duration-300 ${
+      darkMode ? 'bg-gray-900 border-gray-800 shadow-black/20' : 'bg-white border-gray-200'
+    }`}>
       <Select
         id="layerSelect"
         value={layer}

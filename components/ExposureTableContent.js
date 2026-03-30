@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { X, Search, Layers } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 const formatRupiah = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v);
 
@@ -15,6 +16,7 @@ export default function ExposureTableContent({
   onRowClick,
   onTabChange
 }) {
+  const { darkMode } = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -29,8 +31,8 @@ export default function ExposureTableContent({
   }, [activeTab, searchTerm]);
 
   const tabs = [
-    { id: 'healthcare', label: 'Healthcare FS' },
-    { id: 'educational', label: 'Educational FD' },
+    { id: 'healthcare', label: 'Healthcare Facilities' },
+    { id: 'educational', label: 'Educational Facilities' },
     { id: 'electricity', label: 'Electricity' },
     { id: 'airport', label: 'Airport' },
     { id: 'hotel', label: 'Hotel' }
@@ -111,14 +113,15 @@ export default function ExposureTableContent({
   if (!selectedGroup) return <div className="p-4 text-center text-gray-500 text-xs font-medium">Pilih hazard terlebih dahulu</div>;
 
   return (
-    <div className="flex flex-col h-full w-full bg-white relative">
+    <div className={`flex flex-col h-full w-full relative transition-colors duration-300 ${darkMode ? 'bg-[#1E2023] text-gray-200' : 'bg-white text-gray-800'}`}>
       {/* Toolbar */}
-      <div className="px-3 py-2 border-b border-gray-100 flex flex-col gap-2 bg-white sticky top-0 z-[20]">
+      <div className={`px-3 py-2 border-b flex flex-col gap-2 sticky top-0 z-[20] transition-colors duration-300 ${
+        darkMode ? 'bg-[#1E2023] border-gray-800' : 'bg-white border-gray-100'
+      }`}>
         
-        {/* Context Title */}
-        <div className="text-[10px] font-extrabold text-slate-700 tracking-widest uppercase mb-1 flex items-center gap-1.5">
-          <Layers size={12} className="text-[#2F6FAF]" />
-          <span>DATA DIRECT LOSS - {tabs.find(t => t.id === activeTab)?.label} - {selectedCityFeature?.properties?.id_kota || selectedCityFeature?.properties?.kota || 'Semua Kota'}</span>
+        {/* Redundant header removed, replaced with smaller context sub-indicator if needed */}
+        <div className={`text-[9px] font-bold tracking-wider uppercase mb-1 flex items-center gap-1.5 opacity-60 ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>
+          <span>{selectedCityFeature?.properties?.id_kota || selectedCityFeature?.properties?.kota || 'Semua Kota'}</span>
         </div>
 
         {/* Tabs */}
@@ -130,10 +133,14 @@ export default function ExposureTableContent({
                 setActiveTab(tab.id);
                 if (onTabChange) onTabChange(tab.id);
               }}
-              className={`px-3 py-1 text-[10px] font-bold rounded-md transition-colors whitespace-nowrap ${
+              className={`px-2 py-0.5 text-[8px] font-bold rounded-md transition-all whitespace-nowrap border ${
                 activeTab === tab.id 
-                  ? 'bg-blue-50 text-[#1E5C9A] border border-blue-200 shadow-sm' 
-                  : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
+                  ? darkMode 
+                    ? 'bg-blue-900/40 text-blue-300 border-blue-800 shadow-sm' 
+                    : 'bg-blue-50 text-[#1E5C9A] border-blue-200 shadow-sm'
+                  : darkMode
+                    ? 'bg-gray-800/50 text-gray-400 border-gray-700 hover:bg-gray-800'
+                    : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
               }`}
             >
               {tab.label}
@@ -148,8 +155,12 @@ export default function ExposureTableContent({
           </div>
           <input
             type="text"
-            className="block w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-md text-[10px] text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#2F6FAF] focus:ring-1 focus:ring-[#2F6FAF] transition-colors bg-gray-50 focus:bg-white"
-            placeholder="Cari ID / Nama Gedung..."
+            className={`block w-full pl-8 pr-3 py-1 border rounded-md text-[8px] placeholder-gray-400 focus:outline-none transition-all ${
+              darkMode 
+                ? 'bg-gray-800 border-gray-700 text-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500' 
+                : 'bg-gray-50 border-gray-200 text-gray-800 focus:border-[#2F6FAF] focus:ring-1 focus:ring-[#2F6FAF]'
+            }`}
+            placeholder="Search ID/Name..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -157,24 +168,32 @@ export default function ExposureTableContent({
       </div>
 
       {/* Table Content */}
-      <div className="flex-1 overflow-auto bg-gray-50/30 p-2 custom-scrollbar relative">
+      <div className={`flex-1 overflow-auto p-2 custom-scrollbar relative transition-colors duration-300 ${darkMode ? 'bg-gray-950/20' : 'bg-gray-50/30'}`}>
         {filteredData.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-gray-400 py-10">
             <Search size={24} className="mb-2 opacity-20" />
             <p className="text-[10px] font-medium">Data tidak ditemukan.</p>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden relative z-[10] w-full">
+          <div className={`rounded-lg shadow-sm border overflow-hidden relative z-[10] w-full transition-colors duration-300 ${
+            darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'
+          }`}>
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left border-collapse text-[10px]">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="px-2 py-2 font-semibold text-gray-600 whitespace-nowrap sticky left-0 bg-gray-50 z-20 min-w-[90px] border-r border-gray-200">ID Bgn</th>
-                    <th className="px-2 py-2 font-semibold text-gray-600 sticky left-[90px] bg-gray-50 z-20 min-w-[140px] border-r border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] truncate text-left">Nama Gedung</th>
-                    <th className="px-2 py-2 font-semibold text-gray-600 whitespace-nowrap pl-4">Kota</th>
-                    <th className="px-2 py-2 font-semibold text-gray-600 text-right whitespace-nowrap">Nilai Aset</th>
+                  <tr className={`border-b transition-colors duration-300 ${darkMode ? 'bg-gray-800/80 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                    <th className={`px-2 py-1.5 font-bold whitespace-nowrap sticky left-0 z-20 min-w-[70px] border-r transition-colors duration-300 ${
+                      darkMode ? 'bg-[#1E2023] text-gray-300 border-gray-700' : 'bg-gray-50 text-gray-600 border-gray-200'
+                    }`} style={{ fontSize: '9px' }}>ID Bgn</th>
+                    <th className={`px-2 py-1.5 font-bold sticky left-[70px] z-20 min-w-[120px] border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] truncate text-left transition-colors duration-300 ${
+                      darkMode ? 'bg-[#1E2023] text-gray-300 border-gray-700' : 'bg-gray-50 text-gray-600 border-gray-200'
+                    }`} style={{ fontSize: '9px' }}>Nama Gedung</th>
+                    <th className={`px-2 py-1.5 font-bold whitespace-nowrap pl-3 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`} style={{ fontSize: '9px' }}>Kota</th>
+                    <th className={`px-2 py-1.5 font-bold text-right whitespace-nowrap ${darkMode ? 'text-gray-300' : 'text-gray-600'}`} style={{ fontSize: '9px' }}>Nilai Aset</th>
                     {columns.map(col => (
-                      <th key={col.key} className="px-2 py-2 font-bold text-blue-800 text-right whitespace-nowrap border-l border-blue-50 bg-blue-50/50">
+                      <th key={col.key} className={`px-2 py-1.5 font-black text-right whitespace-nowrap border-l transition-colors duration-300 ${
+                        darkMode ? 'text-blue-400 border-blue-900/30 bg-blue-950/20' : 'text-blue-800 border-blue-50 bg-blue-50/50'
+                      }`} style={{ fontSize: '8px' }}>
                         {col.label}
                       </th>
                     ))}
@@ -187,13 +206,19 @@ export default function ExposureTableContent({
                       return (
                         <tr 
                           key={idx} 
-                          className="hover:bg-slate-50 transition-colors group cursor-pointer"
+                          className={`transition-colors group cursor-pointer border-b ${
+                            darkMode ? 'hover:bg-white/5 border-gray-800/50' : 'hover:bg-slate-50 border-gray-100'
+                          }`}
                           onClick={() => onRowClick && onRowClick(row)}
                         >
-                          <td className="px-2 py-2 font-mono text-[9px] text-gray-500 sticky left-0 group-hover:bg-slate-50 bg-white z-10 min-w-[90px] border-r border-gray-100 truncate">{row.id_bangunan || '-'}</td>
-                          <td className="px-2 py-2 font-medium text-gray-800 sticky left-[90px] group-hover:bg-slate-50 bg-white z-10 min-w-[140px] truncate border-r border-gray-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-left" title={row.nama_gedung}>{row.nama_gedung || '-'}</td>
-                          <td className="px-2 py-2 text-gray-600 text-[9px] pl-4 whitespace-nowrap">{row.kota || '-'}</td>
-                          <td className="px-2 py-2 text-right font-semibold text-emerald-700 whitespace-nowrap">{assetValue > 0 ? formatRupiah(assetValue) : '-'}</td>
+                          <td className={`px-2 py-1.5 font-mono text-[8px] sticky left-0 z-10 min-w-[70px] border-r truncate transition-colors duration-300 ${
+                            darkMode ? 'bg-[#1E2023] text-gray-500 group-hover:bg-gray-800 border-gray-800' : 'bg-white text-gray-500 group-hover:bg-slate-50 border-gray-100'
+                          }`}>{row.id_bangunan || '-'}</td>
+                          <td className={`px-2 py-1.5 font-bold sticky left-[70px] z-10 min-w-[120px] truncate border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-left transition-colors duration-300 ${
+                            darkMode ? 'bg-[#1E2023] text-gray-200 group-hover:bg-gray-800 border-gray-800' : 'bg-white text-gray-800 group-hover:bg-slate-50 border-gray-100'
+                          }`} title={row.nama_gedung} style={{ fontSize: '10px' }}>{row.nama_gedung || '-'}</td>
+                          <td className={`px-2 py-1.5 text-[9px] pl-3 whitespace-nowrap ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{row.kota || '-'}</td>
+                          <td className={`px-2 py-1.5 text-right font-bold whitespace-nowrap ${darkMode ? 'text-emerald-400' : 'text-emerald-700'}`} style={{ fontSize: '9px' }}>{assetValue > 0 ? formatRupiah(assetValue) : '-'}</td>
                           {columns.map(col => {
                             let displayVal = '-';
                             
@@ -229,7 +254,9 @@ export default function ExposureTableContent({
                             }
 
                             return (
-                              <td key={col.key} className="px-2 py-2 text-right text-gray-700 border-l border-blue-50 font-medium whitespace-nowrap">
+                              <td key={col.key} className={`px-2 py-2 text-right border-l font-medium whitespace-nowrap transition-colors duration-300 ${
+                                darkMode ? 'text-gray-300 border-blue-900/30' : 'text-gray-700 border-blue-50'
+                              }`}>
                                 {displayVal}
                               </td>
                             );
@@ -246,28 +273,38 @@ export default function ExposureTableContent({
 
         {/* Footer / Pagination */}
         {filteredData.length > 0 && (
-          <div className="px-3 py-2 border-t border-gray-100 bg-white flex justify-between items-center text-[10px] sticky bottom-0 z-[20]">
+          <div className={`px-3 py-2 border-t flex justify-between items-center text-[10px] sticky bottom-0 z-[20] transition-colors duration-300 ${
+            darkMode ? 'bg-[#1E2023] border-gray-800' : 'bg-white border-gray-100'
+          }`}>
             <div className="flex items-center gap-1.5">
               <button 
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                className="px-2 py-1 rounded bg-gray-50 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-200 transition-colors font-medium"
+                className={`px-2 py-1 rounded border transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed ${
+                  darkMode 
+                    ? 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700' 
+                    : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                }`}
               >
                 Prev
               </button>
-              <div className="font-semibold text-gray-700">
+              <div className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 {currentPage} / {totalPages}
               </div>
               <button 
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                className="px-2 py-1 rounded bg-gray-50 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-200 transition-colors font-medium"
+                className={`px-2 py-1 rounded border transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed ${
+                  darkMode 
+                    ? 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700' 
+                    : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                }`}
               >
                 Next
               </button>
             </div>
-            <div className="text-gray-400 font-medium">
-              Tot: <span className="text-gray-700">{filteredData.length}</span>
+            <div className={`${darkMode ? 'text-gray-500' : 'text-gray-400'} font-medium`}>
+              Tot: <span className={darkMode ? 'text-blue-400' : 'text-gray-700'}>{filteredData.length}</span>
             </div>
           </div>
         )}

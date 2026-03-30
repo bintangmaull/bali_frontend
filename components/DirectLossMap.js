@@ -264,7 +264,7 @@ export default function DirectLossMap({ geojson, cityGeojson, filters, search, s
           // Helper to conditionally render a row
           const renderRow = (label, val, className = "") => {
             const numVal = parseFloat(val) || 0;
-            return '<div class="' + className + '">' + label + ': <b>' + formatNumberWithUnit(numVal) + '</b> ' + formatPercent(numVal, assetValue) + '</div>';
+            return '<div class="' + className + '">' + label + ': <b class="' + (darkMode ? 'text-white' : 'text-gray-800') + '">' + formatNumberWithUnit(numVal) + '</b> ' + formatPercent(numVal, assetValue) + '</div>';
           };
 
           let hazardContent = '';
@@ -272,8 +272,8 @@ export default function DirectLossMap({ geojson, cityGeojson, filters, search, s
           if (hasGempa) {
             hazardContent += `
               <div class="flex border-l-2 border-[#2F6FAF] pl-1">
-                <div class="w-12 text-[8px] font-bold text-[#1E5C9A] shrink-0">PGA</div>
-                <div class="flex-1 grid grid-cols-1 gap-y-0 text-[8px] text-gray-600 leading-tight">
+                <div class="w-12 text-[8px] font-bold shrink-0 ${darkMode ? 'text-blue-400' : 'text-[#1E5C9A]'}">PGA</div>
+                <div class="flex-1 grid grid-cols-1 gap-y-0 text-[8px] leading-tight ${darkMode ? 'text-gray-300' : 'text-gray-600'}">
                   ${['1000', '500', '250', '200', '100'].map(rp => {
                     const cityFeature = (cityGeojson?.features || []).find(f => 
                       (f.properties.nama_kota || f.properties.id_kota || '').toUpperCase() === (p.kota || '').toUpperCase()
@@ -294,7 +294,7 @@ export default function DirectLossMap({ geojson, cityGeojson, filters, search, s
                     const ratio = catData[`pga_${rp}`];
                     const ratioStr = ratio != null ? (parseFloat(ratio) * 100).toFixed(6) + '%' : '-';
                     
-                    return `<div>${rp}th: <b class="text-blue-700">${ratioStr}</b> (Loss Ratio)</div>`;
+                    return `<div>${rp}th: <b class="${darkMode ? 'text-blue-300' : 'text-blue-700'}">${ratioStr}</b> (Loss Ratio)</div>`;
                   }).join('')}
                 </div>
               </div>
@@ -304,8 +304,8 @@ export default function DirectLossMap({ geojson, cityGeojson, filters, search, s
           if (hasBanjirR) {
             hazardContent += `
               <div class="flex border-l-2 border-green-500 pl-1">
-                <div class="w-12 text-[8px] font-bold text-green-600 shrink-0">Banjir R</div>
-                <div class="flex-1 grid grid-cols-2 gap-x-1 gap-y-0 text-[8px] text-gray-600 leading-tight">
+                <div class="w-12 text-[8px] font-bold shrink-0 ${darkMode ? 'text-green-400' : 'text-green-600'}">Banjir R</div>
+                <div class="flex-1 grid grid-cols-2 gap-x-1 gap-y-0 text-[8px] leading-tight ${darkMode ? 'text-gray-300' : 'text-gray-600'}">
                   ${renderRow('250th', p.direct_loss_r_250)}
                   ${renderRow('100th', p.direct_loss_r_100)}
                   ${renderRow('50th', p.direct_loss_r_50)}
@@ -321,8 +321,8 @@ export default function DirectLossMap({ geojson, cityGeojson, filters, search, s
            if (hasBanjirRC) {
             hazardContent += `
               <div class="flex border-l-2 border-emerald-500 pl-1">
-                <div class="w-12 text-[8px] font-bold text-emerald-600 shrink-0">Banjir RC</div>
-                <div class="flex-1 grid grid-cols-2 gap-x-1 gap-y-0 text-[8px] text-gray-600 leading-tight">
+                <div class="w-12 text-[8px] font-bold shrink-0 ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}">Banjir RC</div>
+                <div class="flex-1 grid grid-cols-2 gap-x-1 gap-y-0 text-[8px] leading-tight ${darkMode ? 'text-gray-300' : 'text-gray-600'}">
                   ${renderRow('250th', p.direct_loss_rc_250)}
                   ${renderRow('100th', p.direct_loss_rc_100)}
                   ${renderRow('50th', p.direct_loss_rc_50)}
@@ -338,8 +338,8 @@ export default function DirectLossMap({ geojson, cityGeojson, filters, search, s
            if (hasTsunami) {
              hazardContent += `
               <div class="flex border-l-2 border-[#6FB5C2] pl-1">
-                <div class="w-12 text-[8px] font-bold text-cyan-600 shrink-0">Tsunami</div>
-                <div class="flex-1 text-[8px] text-gray-600 leading-tight">
+                <div class="w-12 text-[8px] font-bold shrink-0 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}">Tsunami</div>
+                <div class="flex-1 text-[8px] leading-tight ${darkMode ? 'text-gray-300' : 'text-gray-600'}">
                   ${renderRow('Total', p.direct_loss_inundansi)}
                 </div>
               </div>
@@ -351,21 +351,30 @@ export default function DirectLossMap({ geojson, cityGeojson, filters, search, s
            }
 
           const popupHtml = `
-            <div class="flex flex-col gap-1.5 font-[SF Pro] text-left">
+            <div class="flex flex-col gap-1.5 font-[SF Pro] text-left ${darkMode ? 'text-gray-200' : 'text-gray-800'}">
               <!-- Header -->
               <div>
-                <h3 class="font-bold text-[11px] text-gray-800 leading-tight">${p.nama_gedung || 'Tanpa Nama'}</h3>
-                <p class="text-[9px] text-gray-500 italic mt-0.5">${p.taxonomy || '-'} • Lt: ${p.jumlah_lantai || '-'}</p>
+                <h3 class="font-bold text-[11px] leading-tight ${darkMode ? 'text-white' : 'text-gray-800'}">${p.nama_gedung || 'Tanpa Nama'}</h3>
+                <p class="text-[9px] italic mt-0.5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}">${p.taxonomy || '-'} • Lt: ${p.jumlah_lantai || '-'}</p>
+                <p class="text-[8px] mt-0.5 font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}">${p.alamat || '-'}</p>
               </div>
               
               <!-- Core Attrs -->
-              <div class="grid grid-cols-2 gap-1 text-[9px] bg-slate-50 p-1 rounded border border-slate-100">
-                <div class="text-gray-500 flex flex-col leading-tight"><span class="text-[8px]">Luas</span><span class="font-semibold text-gray-700">${p.luas || '-'} m²</span></div>
-                <div class="text-gray-500 flex flex-col leading-tight"><span class="text-[8px]">Nilai Aset</span><span class="font-semibold text-gray-700">Rp ${assetStr}</span></div>
+              <div class="grid grid-cols-2 gap-1 text-[9px] p-1 rounded border ${
+                darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-slate-50 border-slate-100'
+              }">
+                <div class="flex flex-col leading-tight ${darkMode ? 'text-gray-400' : 'text-gray-500'}">
+                  <span class="text-[8px] uppercase tracking-tighter opacity-70">Luas</span>
+                  <span class="font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-700'}">${p.luas || '-'} m²</span>
+                </div>
+                <div class="flex flex-col leading-tight ${darkMode ? 'text-gray-400' : 'text-gray-500'}">
+                  <span class="text-[8px] uppercase tracking-tighter opacity-70">Nilai Aset</span>
+                  <span class="font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-700'}">Rp ${assetStr}</span>
+                </div>
               </div>
 
               <!-- Hazards -->
-              <div class="space-y-1 mt-0.5 border-t border-gray-100 pt-1">
+              <div class="space-y-1 mt-0.5 border-t pt-1 ${darkMode ? 'border-gray-800' : 'border-gray-100'}">
                 ${hazardContent}
               </div>
             </div>
