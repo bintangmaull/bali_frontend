@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import html2canvas from 'html2canvas';
 import { useTheme } from '../context/ThemeContext';
 import { createPortal } from 'react-dom';
-import { TrendingUp, TrendingDown, Info, Maximize2, Minimize2, MapPin, X, BarChart2, Check, ExternalLink, Filter, Shield, Layers, Calendar, ChevronDown, ChevronLeft, ChevronRight, Table2 as TableIcon, Layout } from 'lucide-react';
+import { TrendingUp, TrendingDown, Info, Maximize2, Minimize2, MapPin, X, BarChart2, Check, ExternalLink, Filter, Shield, Layers, Calendar, ChevronDown, ChevronLeft, ChevronRight, Table2 as TableIcon, Layout, Download } from 'lucide-react';
 import { MANUAL_GEMPA_DATA } from '../src/lib/manual_gempa_data';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import { DROUGHT_CURVE } from '../src/lib/drought_curve';
@@ -80,7 +81,8 @@ const PML_RP_KEYS = [
   { key: '1000', label: '1000 TH', color: '#e0e7ff' },
 ];
 
-const formatYAxisShort = (val) => {
+const formatYAxisShort = (val, isPercentage = false) => {
+  if (isPercentage) return `${val.toFixed(2)}%`;
   if (val >= 1e12) return `Rp${(val / 1e12).toFixed(1)}T`;
   if (val >= 1e9) return `Rp${(val / 1e9).toFixed(0)}M`;
   if (val >= 1e6) return `Rp${(val / 1e6).toFixed(0)}Jt`;
@@ -91,9 +93,8 @@ const ComparisonTooltip = ({ active, payload, label }) => {
   const { darkMode } = useTheme();
   if (active && payload && payload.length) {
     return (
-      <div className={`backdrop-blur border p-2 rounded-lg shadow-lg transition-colors duration-300 ${
-        darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white/95 border-slate-200'
-      }`}>
+      <div className={`backdrop-blur border p-2 rounded-lg shadow-lg transition-colors duration-300 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white/95 border-slate-200'
+        }`}>
         <p className={`font-bold text-[9px] mb-1.5 border-b pb-1 ${darkMode ? 'text-white border-gray-800' : 'text-slate-800 border-slate-100'}`}>{label}</p>
         <div className="flex flex-col gap-1">
           {payload.map((entry, index) => (
@@ -217,7 +218,7 @@ function MiniBarChart({ data, maxVal, expAsset = 0 }) {
   );
 }
 
-function DroughtSawahChartPanel({ selectedGroup, selectedCityFeature }) {
+function DroughtSawahChartPanel({ selectedGroup, selectedCityFeature, onOpenDownload }) {
   const { darkMode } = useTheme();
   const [droughtData, setDroughtData] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
@@ -310,7 +311,7 @@ function DroughtSawahChartPanel({ selectedGroup, selectedCityFeature }) {
         <BarChart data={yearComparisonData} margin={{ top: 4, right: 6, bottom: 6, left: -4 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={darkMode ? 'rgba(148, 163, 184, 0.1)' : '#f1f5f9'} />
           <XAxis dataKey="year" tick={{ fontSize: 7, fill: darkMode ? '#94a3b8' : '#64748b', fontWeight: 700 }} axisLine={{ stroke: darkMode ? '#475569' : '#cbd5e1' }} tickLine={false} />
-          <YAxis tickFormatter={formatRupiah} tick={{ fontSize: 6, fill: darkMode ? '#64748b' : '#94a3b8' }} axisLine={false} tickLine={false} width={52} />
+          <YAxis tickFormatter={formatRupiah} tick={{ fontSize: 6, fill: darkMode ? '#64748b' : '#94a3b8' }} axisLine={false} tickLine={false} width={52} domain={[0, 'auto']} />
           <Tooltip cursor={{ fill: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(241,245,249,0.4)' }} content={tooltipContent} />
           {rpSeriesConfig.map(({ dataKey, label, color }) => (
             <Bar key={dataKey} dataKey={dataKey} name={label} fill={color} radius={[2, 2, 0, 0]} maxBarSize={12} />
@@ -361,9 +362,8 @@ function DroughtSawahChartPanel({ selectedGroup, selectedCityFeature }) {
                   onClick={() => setZoomedChart({ type: 'year' })}>Perbesar</span>
               </div>
               {dotLegend}
-              <div className={`border rounded-lg p-1.5 shadow-sm cursor-pointer transition-colors ${
-                darkMode ? 'bg-gray-800 border-gray-700 hover:border-green-500/50' : 'bg-white border-slate-200 hover:border-green-300'
-              }`}
+              <div className={`border rounded-lg p-1.5 shadow-sm cursor-pointer transition-colors ${darkMode ? 'bg-gray-800 border-gray-700 hover:border-green-500/50' : 'bg-white border-slate-200 hover:border-green-300'
+                }`}
                 onClick={() => setZoomedChart({ type: 'year' })}>
                 {renderYearComparison(170)}
               </div>
@@ -397,31 +397,69 @@ function DroughtSawahChartPanel({ selectedGroup, selectedCityFeature }) {
         {zoomedChart && createPortal(
           <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-6" onClick={() => setZoomedChart(null)}>
             <div className={`rounded-2xl shadow-2xl p-6 w-full max-w-3xl ${darkMode ? 'bg-gray-900 border border-gray-800' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-3 border-b pb-2">
                 <h3 className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-                  Direct Loss Sawah — {selectedKota} — {zoomedChart.type === 'year' ? 'Semua Return Period per Tahun' : zoomedChart.label}
+                  Direct Loss Sawah — {selectedKota || 'Bali'} — {zoomedChart.type === 'year' ? 'Perbandingan per Tahun' : zoomedChart.label}
                 </h3>
-                <button onClick={() => setZoomedChart(null)} className="text-slate-400 hover:text-slate-700"><X size={18} /></button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      const el = document.getElementById('zoomed-drought-capture');
+                      if (!el) return;
+                      const canvas = await html2canvas(el, {
+                        backgroundColor: darkMode ? '#111827' : '#ffffff',
+                        scale: 2,
+                        useCORS: true,
+                        onclone: (clonedDoc) => {
+                          const styleTags = clonedDoc.getElementsByTagName('style');
+                          for (let style of styleTags) {
+                            style.innerHTML = style.innerHTML.replace(/(oklch|oklab|lab)\([^)]+\)/g, '#00000000');
+                          }
+                        }
+                      });
+                      const link = document.createElement('a');
+                      const title = `Direct Loss Sawah — ${selectedKota || 'Bali'} — ${zoomedChart.type === 'year' ? 'Comparison' : zoomedChart.label}`;
+                      link.download = `${title.replace(/\s+/g, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.png`;
+                      link.href = canvas.toDataURL('image/png');
+                      link.click();
+                    }}
+                    className={`p-1.5 rounded-full transition-colors group ${darkMode ? 'hover:bg-gray-800 text-blue-400' : 'hover:bg-blue-50 text-blue-600'}`}
+                    title="Unduh Gambar"
+                  >
+                    <Download size={20} />
+                  </button>
+                  <button onClick={() => setZoomedChart(null)} className="text-slate-400 hover:text-slate-700 p-1.5"><X size={20} /></button>
+                </div>
               </div>
-              {zoomedChart.type === 'year' ? (
-                <>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 mb-4">{rpSeriesConfig.map(({ dataKey, label, color }) => (
-                    <div key={dataKey} className="flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
-                      <span className="text-[8px] text-slate-600 font-medium">{label}</span>
+
+              <div id="zoomed-drought-capture" className={`flex-1 p-2 ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+                <div className="mb-4">
+                  <h3 className={`font-bold text-lg ${darkMode ? 'text-white' : 'text-slate-800'}`}>
+                    Direct Loss Sawah — {selectedKota || 'Bali'} — {zoomedChart.type === 'year' ? 'Perbandingan per Tahun' : zoomedChart.label}
+                  </h3>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Analisis Risiko Sawah Kekerigan</p>
+                </div>
+                {zoomedChart.type === 'year' ? (
+                  <>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 mb-4">{rpSeriesConfig.map(({ dataKey, label, color }) => (
+                      <div key={dataKey} className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
+                        <span className="text-[8px] text-slate-600 font-medium">{label}</span>
+                      </div>
+                    ))}</div>
+                    {renderYearComparison(400)}
+                  </>
+                ) : (
+                  <>
+                    <div className="flex gap-4 mb-4">
+                      <div className="flex items-center gap-1.5"><span className="w-3 h-2.5 rounded-sm bg-[#52b788]" /><span className="text-[8px] text-slate-600 font-semibold">Non Climate Change</span></div>
+                      <div className="flex items-center gap-1.5"><span className="w-3 h-2.5 rounded-sm bg-[#60a5fa]" /><span className="text-[8px] text-slate-600 font-semibold">Climate Change</span></div>
                     </div>
-                  ))}</div>
-                  {renderYearComparison(400)}
-                </>
-              ) : (
-                <>
-                  <div className="flex gap-4 mb-4">
-                    <div className="flex items-center gap-1.5"><span className="w-3 h-2.5 rounded-sm bg-[#52b788]" /><span className="text-[8px] text-slate-600 font-semibold">Non Climate Change</span></div>
-                    <div className="flex items-center gap-1.5"><span className="w-3 h-2.5 rounded-sm bg-[#60a5fa]" /><span className="text-[8px] text-slate-600 font-semibold">Climate Change</span></div>
-                  </div>
-                  {renderGroupedBar(buildPerCityYear(zoomedChart.key), 400)}
-                </>
-              )}
+                    {renderGroupedBar(buildPerCityYear(zoomedChart.key), 400)}
+                  </>
+                )}
+              </div>
             </div>
           </div>,
           document.body
@@ -496,9 +534,18 @@ function DroughtSawahChartPanel({ selectedGroup, selectedCityFeature }) {
 
   return (
     <div className="px-4 pt-3 pb-2 flex flex-col gap-3">
-      <div className="text-[8px] font-extrabold text-slate-500 tracking-widest uppercase flex items-center gap-1">
-        <BarChart2 size={10} className="text-green-600" />
-        Direct Loss Sawah — Kekeringan
+      <div className="text-[9px] font-bold text-slate-400 tracking-widest uppercase mb-1 flex items-center justify-between group">
+        <div className="flex items-center gap-2">
+          <BarChart2 size={10} className="text-green-600" />
+          Direct Loss Sawah — Kekeringan
+        </div>
+        <button
+          onClick={() => onOpenDownload('map_chart')}
+          className={`p-1 rounded-md transition-all opacity-0 group-hover:opacity-100 ${darkMode ? 'hover:bg-white/10 text-gray-400 hover:text-green-400' : 'hover:bg-slate-100 text-slate-400 hover:text-green-600'}`}
+          title="Download Gambar"
+        >
+          <Download size={10} strokeWidth={2.5} />
+        </button>
       </div>
 
       {loading && <div className="text-[9px] text-slate-400 py-4 text-center">Memuat data...</div>}
@@ -614,23 +661,71 @@ function DroughtSawahChartPanel({ selectedGroup, selectedCityFeature }) {
 
       {/* Zoomed modal */}
       {zoomedChart && createPortal(
-        <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-6" onClick={() => setZoomedChart(null)}>
-          <div className={`rounded-2xl shadow-2xl p-6 w-full max-w-3xl transition-colors duration-300 ${darkMode ? 'bg-gray-900 border border-gray-800' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-                Direct Loss Sawah — {zoomedChart.label} — Semua Kota
-              </h3>
-              <button onClick={() => setZoomedChart(null)} className="text-slate-400 hover:text-slate-700"><X size={18} /></button>
-            </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 mb-4">
-              {zoomedChart.rpColors && Object.entries(zoomedChart.rpColors).map(([key, color]) => (
-                <div key={key} className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
-                  <span className="text-[8px] text-slate-600 font-medium">{zoomedChart.rpLabels?.[key]}</span>
+        <div className={`fixed inset-0 z-[9999] backdrop-blur-sm flex items-center justify-center p-4 lg:p-12 animate-in fade-in duration-200 ${darkMode ? 'bg-black/60' : 'bg-slate-900/60'}`} onClick={() => setZoomedChart(null)}>
+          <div className={`rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 ${darkMode ? 'bg-gray-900 border border-gray-800' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
+            <div className={`px-6 py-4 flex items-center justify-between border-b ${darkMode ? 'border-gray-800 bg-gray-900/50' : 'border-slate-100 bg-slate-50/50'}`}>
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${darkMode ? 'bg-green-900/30' : 'bg-green-100'}`}>
+                  <BarChart2 size={24} className={darkMode ? 'text-green-400' : 'text-green-600'} />
                 </div>
-              ))}
+                <div>
+                  <h3 className={`text-lg font-bold tracking-tight ${darkMode ? 'text-white' : 'text-slate-800'}`}>Direct Loss Sawah — {zoomedChart.label}</h3>
+                  <p className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Semua Kota — Kekeringan</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    const el = document.getElementById('zoomed-drought-capture');
+                    if (!el) return;
+                    const canvas = await html2canvas(el, {
+                      backgroundColor: darkMode ? '#111827' : '#ffffff',
+                      scale: 2,
+                      useCORS: true,
+                      onclone: (clonedDoc) => {
+                        const styleTags = clonedDoc.getElementsByTagName('style');
+                        for (let style of styleTags) {
+                          style.innerHTML = style.innerHTML.replace(/(oklch|oklab|lab)\([^)]+\)/g, '#00000000');
+                        }
+                      }
+                    });
+                    const link = document.createElement('a');
+                    const title = `Direct Loss Sawah — ${zoomedChart.label} — Kekeringan`;
+                    link.download = `${title.replace(/\s+/g, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                  }}
+                  className={`p-2 rounded-full transition-colors group ${darkMode ? 'hover:bg-gray-800 text-blue-400' : 'hover:bg-blue-50 text-blue-600'}`}
+                  title="Unduh Gambar"
+                >
+                  <Download size={24} />
+                </button>
+                <button onClick={() => setZoomedChart(null)} className={`p-2 rounded-full transition-colors ${darkMode ? 'hover:bg-gray-800 text-gray-400 hover:text-gray-200' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'}`}>
+                  <X size={24} />
+                </button>
+              </div>
             </div>
-            {zoomedChart.renderMultiRpChart?.(zoomedChart.data, 400)}
+
+            <div id="zoomed-drought-capture" className={`flex-1 p-8 overflow-y-auto ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+              <div className="mb-6">
+                <h3 className={`text-2xl font-bold tracking-tight ${darkMode ? 'text-white' : 'text-slate-800'}`}>
+                  Direct Loss Sawah — {zoomedChart.label}
+                </h3>
+                <p className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Analisis Risiko Sawah Kekeringan — Semua Kota</p>
+              </div>
+              <div className="flex flex-wrap gap-x-6 gap-y-2 mb-6">
+                {zoomedChart.rpColors && Object.entries(zoomedChart.rpColors).map(([key, color]) => (
+                  <div key={key} className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full" style={{ background: color }} />
+                    <span className={`text-xs font-semibold ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>{zoomedChart.rpLabels?.[key]}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="h-[500px] w-full">
+                {zoomedChart.renderMultiRpChart?.(zoomedChart.data, 500)}
+              </div>
+            </div>
           </div>
         </div>,
         document.body
@@ -639,7 +734,7 @@ function DroughtSawahChartPanel({ selectedGroup, selectedCityFeature }) {
   );
 }
 
-function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYear, setSelectedSawahYear }) {
+function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYear, setSelectedSawahYear, onOpenDownload }) {
   const { darkMode } = useTheme();
   const [loading] = React.useState(false);
   const [zoomedChart, setZoomedChart] = React.useState(null);
@@ -664,7 +759,7 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
 
   // NCC (blue shades for r), CC (orange/amber shades for rc)
   const nccColors = { 2: '#1e3a8a', 5: '#1d4ed8', 10: '#3b82f6', 25: '#60a5fa', 50: '#93c5fd', 100: '#bfdbfe', 250: '#dbeafe' };
-  const ccColors  = { 2: '#7c2d12', 5: '#c2410c', 10: '#ea580c', 25: '#f97316', 50: '#fb923c', 100: '#fdba74', 250: '#fed7aa' };
+  const ccColors = { 2: '#7c2d12', 5: '#c2410c', 10: '#ea580c', 25: '#f97316', 50: '#fb923c', 100: '#fdba74', 250: '#fed7aa' };
 
 
   // ── PER-CITY MODE ─────────────────────────────────────────────────
@@ -678,13 +773,13 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
 
     const rpSeriesConfig = sortedRps.flatMap(rp => [
       { dataKey: `ncc_${rp}`, label: `NCC ${rp}TH`, color: nccColors[rp] || '#3b82f6' },
-      { dataKey: `cc_${rp}`,  label: `CC ${rp}TH`,  color: ccColors[rp]  || '#f97316' },
+      { dataKey: `cc_${rp}`, label: `CC ${rp}TH`, color: ccColors[rp] || '#f97316' },
     ]);
 
     const buildPerCityYear = (yearKey) =>
       sortedRps.map(rp => {
         const rpKey = String(rp);
-        const rRow  = (floodData?.r?.[rpKey]  || []).find(r => r.kota.toUpperCase() === selectedKota.toUpperCase());
+        const rRow = (floodData?.r?.[rpKey] || []).find(r => r.kota.toUpperCase() === selectedKota.toUpperCase());
         const rcRow = (floodData?.rc?.[rpKey] || []).find(r => r.kota.toUpperCase() === selectedKota.toUpperCase());
         return { rp: `${rp} TH`, ncc: rRow?.[yearKey] || 0, cc: rcRow?.[yearKey] || 0 };
       });
@@ -693,10 +788,10 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
       const row = { year: label, key };
       sortedRps.forEach(rp => {
         const rpKey = String(rp);
-        const rRow = (floodData?.r?.[rpKey]  || []).find(r => r.kota.toUpperCase() === selectedKota.toUpperCase());
+        const rRow = (floodData?.r?.[rpKey] || []).find(r => r.kota.toUpperCase() === selectedKota.toUpperCase());
         const rcRow = (floodData?.rc?.[rpKey] || []).find(r => r.kota.toUpperCase() === selectedKota.toUpperCase());
-        row[`ncc_${rp}`] = rRow?.[key]  || 0;
-        row[`cc_${rp}`]  = rcRow?.[key] || 0;
+        row[`ncc_${rp}`] = rRow?.[key] || 0;
+        row[`cc_${rp}`] = rcRow?.[key] || 0;
       });
       return row;
     });
@@ -730,7 +825,7 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
           <YAxis tickFormatter={formatRupiah} tick={{ fontSize: 6, fill: darkMode ? '#64748b' : '#94a3b8' }} axisLine={false} tickLine={false} width={52} />
           <Tooltip cursor={{ fill: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(241,245,249,0.5)' }} content={tooltipContent} />
           <Bar dataKey="ncc" name="Non CC" fill="#3b82f6" radius={[3, 3, 0, 0]} maxBarSize={26} />
-          <Bar dataKey="cc"  name="CC"     fill="#f97316" radius={[3, 3, 0, 0]} maxBarSize={26} />
+          <Bar dataKey="cc" name="CC" fill="#f97316" radius={[3, 3, 0, 0]} maxBarSize={26} />
         </BarChart>
       </ResponsiveContainer>
     );
@@ -768,9 +863,8 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
                     <span className="text-[6px] text-slate-400 cursor-pointer hover:text-blue-600 transition-colors"
                       onClick={() => setZoomedChart({ label: `Sawah ${label} — ${selectedKota}`, data })}>Perbesar</span>
                   </div>
-                  <div className={`border rounded-lg p-1.5 shadow-sm cursor-pointer transition-colors ${
-                    darkMode ? 'bg-gray-800 border-gray-700 hover:border-blue-500/50' : 'bg-white border-slate-200 hover:border-blue-300'
-                  }`}
+                  <div className={`border rounded-lg p-1.5 shadow-sm cursor-pointer transition-colors ${darkMode ? 'bg-gray-800 border-gray-700 hover:border-blue-500/50' : 'bg-white border-slate-200 hover:border-blue-300'
+                    }`}
                     onClick={() => setZoomedChart({ label: `Sawah ${label} — ${selectedKota}`, data })}>
                     {renderGroupedBar(data, 130)}
                   </div>
@@ -806,9 +900,9 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
   const rpLabels = {};
   sortedRps.forEach(rp => {
     rpColors[`ncc_${rp}`] = nccColors[rp] || '#3b82f6';
-    rpColors[`cc_${rp}`]  = ccColors[rp]  || '#f97316';
+    rpColors[`cc_${rp}`] = ccColors[rp] || '#f97316';
     rpLabels[`ncc_${rp}`] = `NCC ${rp}TH`;
-    rpLabels[`cc_${rp}`]  = `CC ${rp}TH`;
+    rpLabels[`cc_${rp}`] = `CC ${rp}TH`;
   });
 
   const buildAllCitiesData = (yearKey) => {
@@ -852,7 +946,7 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
       <BarChart data={data} margin={{ top: 2, right: 4, bottom: 32, left: -4 }}>
         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={darkMode ? 'rgba(148, 163, 184, 0.1)' : '#eff6ff'} />
         <XAxis dataKey="kota" tick={{ fontSize: 5, fill: darkMode ? '#94a3b8' : '#64748b', fontWeight: 700 }} axisLine={{ stroke: darkMode ? '#475569' : '#cbd5e1' }} tickLine={false} interval={0} angle={-35} textAnchor="end" height={42} />
-        <YAxis tickFormatter={formatRupiah} tick={{ fontSize: 5.5, fill: darkMode ? '#64748b' : '#94a3b8' }} axisLine={false} tickLine={false} width={48} />
+        <YAxis tickFormatter={formatRupiah} tick={{ fontSize: 5.5, fill: darkMode ? '#64748b' : '#94a3b8' }} axisLine={false} tickLine={false} width={48} domain={[0, 'auto']} />
         <Tooltip cursor={{ fill: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(219,234,254,0.4)' }} content={tooltipAllCities} />
         {Object.entries(rpColors).map(([key, color]) => (
           <Bar key={key} dataKey={key} name={rpLabels[key]} fill={color} radius={[2, 2, 0, 0]} maxBarSize={9} />
@@ -869,9 +963,18 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
 
   return (
     <div className="px-4 pt-3 pb-2 flex flex-col gap-3">
-      <div className={`text-[8px] font-extrabold tracking-widest uppercase flex items-center gap-1 ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>
-        <BarChart2 size={10} className={darkMode ? 'text-blue-400' : 'text-blue-600'} />
-        Direct Loss Sawah — Banjir
+      <div className="text-[9px] font-bold text-slate-400 tracking-widest uppercase mb-1 flex items-center justify-between group">
+        <div className="flex items-center gap-2">
+          <BarChart2 size={10} className={darkMode ? 'text-blue-400' : 'text-blue-600'} />
+          Direct Loss Sawah — Banjir
+        </div>
+        <button
+          onClick={() => onOpenDownload('map_chart')}
+          className={`p-1 rounded-md transition-all opacity-0 group-hover:opacity-100 ${darkMode ? 'hover:bg-white/10 text-gray-400 hover:text-blue-400' : 'hover:bg-slate-100 text-slate-400 hover:text-blue-600'}`}
+          title="Download Gambar"
+        >
+          <Download size={10} strokeWidth={2.5} />
+        </button>
       </div>
 
       {loading && <div className="text-[9px] text-slate-400 py-4 text-center">Memuat data...</div>}
@@ -910,25 +1013,72 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
       )}
 
       {/* Zoomed modal */}
-
-
-      {/* Zoomed modal */}
       {zoomedChart && createPortal(
-        <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-6" onClick={() => setZoomedChart(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-3xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-slate-800 text-sm">Direct Loss Sawah — {zoomedChart.label}</h3>
-              <button onClick={() => setZoomedChart(null)} className="text-slate-400 hover:text-slate-700"><X size={18} /></button>
-            </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 mb-4">
-              {Object.entries(rpColors).map(([key, color]) => (
-                <div key={key} className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
-                  <span className="text-[8px] text-slate-600 font-medium">{rpLabels[key]}</span>
+        <div className={`fixed inset-0 z-[9999] backdrop-blur-sm flex items-center justify-center p-4 lg:p-12 animate-in fade-in duration-200 ${darkMode ? 'bg-black/60' : 'bg-slate-900/60'}`} onClick={() => setZoomedChart(null)}>
+          <div className={`rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 ${darkMode ? 'bg-gray-900 border border-gray-800' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
+            <div className={`px-6 py-4 flex items-center justify-between border-b ${darkMode ? 'border-gray-800 bg-gray-900/50' : 'border-slate-100 bg-slate-50/50'}`}>
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+                  <BarChart2 size={24} className={darkMode ? 'text-blue-400' : 'text-blue-600'} />
                 </div>
-              ))}
+                <div>
+                  <h3 className={`text-lg font-bold tracking-tight ${darkMode ? 'text-white' : 'text-slate-800'}`}>Direct Loss Sawah — {zoomedChart.label}</h3>
+                  <p className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Semua Kota — Banjir</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    const el = document.getElementById('zoomed-flood-capture');
+                    if (!el) return;
+                    const canvas = await html2canvas(el, {
+                      backgroundColor: darkMode ? '#111827' : '#ffffff',
+                      scale: 2,
+                      useCORS: true,
+                      onclone: (clonedDoc) => {
+                        const styleTags = clonedDoc.getElementsByTagName('style');
+                        for (let style of styleTags) {
+                          style.innerHTML = style.innerHTML.replace(/(oklch|oklab|lab)\([^)]+\)/g, '#00000000');
+                        }
+                      }
+                    });
+                    const link = document.createElement('a');
+                    const title = `Direct Loss Sawah — ${zoomedChart.label} — Banjir`;
+                    link.download = `${title.replace(/\s+/g, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                  }}
+                  className={`p-2 rounded-full transition-colors group ${darkMode ? 'hover:bg-gray-800 text-blue-400' : 'hover:bg-blue-50 text-blue-600'}`}
+                  title="Unduh Gambar"
+                >
+                  <Download size={24} />
+                </button>
+                <button onClick={() => setZoomedChart(null)} className={`p-2 rounded-full transition-colors ${darkMode ? 'hover:bg-gray-800 text-gray-400 hover:text-gray-200' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'}`}>
+                  <X size={24} />
+                </button>
+              </div>
             </div>
-            {renderMultiRpChart(zoomedChart.data, 400)}
+
+            <div id="zoomed-flood-capture" className={`flex-1 p-8 overflow-y-auto ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+              <div className="mb-6">
+                <h3 className={`text-2xl font-bold tracking-tight ${darkMode ? 'text-white' : 'text-slate-800'}`}>
+                  Direct Loss Sawah — {zoomedChart.label}
+                </h3>
+                <p className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Analisis Risiko Sawah Banjir — Semua Kota</p>
+              </div>
+              <div className="flex flex-wrap gap-x-6 gap-y-2 mb-6">
+                {Object.entries(rpColors).map(([key, color]) => (
+                  <div key={key} className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full" style={{ background: color }} />
+                    <span className={`text-xs font-semibold ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>{rpLabels[key]}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="h-[500px] w-full">
+                {renderMultiRpChart(zoomedChart.data, 500)}
+              </div>
+            </div>
           </div>
         </div>,
         document.body
@@ -940,7 +1090,7 @@ function FloodSawahChartPanel({ selectedCityFeature, floodData, selectedSawahYea
 
 
 
-function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup, onOpenTable }) {
+function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup, onOpenTable, onOpenDownload }) {
   const { darkMode } = useTheme();
   const [zoomedChart, setZoomedChart] = useState(null);
 
@@ -1002,7 +1152,7 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
   } else {
     totalCount = boundaryData.features.reduce((sum, f) => sum + (f.properties.count_total || 0), 0);
     totalAsset = boundaryData.features.reduce((sum, f) => sum + (f.properties.total_asset_total || 0), 0);
-    
+
     // Manual Gempa additions are now handled centrally in the enriched boundary properties
   }
 
@@ -1150,7 +1300,7 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
       } else {
         expCount = boundaryData.features.reduce((sum, f) => sum + (f.properties[`count_${group.exp}`] || 0), 0);
         expAsset = boundaryData.features.reduce((sum, f) => sum + (f.properties[`total_asset_${group.exp}`] || 0), 0);
-        
+
         // Manual Gempa additions are already handled in the enriched boundary properties
       }
 
@@ -1218,9 +1368,19 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
               <BarChart2 size={10} className={darkMode ? 'text-blue-400' : 'text-blue-500'} />
               Perbandingan Direct Loss Antar Kota
             </div>
-            <span className={darkMode ? 'text-gray-500' : 'text-slate-400'}>Klik untuk perbesar</span>
+            <div className="flex items-center gap-2">
+              <span className={darkMode ? 'text-gray-500' : 'text-slate-400'}>Klik untuk perbesar</span>
+              <button
+                onClick={(e) => { e.stopPropagation(); onOpenDownload('map_chart'); }}
+                className={`p-1 rounded-md transition-all ${darkMode ? 'hover:bg-white/10 text-gray-400 hover:text-blue-400' : 'hover:bg-slate-100 text-slate-400 hover:text-blue-600'}`}
+                title="Download Gambar"
+              >
+                <Download size={10} strokeWidth={2.5} />
+              </button>
+            </div>
           </div>
           <div
+            id="city-comparison-chart"
             className={`flex-1 w-full relative cursor-pointer group rounded border transition-colors ${darkMode ? 'border-transparent hover:border-blue-900/50 hover:bg-gray-700/50' : 'border-transparent hover:border-blue-200 hover:bg-slate-50/50'}`}
             onClick={() => setZoomedChart({ type: 'city', title: 'Perbandingan Direct Loss Antar Kota', data: cityChartData, xKey: "kota" })}
           >
@@ -1238,10 +1398,11 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
                   height={40}
                 />
                 <YAxis
-                  tickFormatter={(val) => val >= 1e12 ? `Rp${(val / 1e12).toFixed(1)}T` : val >= 1e9 ? `Rp${(val / 1e9).toFixed(0)}M` : `Rp${(val / 1e6).toFixed(0)}Jt`}
+                  tickFormatter={(val) => formatYAxisShort(val, selectedGroup === 'earthquake')}
                   tick={{ fontSize: 7, fill: darkMode ? '#64748b' : '#94a3b8' }}
                   axisLine={false}
                   tickLine={false}
+                  domain={[0, 'auto']}
                 />
                 <Tooltip
                   cursor={{ fill: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(241, 245, 249, 0.5)' }}
@@ -1292,9 +1453,19 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
               <BarChart2 size={10} className={darkMode ? 'text-orange-400' : 'text-orange-500'} />
               Perbandingan Direct Loss Antar Eksposur
             </div>
-            <span className={darkMode ? 'text-gray-500' : 'text-slate-400'}>Klik untuk perbesar</span>
+            <div className="flex items-center gap-2">
+              <span className={darkMode ? 'text-gray-500' : 'text-slate-400'}>Klik untuk perbesar</span>
+              <button
+                onClick={(e) => { e.stopPropagation(); onOpenDownload('map_chart'); }}
+                className={`p-1 rounded-md transition-all ${darkMode ? 'hover:bg-white/10 text-gray-400 hover:text-orange-400' : 'hover:bg-slate-100 text-slate-400 hover:text-orange-600'}`}
+                title="Download Gambar"
+              >
+                <Download size={10} strokeWidth={2.5} />
+              </button>
+            </div>
           </div>
           <div
+            id="exposure-comparison-chart"
             className={`flex-1 w-full relative cursor-pointer group rounded border transition-colors ${darkMode ? 'border-transparent hover:border-orange-900/50 hover:bg-gray-700/50' : 'border-transparent hover:border-orange-200 hover:bg-slate-50/50'}`}
             onClick={() => setZoomedChart({ type: 'exposure', title: 'Perbandingan Direct Loss Antar Eksposur', data: exposureChartData, xKey: "exposure_name" })}
           >
@@ -1312,10 +1483,11 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
                   height={40}
                 />
                 <YAxis
-                  tickFormatter={(val) => val >= 1e12 ? `Rp${(val / 1e12).toFixed(1)}T` : val >= 1e9 ? `Rp${(val / 1e9).toFixed(0)}M` : `Rp${(val / 1e6).toFixed(0)}Jt`}
+                  tickFormatter={(val) => formatYAxisShort(val, selectedGroup === 'earthquake')}
                   tick={{ fontSize: 7, fill: darkMode ? '#64748b' : '#94a3b8' }}
                   axisLine={false}
                   tickLine={false}
+                  domain={[0, 'auto']}
                 />
                 <Tooltip
                   cursor={{ fill: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(241, 245, 249, 0.5)' }}
@@ -1358,17 +1530,33 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
         </div>
       )}
 
-      <div className="text-[9px] font-bold text-slate-400 tracking-widest uppercase my-3 w-full flex justify-between items-center">
-        <span>Distribusi Direct Loss per Eksposur</span>
-        {selectedGroup === 'banjir' && (
-          <div className="flex gap-2 text-[8px] font-semibold text-slate-500">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-[2px] bg-[#3b82f6]"></span> R</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-[2px] bg-[#f97316]"></span> RC</span>
+      {selectedGroup !== 'earthquake' && (
+        <div className="text-[9px] font-bold text-slate-400 tracking-widest uppercase my-3 w-full flex justify-between items-center group">
+          <div className="flex items-center gap-2">
+            <span>Distribusi Direct Loss per Eksposur</span>
+            <button
+              onClick={() => onOpenDownload('map_chart')}
+              className={`p-1 rounded-md transition-all opacity-0 group-hover:opacity-100 ${darkMode ? 'hover:bg-white/10 text-gray-400 hover:text-blue-400' : 'hover:bg-slate-100 text-slate-400 hover:text-blue-600'}`}
+              title="Download Gambar"
+            >
+              <Download size={10} strokeWidth={2.5} />
+            </button>
           </div>
-        )}
-      </div>
+          {selectedGroup === 'banjir' && (
+            <div className="flex gap-2 text-[8px] font-semibold text-slate-500">
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-[2px] bg-[#3b82f6]"></span> R</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-[2px] bg-[#f97316]"></span> RC</span>
+            </div>
+          )}
+        </div>
+      )}
       <div className="flex flex-col w-full px-1 pt-1 pb-2">
-        {renderCharts(EXPOSURE_GROUPS.filter(g => !(g.gempaOnly && selectedGroup !== 'earthquake')))}
+        {renderCharts(EXPOSURE_GROUPS.filter(g => {
+          if (selectedGroup === 'earthquake') {
+            return g.exp !== 'total' && !g.gempaOnly;
+          }
+          return !g.gempaOnly;
+        }))}
       </div>
 
       {/* Zoomed Chart Modal */}
@@ -1386,45 +1574,83 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
                   <p className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Semua Return Period</p>
                 </div>
               </div>
-              <button
-                onClick={() => setZoomedChart(null)}
-                className={`p-2 rounded-full transition-colors group ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-slate-200'}`}
-                title="Tutup Modal"
-              >
-                <X size={24} className={`${darkMode ? 'text-gray-500 group-hover:text-gray-300' : 'text-slate-400 group-hover:text-slate-600'}`} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    const el = document.getElementById(zoomedChart.type === 'aal' ? 'zoomed-aal-capture' : 'zoomed-direct-loss-capture');
+                    if (!el) return;
+                    const canvas = await html2canvas(el, {
+                      backgroundColor: darkMode ? '#111827' : '#ffffff',
+                      scale: 2,
+                      useCORS: true,
+                      onclone: (clonedDoc) => {
+                        const styleTags = clonedDoc.getElementsByTagName('style');
+                        for (let style of styleTags) {
+                          style.innerHTML = style.innerHTML.replace(/(oklch|oklab|lab)\([^)]+\)/g, '#00000000');
+                        }
+                      }
+                    });
+                    const link = document.createElement('a');
+                    link.download = `${zoomedChart.title.replace(/\s+/g, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                  }}
+                  className={`p-2 rounded-full transition-colors group ${darkMode ? 'hover:bg-gray-800 text-blue-400' : 'hover:bg-blue-50 text-blue-600'}`}
+                  title="Unduh Gambar"
+                >
+                  <Download size={24} />
+                </button>
+                <button
+                  onClick={() => setZoomedChart(null)}
+                  className={`p-2 rounded-full transition-colors group ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-slate-200'}`}
+                  title="Tutup Modal"
+                >
+                  <X size={24} className={`${darkMode ? 'text-gray-500 group-hover:text-gray-300' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                </button>
+              </div>
             </div>
 
-            {/* Modal Content - Expanded Chart */}
-            <div className="flex-1 w-full p-6 relative">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={zoomedChart.data} margin={{ top: 20, right: 30, bottom: 60, left: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={darkMode ? 'rgba(148, 163, 184, 0.1)' : '#e2e8f0'} />
-                  <XAxis
-                    dataKey={zoomedChart.xKey}
-                    tick={{ fontSize: 11, fill: darkMode ? '#94a3b8' : '#475569', fontWeight: 700 }}
-                    axisLine={{ stroke: darkMode ? '#475569' : '#cbd5e1', strokeWidth: 2 }}
-                    tickLine={false}
-                    interval={0}
-                    angle={-35}
-                    textAnchor="end"
-                    tickMargin={15}
-                  />
-                  <YAxis
-                    tickFormatter={(val) => val >= 1e12 ? `Rp ${(val / 1e12).toFixed(1)}T` : val >= 1e9 ? `Rp ${(val / 1e9).toFixed(0)}M` : `Rp ${(val / 1e6).toFixed(0)}Jt`}
-                    tick={{ fontSize: 11, fill: darkMode ? '#64748b' : '#64748b', fontWeight: 600 }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickMargin={10}
-                  />
-                  <Legend
-                    verticalAlign="top"
-                    height={36}
-                    iconType="circle"
-                    iconSize={8}
-                    wrapperStyle={{ paddingBottom: '12px' }}
-                    formatter={(value) => <span className="text-slate-600 font-medium text-xs ml-1">{value}</span>}
-                  />
+            <div id={zoomedChart.type === 'aal' ? 'zoomed-aal-capture' : 'zoomed-direct-loss-capture'} className={`flex-1 w-full p-6 relative flex flex-col ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+              {selectedGroup !== 'earthquake' && (
+                <div className="mb-4 text-left">
+                  <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>{zoomedChart.title}</h3>
+                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>{zoomedChart.type === 'aal' ? 'Analisis Average Annual Loss (AAL)' : 'Analisis Risiko Direct Loss — Semua Return Period'}</p>
+                </div>
+              )}
+
+              <div className="flex-1 min-h-0 w-full relative">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={zoomedChart.data} margin={{ top: 20, right: 30, bottom: 60, left: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={darkMode ? 'rgba(148, 163, 184, 0.1)' : '#e2e8f0'} />
+                    <XAxis
+                      dataKey={zoomedChart.xKey}
+                      tick={{ fontSize: 11, fill: darkMode ? '#94a3b8' : '#475569', fontWeight: 700 }}
+                      axisLine={{ stroke: darkMode ? '#475569' : '#cbd5e1', strokeWidth: 2 }}
+                      tickLine={false}
+                      interval={0}
+                      angle={-35}
+                      textAnchor="end"
+                      tickMargin={15}
+                    />
+                    <YAxis
+                      tickFormatter={(val) => formatYAxisShort(val, selectedGroup === 'earthquake')}
+                      tick={{ fontSize: 11, fill: darkMode ? '#64748b' : '#64748b', fontWeight: 600 }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickMargin={10}
+                      domain={[0, 'auto']}
+                    />
+                  {zoomedChart.type !== 'aal' && (
+                    <Legend
+                      verticalAlign="top"
+                      height={36}
+                      iconType="circle"
+                      iconSize={8}
+                      wrapperStyle={{ paddingBottom: '12px' }}
+                      formatter={(value) => <span className="text-slate-600 font-medium text-xs ml-1">{value}</span>}
+                    />
+                  )}
                   <Tooltip
                     cursor={{ fill: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(241, 245, 249, 0.5)' }}
                     content={({ active, payload, label }) => {
@@ -1470,12 +1696,14 @@ function DirectLossChartPanel({ boundaryData, selectedCityFeature, selectedGroup
             </div>
           </div>
         </div>
-      , document.body)}
-    </div>
-  );
+      </div>,
+      document.body
+    )}
+  </div>
+);
 }
 
-function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTable, selectedGroup }) {
+function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTable, selectedGroup, onOpenDownload }) {
   const { darkMode } = useTheme();
   const [zoomedChart, setZoomedChart] = useState(null);
   const [pmlData, setPmlData] = useState([]);
@@ -1506,8 +1734,8 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
       if (!acc[rp]) acc[rp] = 0;
       if (isTotal) {
         // Sum all PML categories
-        const val = (curr.pml_airport || 0) + (curr.pml_res || 0) + (curr.pml_hotel || 0) + 
-                    (curr.pml_bmn || 0) + (curr.pml_fd || 0) + (curr.pml_fs || 0) + (curr.pml_electricity || 0);
+        const val = (curr.pml_airport || 0) + (curr.pml_res || 0) + (curr.pml_hotel || 0) +
+          (curr.pml_bmn || 0) + (curr.pml_fd || 0) + (curr.pml_fs || 0) + (curr.pml_electricity || 0);
         acc[rp] += val;
       } else {
         const key = `pml_${suffix}`;
@@ -1621,7 +1849,7 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
           <div className={`mt-4 pt-3 border-t text-center ${darkMode ? 'border-gray-700/60' : 'border-slate-200/60'}`}>
             <div className={`text-[8px] font-bold tracking-widest uppercase mb-2 ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>PML Gempa (Probabilistic Loss)</div>
             <div className="flex justify-center">
-              <MiniBarChart 
+              <MiniBarChart
                 data={getPmlChartData(group)}
                 maxVal={Math.max(...getPmlChartData(group).map(d => d.value), 1)}
                 expAsset={expAsset}
@@ -1667,8 +1895,8 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
     const byCity = pmlData.reduce((acc, curr) => {
       const city = curr.id_kota;
       if (!acc[city]) acc[city] = { kota: city };
-      acc[city][curr.return_period] = (curr.pml_res || 0) + (curr.pml_bmn || 0) + (curr.pml_hotel || 0) + 
-                                       (curr.pml_fd || 0) + (curr.pml_fs || 0) + (curr.pml_electricity || 0) + (curr.pml_airport || 0);
+      acc[city][curr.return_period] = (curr.pml_res || 0) + (curr.pml_bmn || 0) + (curr.pml_hotel || 0) +
+        (curr.pml_fd || 0) + (curr.pml_fs || 0) + (curr.pml_electricity || 0) + (curr.pml_airport || 0);
       return acc;
     }, {});
     return Object.values(byCity).sort((a, b) => a.kota.localeCompare(b.kota));
@@ -1691,75 +1919,111 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
   if (!boundaryData?.features?.length) return null;
 
   return (
-    <div className="px-4 pb-4 border-t border-slate-100 flex flex-col items-center relative">
+    <div className={`px-4 pb-4 border-t flex flex-col items-center relative ${darkMode ? 'border-gray-800' : 'border-slate-100'}`}>
       {/* Zoomed Chart Modal */}
       {zoomedChart && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 lg:p-12 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100 bg-slate-50/50">
+        <div className={`fixed inset-0 z-[9999] backdrop-blur-sm flex items-center justify-center p-4 lg:p-12 animate-in fade-in duration-200 ${darkMode ? 'bg-black/60' : 'bg-slate-900/60'}`}>
+          <div className={`rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 ${darkMode ? 'bg-gray-900 border border-gray-800' : 'bg-white'}`}>
+            <div className={`px-6 py-4 flex items-center justify-between border-b ${darkMode ? 'border-gray-800 bg-gray-900/50' : 'border-slate-100 bg-slate-50/50'}`}>
               <div className="flex items-center gap-3">
-                <div className="bg-blue-100 p-2 rounded-lg">
-                  <BarChart2 size={24} className="text-blue-600" />
+                <div className={`p-2 rounded-lg ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+                  <BarChart2 size={24} className={darkMode ? 'text-blue-400' : 'text-blue-600'} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-800 tracking-tight">{zoomedChart.title}</h3>
-                  <p className="text-sm font-medium text-slate-500">Nilai Average Annual Loss</p>
+                  <h3 className={`text-lg font-bold tracking-tight ${darkMode ? 'text-white' : 'text-slate-800'}`}>{zoomedChart.title}</h3>
+                  <p className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Nilai Average Annual Loss</p>
                 </div>
               </div>
-              <button
-                onClick={() => setZoomedChart(null)}
-                className="p-2 hover:bg-slate-200 rounded-full transition-colors group"
-                title="Tutup Modal"
-              >
-                <X size={24} className="text-slate-400 group-hover:text-slate-600" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    const el = document.getElementById('zoomed-aal-capture');
+                    if (!el) return;
+                    const canvas = await html2canvas(el, {
+                      backgroundColor: darkMode ? '#111827' : '#ffffff',
+                      scale: 2,
+                      useCORS: true,
+                      onclone: (clonedDoc) => {
+                        const styleTags = clonedDoc.getElementsByTagName('style');
+                        for (let style of styleTags) {
+                          style.innerHTML = style.innerHTML.replace(/(oklch|oklab|lab)\([^)]+\)/g, '#00000000');
+                        }
+                      }
+                    });
+                    const link = document.createElement('a');
+                    link.download = `${zoomedChart.title.replace(/\s+/g, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                  }}
+                  className={`p-2 rounded-full transition-colors group ${darkMode ? 'hover:bg-gray-800 text-blue-400' : 'hover:bg-blue-50 text-blue-600'}`}
+                  title="Unduh Gambar"
+                >
+                  <Download size={24} />
+                </button>
+                <button
+                  onClick={() => setZoomedChart(null)}
+                  className={`p-2 rounded-full transition-colors group ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-slate-200'}`}
+                  title="Tutup Modal"
+                >
+                  <X size={24} className={`${darkMode ? 'text-gray-500 group-hover:text-gray-300' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                </button>
+              </div>
             </div>
 
-            <div className="flex-1 w-full p-6 relative">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={zoomedChart.data} margin={{ top: 20, right: 30, bottom: 60, left: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis
-                    dataKey={zoomedChart.xKey}
-                    tick={{ fontSize: 11, fill: '#475569', fontWeight: 700 }}
-                    axisLine={{ stroke: '#cbd5e1', strokeWidth: 2 }}
-                    tickLine={false}
-                    interval={0}
-                    angle={-35}
-                    textAnchor="end"
-                    tickMargin={15}
-                  />
-                  <YAxis
-                    tickFormatter={(val) => val >= 1e12 ? `Rp ${(val / 1e12).toFixed(1)}T` : val >= 1e9 ? `Rp ${(val / 1e9).toFixed(0)}M` : `Rp ${(val / 1e6).toFixed(0)}Jt`}
-                    tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickMargin={10}
-                  />
+            <div id="zoomed-aal-capture" className={`flex-1 w-full p-6 relative flex flex-col ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+              {selectedGroup !== 'earthquake' && (
+                <div className="mb-4 text-left">
+                  <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>{zoomedChart.title}</h3>
+                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>Analisis Average Annual Loss (AAL)</p>
+                </div>
+              )}
+              <div className="flex-1 min-h-0 w-full relative">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={zoomedChart.data} margin={{ top: 20, right: 30, bottom: 60, left: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={darkMode ? 'rgba(148, 163, 184, 0.1)' : '#e2e8f0'} />
+                    <XAxis
+                      dataKey={zoomedChart.xKey}
+                      tick={{ fontSize: 11, fill: darkMode ? '#94a3b8' : '#475569', fontWeight: 700 }}
+                      axisLine={{ stroke: darkMode ? '#475569' : '#cbd5e1', strokeWidth: 2 }}
+                      tickLine={false}
+                      interval={0}
+                      angle={-35}
+                      textAnchor="end"
+                      tickMargin={15}
+                    />
+                    <YAxis
+                      tickFormatter={(val) => formatYAxisShort(val, selectedGroup === 'earthquake')}
+                      tick={{ fontSize: 11, fill: darkMode ? '#64748b' : '#64748b', fontWeight: 600 }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickMargin={10}
+                      domain={[0, 'auto']}
+                    />
                   <Legend
                     verticalAlign="top"
                     height={36}
                     iconType="circle"
                     iconSize={8}
                     wrapperStyle={{ paddingBottom: '12px' }}
-                    formatter={(value) => <span className="text-slate-600 font-medium text-xs ml-1">{value.replace('\n', ' ')}</span>}
+                    formatter={(value) => <span className={`font-medium text-xs ml-1 ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>{value.replace('\n', ' ')}</span>}
                   />
                   <Tooltip
-                    cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }}
+                    cursor={{ fill: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(241, 245, 249, 0.5)' }}
                     content={({ active, payload, label }) => {
                       if (active && payload && payload.length) {
                         return (
-                          <div className="bg-white/95 backdrop-blur border border-slate-200 p-4 rounded-xl shadow-xl">
-                            <p className="font-bold text-slate-800 text-sm mb-3 border-b border-slate-100 pb-2">{label}</p>
+                          <div className={`backdrop-blur border p-4 rounded-xl shadow-xl ${darkMode ? 'bg-gray-900/95 border-gray-700' : 'bg-white/95 border-slate-200'}`}>
+                            <p className={`font-bold text-sm mb-3 border-b pb-2 ${darkMode ? 'text-white border-gray-700' : 'text-slate-800 border-slate-100'}`}>{label}</p>
                             <div className="flex flex-col gap-2">
                               {payload.map((entry, index) => (
                                 <div key={index} className="flex items-center justify-between gap-8 text-xs font-medium">
-                                  <div className="flex items-center gap-2 text-slate-600">
+                                  <div className={`flex items-center gap-2 ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>
                                     <span className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></span>
                                     <span>{entry.name.replace('\n', ' ')}</span>
                                   </div>
                                   <div className="flex flex-col items-end">
-                                    <span className="font-bold text-slate-800">{formatRupiah(entry.value)}</span>
+                                    <span className={`font-bold ${darkMode ? 'text-gray-200' : 'text-slate-800'}`}>{formatRupiah(entry.value)}</span>
                                     <span className="text-[8px] text-green-600 font-bold">({formatUSD(entry.value)})</span>
                                   </div>
                                 </div>
@@ -1771,35 +2035,37 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
                       return null;
                     }}
                   />
-                  {(zoomedChart.isPml ? PML_RP_KEYS : HAZARD_KEYS).map((col) => (
-                    <Bar
-                      key={col.key}
-                      dataKey={col.key}
-                      name={col.label}
-                      fill={col.color}
-                      radius={[4, 4, 0, 0]}
-                      maxBarSize={80}
-                      animationDuration={1500}
-                    />
-                  ))}
-                </BarChart>
-              </ResponsiveContainer>
+                    {(zoomedChart.isPml ? PML_RP_KEYS : HAZARD_KEYS).map((col) => (
+                      <Bar
+                        key={col.key}
+                        dataKey={col.key}
+                        name={col.label}
+                        fill={col.color}
+                        radius={[4, 4, 0, 0]}
+                        maxBarSize={80}
+                        animationDuration={1500}
+                      />
+                    ))}
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
-        </div>
-        , document.body)}
+        </div>,
+        document.body
+      )}
 
       {rekapData?.features?.length > 0 && (
-        <div className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 mt-3 mb-1 shadow-sm flex justify-between items-center">
+        <div className={`w-full border rounded-xl p-3 mt-3 mb-1 shadow-sm flex justify-between items-center transition-all ${darkMode ? 'bg-gray-800/60 border-gray-700 shadow-black/20' : 'bg-slate-50 border-slate-100'}`}>
           <div className="flex flex-col">
-            <span className="text-[8px] font-bold text-slate-400 tracking-widest uppercase">Total Bangunan</span>
-            <span className="text-[12px] font-extrabold text-slate-800">{totalCount.toLocaleString('id-ID')}</span>
+            <span className={`text-[8px] font-bold tracking-widest uppercase ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>Total Bangunan</span>
+            <span className={`text-[12px] font-extrabold ${darkMode ? 'text-white' : 'text-slate-800'}`}>{totalCount.toLocaleString('id-ID')}</span>
           </div>
-          <div className="w-[1px] h-6 bg-slate-200"></div>
+          <div className={`w-[1px] h-6 ${darkMode ? 'bg-gray-700' : 'bg-slate-200'}`}></div>
           <div className="flex flex-col text-right">
-            <span className="text-[8px] font-bold text-slate-400 tracking-widest uppercase">Total Nilai Aset</span>
+            <span className={`text-[8px] font-bold tracking-widest uppercase ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>Total Nilai Aset</span>
             <div className="flex flex-col items-end">
-              <span className="text-[12px] font-extrabold text-slate-800">{formatRupiah(totalAsset)}</span>
+              <span className={`text-[12px] font-extrabold ${darkMode ? 'text-white' : 'text-slate-800'}`}>{formatRupiah(totalAsset)}</span>
               <span className="text-[10px] text-green-600 font-bold">({formatUSD(totalAsset)})</span>
             </div>
           </div>
@@ -1808,25 +2074,34 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
 
       {/* City Comparison Chart */}
       {!selectedCityFeature && cityChartData.length > 0 && (
-        <div className="w-full h-[180px] bg-white border border-slate-200 rounded-xl p-2 mt-2 shadow-sm relative z-0 flex flex-col">
-          <div className="text-[8px] font-extrabold text-slate-500 tracking-widest uppercase mb-1 flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              <BarChart2 size={10} className="text-blue-500" />
+        <div className={`w-full h-[180px] border rounded-xl p-2 mt-2 shadow-sm relative z-0 flex flex-col transition-all ${darkMode ? 'bg-gray-800/40 border-gray-700 shadow-black/20' : 'bg-white border-slate-200'}`}>
+          <div className="text-[8px] font-extrabold tracking-widest uppercase mb-1 flex items-center justify-between">
+            <div className={`flex items-center gap-1 ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>
+              <BarChart2 size={10} className={darkMode ? 'text-blue-400' : 'text-blue-500'} />
               Perbandingan AAL Antar Kota
             </div>
-            <span className="text-[7px] text-slate-400 font-medium">Klik untuk perbesar</span>
+            <div className="flex items-center gap-2">
+              <span className={`text-[7px] font-medium ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>Klik untuk perbesar</span>
+              <button
+                onClick={(e) => { e.stopPropagation(); onOpenDownload('map_chart'); }}
+                className={`p-1 rounded-md transition-all ${darkMode ? 'hover:bg-white/10 text-gray-400 hover:text-blue-400' : 'hover:bg-slate-100 text-slate-400 hover:text-blue-600'}`}
+                title="Download Gambar"
+              >
+                <Download size={10} strokeWidth={2.5} />
+              </button>
+            </div>
           </div>
           <div
-            className="flex-1 w-full relative cursor-pointer group rounded border border-transparent hover:border-blue-200 hover:bg-slate-50 transition-colors"
+            className={`flex-1 w-full relative cursor-pointer group rounded border border-transparent transition-colors ${darkMode ? 'hover:border-blue-900/50 hover:bg-gray-800/60' : 'hover:border-blue-200 hover:bg-slate-50'}`}
             onClick={() => setZoomedChart({ type: 'city', title: 'Perbandingan AAL Antar Kota', data: cityChartData, xKey: "kota" })}
           >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={cityChartData} margin={{ top: 5, right: 10, bottom: 20, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={darkMode ? 'rgba(148, 163, 184, 0.1)' : '#f1f5f9'} />
                 <XAxis
                   dataKey="kota"
-                  tick={{ fontSize: 6, fill: '#64748b', fontWeight: 700 }}
-                  axisLine={{ stroke: '#cbd5e1' }}
+                  tick={{ fontSize: 6, fill: darkMode ? '#94a3b8' : '#64748b', fontWeight: 700 }}
+                  axisLine={{ stroke: darkMode ? '#475569' : '#cbd5e1' }}
                   tickLine={false}
                   interval={0}
                   angle={-35}
@@ -1834,27 +2109,28 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
                   height={40}
                 />
                 <YAxis
-                  tickFormatter={(val) => val >= 1e12 ? `Rp${(val / 1e12).toFixed(1)}T` : val >= 1e9 ? `Rp${(val / 1e9).toFixed(0)}M` : `Rp${(val / 1e6).toFixed(0)}Jt`}
-                  tick={{ fontSize: 7, fill: '#94a3b8' }}
+                  tickFormatter={(val) => formatYAxisShort(val, selectedGroup === 'earthquake')}
+                  tick={{ fontSize: 7, fill: darkMode ? '#64748b' : '#94a3b8' }}
                   axisLine={false}
                   tickLine={false}
+                  domain={[0, 'auto']}
                 />
                 <Tooltip
-                  cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }}
+                  cursor={{ fill: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(241, 245, 249, 0.5)' }}
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="bg-white/95 backdrop-blur border border-slate-200 p-2 rounded-lg shadow-lg">
-                          <p className="font-bold text-slate-800 text-[9px] mb-1.5 border-b border-slate-100 pb-1">{label}</p>
+                        <div className={`backdrop-blur border p-2 rounded-lg shadow-lg ${darkMode ? 'bg-gray-900/95 border-gray-700' : 'bg-white/95 border-slate-200'}`}>
+                          <p className={`font-bold text-[9px] mb-1.5 border-b pb-1 ${darkMode ? 'text-white border-gray-700' : 'text-slate-800 border-slate-100'}`}>{label}</p>
                           <div className="flex flex-col gap-1">
                             {payload.map((entry, index) => (
                               <div key={index} className="flex items-center justify-between gap-4 text-[8px]">
-                                <div className="flex items-center gap-1.5 text-slate-600">
+                                <div className={`flex items-center gap-1.5 ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>
                                   <span className="w-2 h-2 rounded-[2px]" style={{ backgroundColor: entry.color }}></span>
                                   <span>{entry.name.replace('\n', ' ')}</span>
                                 </div>
                                 <div className="flex flex-col items-end">
-                                  <span className="font-bold text-slate-800">{formatRupiah(entry.value)}</span>
+                                  <span className={`font-bold ${darkMode ? 'text-gray-200' : 'text-slate-800'}`}>{formatRupiah(entry.value)}</span>
                                   <span className="text-[7px] text-green-600 font-bold">({formatUSD(entry.value)})</span>
                                 </div>
                               </div>
@@ -1871,8 +2147,8 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
                 ))}
               </BarChart>
             </ResponsiveContainer>
-            <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 backdrop-blur-[1px]">
-              <div className="bg-slate-900/80 text-white rounded-full p-2 shadow-lg transform scale-95 group-hover:scale-100 transition-all">
+            <div className={`absolute inset-0 group-hover:opacity-100 backdrop-blur-[1px] flex items-center justify-center transition-all opacity-0 ${darkMode ? 'bg-gray-900/10' : 'bg-white/10'}`}>
+              <div className={`rounded-full p-2 shadow-lg transform scale-95 group-hover:scale-100 transition-all ${darkMode ? 'bg-blue-600 text-white' : 'bg-slate-900/80 text-white'}`}>
                 <Maximize2 size={16} />
               </div>
             </div>
@@ -1880,53 +2156,64 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
         </div>
       )}
 
-      {/* City Comparison Chart (AAL) */}
-      {!selectedCityFeature && cityChartData.length > 0 && (
-        <div className="w-full h-[180px] bg-white border border-slate-200 rounded-xl p-2 mt-2 shadow-sm relative z-0 flex flex-col">
-          <div className="text-[8px] font-extrabold text-slate-500 tracking-widest uppercase mb-1 flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              <BarChart2 size={10} className="text-blue-500" />
-              Perbandingan AAL Antar Kota
-            </div>
-            <span className="text-[7px] text-slate-400 font-medium">Klik untuk perbesar</span>
-          </div>
-          <div
-            className="flex-1 w-full relative cursor-pointer group rounded border border-transparent hover:border-blue-200 hover:bg-slate-50 transition-colors"
-            onClick={() => setZoomedChart({ type: 'city', title: 'Perbandingan AAL Antar Kota', data: cityChartData, xKey: "kota" })}
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={cityChartData} margin={{ top: 5, right: 10, bottom: 20, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="kota" tick={{ fontSize: 6, fill: '#64748b' }} interval={0} angle={-35} textAnchor="end" height={40} />
-                <YAxis tickFormatter={formatYAxisShort} tick={{ fontSize: 7, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <Tooltip cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }} content={<ComparisonTooltip />} />
-                {HAZARD_KEYS.map((col) => <Bar key={col.key} dataKey={col.key} name={col.label} fill={col.color} radius={[2, 2, 0, 0]} />)}
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
-
       {/* Exposure Comparison Chart (AAL) */}
       {exposureChartData.length > 0 && (
-        <div className="w-full h-[180px] bg-white border border-slate-200 rounded-xl p-2 mt-2 shadow-sm relative z-0 flex flex-col">
-          <div className="text-[8px] font-extrabold text-slate-500 tracking-widest uppercase mb-1 flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              <BarChart2 size={10} className="text-orange-500" />
+        <div className={`w-full h-[180px] border rounded-xl p-2 mt-2 shadow-sm relative z-0 flex flex-col transition-all ${darkMode ? 'bg-gray-800/40 border-gray-700 shadow-black/20' : 'bg-white border-slate-200'}`}>
+          <div className="text-[8px] font-extrabold tracking-widest uppercase mb-1 flex items-center justify-between">
+            <div className={`flex items-center gap-1 ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>
+              <BarChart2 size={10} className={darkMode ? 'text-orange-400' : 'text-orange-500'} />
               Perbandingan AAL Antar Eksposur
             </div>
-            <span className="text-[7px] text-slate-400 font-medium">Klik untuk perbesar</span>
+            <div className="flex items-center gap-2">
+              <span className={`text-[7px] font-medium ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>Klik untuk perbesar</span>
+              <button
+                onClick={(e) => { e.stopPropagation(); onOpenDownload('map_chart'); }}
+                className={`p-1 rounded-md transition-all ${darkMode ? 'hover:bg-white/10 text-orange-400 hover:text-blue-400' : 'hover:bg-slate-100 text-slate-400 hover:text-blue-600'}`}
+                title="Download Gambar"
+              >
+                <Download size={10} strokeWidth={2.5} />
+              </button>
+            </div>
           </div>
           <div
-            className="flex-1 w-full relative cursor-pointer group rounded border border-transparent hover:border-orange-200 hover:bg-slate-50 transition-colors"
+            className={`flex-1 w-full relative cursor-pointer group rounded border border-transparent transition-colors ${darkMode ? 'hover:border-orange-900/50 hover:bg-gray-800/60' : 'hover:border-orange-200 hover:bg-slate-50'}`}
             onClick={() => setZoomedChart({ type: 'exposure', title: 'Perbandingan AAL Antar Eksposur', data: exposureChartData, xKey: "exposure_name" })}
           >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={exposureChartData} margin={{ top: 5, right: 10, bottom: 20, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="exposure_name" tick={{ fontSize: 6, fill: '#64748b' }} interval={0} angle={-25} textAnchor="end" height={40} />
-                <YAxis tickFormatter={formatYAxisShort} tick={{ fontSize: 7, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <Tooltip cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }} content={<ComparisonTooltip />} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={darkMode ? 'rgba(148, 163, 184, 0.1)' : '#f1f5f9'} />
+                <XAxis dataKey="exposure_name" tick={{ fontSize: 6, fill: darkMode ? '#94a3b8' : '#64748b' }} interval={0} angle={-25} textAnchor="end" height={40} />
+                <YAxis
+                  tickFormatter={(val) => formatYAxisShort(val, selectedGroup === 'earthquake')}
+                  tick={{ fontSize: 7, fill: darkMode ? '#64748b' : '#94a3b8' }}
+                  axisLine={false}
+                  tickLine={false}
+                  domain={[0, 'auto']}
+                />
+                <Tooltip cursor={{ fill: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(241, 245, 249, 0.5)' }} content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div className={`backdrop-blur border p-2 rounded-lg shadow-lg ${darkMode ? 'bg-gray-900/95 border-gray-700' : 'bg-white/95 border-slate-200'}`}>
+                        <p className={`font-bold text-[9px] mb-1.5 border-b pb-1 ${darkMode ? 'text-white border-gray-700' : 'text-slate-800 border-slate-100'}`}>{label}</p>
+                        <div className="flex flex-col gap-1">
+                          {payload.map((entry, index) => (
+                            <div key={index} className="flex items-center justify-between gap-4 text-[8px]">
+                              <div className={`flex items-center gap-1.5 ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>
+                                <span className="w-2 h-2 rounded-[2px]" style={{ backgroundColor: entry.color }}></span>
+                                <span>{entry.name.replace('\n', ' ')}</span>
+                              </div>
+                              <div className="flex flex-col items-end">
+                                <span className={`font-bold ${darkMode ? 'text-gray-200' : 'text-slate-800'}`}>{formatRupiah(entry.value)}</span>
+                                <span className="text-[7px] text-green-600 font-bold">({formatUSD(entry.value)})</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                }} />
                 {HAZARD_KEYS.map((col) => <Bar key={col.key} dataKey={col.key} name={col.label} fill={col.color} radius={[2, 2, 0, 0]} />)}
               </BarChart>
             </ResponsiveContainer>
@@ -1936,9 +2223,9 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
 
       {/* PML Comparison Charts */}
       {selectedGroup === 'earthquake' && pmlCityChartData.length > 0 && (
-        <div className="w-full h-[180px] bg-white border border-slate-200 rounded-xl p-2 mt-2 shadow-sm relative z-0 flex flex-col">
-          <div className="text-[8px] font-extrabold text-slate-500 tracking-widest uppercase mb-1 flex items-center justify-between">
-            <div className="flex items-center gap-1 text-indigo-500">
+        <div className={`w-full h-[180px] border rounded-xl p-2 mt-2 shadow-sm relative z-0 flex flex-col transition-all ${darkMode ? 'bg-gray-800/40 border-gray-700 shadow-black/20' : 'bg-white border-slate-200'}`}>
+          <div className="text-[8px] font-extrabold tracking-widest uppercase mb-1 flex items-center justify-between">
+            <div className={`flex items-center gap-1 ${darkMode ? 'text-indigo-400' : 'text-indigo-500'}`}>
               <BarChart2 size={10} />
               Perbandingan PML Antar Kota
             </div>
@@ -1949,10 +2236,39 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
           >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={pmlCityChartData} margin={{ top: 5, right: 10, bottom: 20, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="kota" tick={{ fontSize: 6, fill: '#64748b' }} interval={0} angle={-35} textAnchor="end" height={40} />
-                <YAxis tickFormatter={formatYAxisShort} tick={{ fontSize: 7, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <Tooltip cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }} content={<ComparisonTooltip />} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={darkMode ? 'rgba(148, 163, 184, 0.1)' : '#f1f5f9'} />
+                <XAxis dataKey="kota" tick={{ fontSize: 6, fill: darkMode ? '#94a3b8' : '#64748b' }} interval={0} angle={-35} textAnchor="end" height={40} />
+                <YAxis
+                  tickFormatter={(val) => formatYAxisShort(val, selectedGroup === 'earthquake')}
+                  tick={{ fontSize: 7, fill: darkMode ? '#64748b' : '#94a3b8' }}
+                  axisLine={false}
+                  tickLine={false}
+                  domain={[0, 'auto']}
+                />
+                <Tooltip cursor={{ fill: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(241, 245, 249, 0.5)' }} content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div className={`backdrop-blur border p-2 rounded-lg shadow-lg ${darkMode ? 'bg-gray-900/95 border-gray-700' : 'bg-white/95 border-slate-200'}`}>
+                        <p className={`font-bold text-[9px] mb-1.5 border-b pb-1 ${darkMode ? 'text-white border-gray-700' : 'text-slate-800 border-slate-100'}`}>{label}</p>
+                        <div className="flex flex-col gap-1">
+                          {payload.map((entry, index) => (
+                            <div key={index} className="flex items-center justify-between gap-4 text-[8px]">
+                              <div className={`flex items-center gap-1.5 ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>
+                                <span className="w-2 h-2 rounded-[2px]" style={{ backgroundColor: entry.color }}></span>
+                                <span>{entry.name.replace('\n', ' ')}</span>
+                              </div>
+                              <div className="flex flex-col items-end">
+                                <span className={`font-bold ${darkMode ? 'text-gray-200' : 'text-slate-800'}`}>{formatRupiah(entry.value)}</span>
+                                <span className="text-[7px] text-green-600 font-bold">({formatUSD(entry.value)})</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                }} />
                 {PML_RP_KEYS.map(rp => <Bar key={rp.key} dataKey={rp.key} name={rp.label} fill={rp.color} radius={[2, 2, 0, 0]} />)}
               </BarChart>
             </ResponsiveContainer>
@@ -1961,9 +2277,9 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
       )}
 
       {selectedGroup === 'earthquake' && pmlExposureChartData.length > 0 && (
-        <div className="w-full h-[180px] bg-white border border-slate-200 rounded-xl p-2 mt-2 shadow-sm relative z-0 flex flex-col">
-          <div className="text-[8px] font-extrabold text-slate-500 tracking-widest uppercase mb-1 flex items-center justify-between">
-            <div className="flex items-center gap-1 text-violet-500">
+        <div className={`w-full h-[180px] border rounded-xl p-2 mt-2 shadow-sm relative z-0 flex flex-col transition-all ${darkMode ? 'bg-gray-800/40 border-gray-700 shadow-black/20' : 'bg-white border-slate-200'}`}>
+          <div className="text-[8px] font-extrabold tracking-widest uppercase mb-1 flex items-center justify-between">
+            <div className={`flex items-center gap-1 ${darkMode ? 'text-violet-400' : 'text-violet-500'}`}>
               <BarChart2 size={10} />
               Perbandingan PML Antar Eksposur
             </div>
@@ -1974,10 +2290,33 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
           >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={pmlExposureChartData} margin={{ top: 5, right: 10, bottom: 20, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="exposure_name" tick={{ fontSize: 6, fill: '#64748b' }} interval={0} angle={-25} textAnchor="end" height={40} />
-                <YAxis tickFormatter={formatYAxisShort} tick={{ fontSize: 7, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <Tooltip cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }} content={<ComparisonTooltip />} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={darkMode ? 'rgba(148, 163, 184, 0.1)' : '#f1f5f9'} />
+                <XAxis dataKey="exposure_name" tick={{ fontSize: 6, fill: darkMode ? '#94a3b8' : '#64748b' }} interval={0} angle={-25} textAnchor="end" height={40} />
+                <YAxis tickFormatter={(val) => val >= 1e12 ? `Rp${(val / 1e12).toFixed(1)}T` : val >= 1e9 ? `Rp${(val / 1e9).toFixed(0)}M` : `Rp${(val / 1e6).toFixed(0)}Jt`} tick={{ fontSize: 7, fill: darkMode ? '#64748b' : '#94a3b8' }} axisLine={false} tickLine={false} />
+                <Tooltip cursor={{ fill: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(241, 245, 249, 0.5)' }} content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div className={`backdrop-blur border p-2 rounded-lg shadow-lg ${darkMode ? 'bg-gray-900/95 border-gray-700' : 'bg-white/95 border-slate-200'}`}>
+                        <p className={`font-bold text-[9px] mb-1.5 border-b pb-1 ${darkMode ? 'text-white border-gray-700' : 'text-slate-800 border-slate-100'}`}>{label}</p>
+                        <div className="flex flex-col gap-1">
+                          {payload.map((entry, index) => (
+                            <div key={index} className="flex items-center justify-between gap-4 text-[8px]">
+                              <div className={`flex items-center gap-1.5 ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>
+                                <span className="w-2 h-2 rounded-[2px]" style={{ backgroundColor: entry.color }}></span>
+                                <span>{entry.name.replace('\n', ' ')}</span>
+                              </div>
+                              <div className="flex flex-col items-end">
+                                <span className={`font-bold ${darkMode ? 'text-gray-200' : 'text-slate-800'}`}>{formatRupiah(entry.value)}</span>
+                                <span className="text-[7px] text-green-600 font-bold">({formatUSD(entry.value)})</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                }} />
                 {PML_RP_KEYS.map(rp => <Bar key={rp.key} dataKey={rp.key} name={rp.label} fill={rp.color} radius={[2, 2, 0, 0]} />)}
               </BarChart>
             </ResponsiveContainer>
@@ -1985,9 +2324,16 @@ function AALChartPanel({ boundaryData, selectedCityFeature, rekapData, onOpenTab
         </div>
       )}
 
-      <div className="text-[9px] font-bold text-slate-400 tracking-widest uppercase my-3 w-full text-left">Distribusi AAL per Eksposur</div>
+      {selectedGroup !== 'earthquake' && (
+        <div className={`text-[9px] font-bold tracking-widest uppercase my-3 w-full text-left ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>Distribusi AAL per Eksposur</div>
+      )}
       <div className="flex flex-col w-full px-1 pt-1 pb-2">
-        {renderCharts(EXPOSURE_GROUPS.filter(g => !(g.gempaOnly && selectedGroup !== 'earthquake')))}
+        {renderCharts(EXPOSURE_GROUPS.filter(g => {
+          if (selectedGroup === 'earthquake') {
+            return g.exp !== 'total' && !g.gempaOnly;
+          }
+          return !g.gempaOnly;
+        }))}
       </div>
     </div>
   );
@@ -2012,6 +2358,7 @@ const ReactLegendOverlay = ({
   onSelectCity,
   onClearCity,
   onOpenTable,
+  onOpenDownload,
   floodView,
   setFloodView,
   floodSawahYear,
@@ -2179,9 +2526,9 @@ const ReactLegendOverlay = ({
       // NEW: Filter groups by floodView toggle for Banjir
       if (curveKey === 'banjir') {
         if (floodView === 'building') {
-            groups = groups.filter(g => g.title.toLowerCase().includes('building'));
+          groups = groups.filter(g => g.title.toLowerCase().includes('building'));
         } else if (floodView === 'sawah') {
-            groups = groups.filter(g => g.title.toLowerCase().includes('sawah'));
+          groups = groups.filter(g => g.title.toLowerCase().includes('sawah'));
         }
       }
 
@@ -2298,9 +2645,8 @@ const ReactLegendOverlay = ({
                     placeholder="Ketik angka..."
                     value={manualIntensity}
                     onChange={(e) => setManualIntensity(e.target.value)}
-                    className={`w-full text-[10px] p-1.5 font-bold border rounded outline-none shadow-sm transition-colors ${
-                      darkMode ? 'bg-gray-800 border-orange-700 text-white focus:border-orange-500' : 'border-orange-500 text-slate-800 bg-white'
-                    }`}
+                    className={`w-full text-[10px] p-1.5 font-bold border rounded outline-none shadow-sm transition-colors ${darkMode ? 'bg-gray-800 border-orange-700 text-white focus:border-orange-500' : 'border-orange-500 text-slate-800 bg-white'
+                      }`}
                   />
                 ) : (
                   <div className={`w-full text-[9px] p-1.5 font-semibold border border-transparent text-center ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>
@@ -2362,15 +2708,13 @@ const ReactLegendOverlay = ({
     <>
       {(hasHazard || hasExposure) && (
         <div className="absolute bottom-6 left-[260px] right-0 lg:right-[320px] pointer-events-none z-[2002] flex justify-center">
-          <div className={`backdrop-blur-sm px-4 lg:px-5 py-3 rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border pointer-events-auto transition-all duration-300 max-w-(full) min-w-max flex flex-row items-center overflow-x-auto custom-scrollbar ${
-            darkMode ? 'bg-gray-900/95 border-gray-800 shadow-black/40' : 'bg-white/95 border-slate-200'
-          } ${(hazardKey && (hazardKey.includes('flood') || hazardKey.includes('drought'))) ? 'gap-3 lg:gap-4' : 'gap-4 lg:gap-6'}`}>
+          <div className={`backdrop-blur-sm px-4 lg:px-5 py-3 rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border pointer-events-auto transition-all duration-300 max-w-(full) min-w-max flex flex-row items-center overflow-x-auto custom-scrollbar ${darkMode ? 'bg-gray-900/95 border-gray-800 shadow-black/40' : 'bg-white/95 border-slate-200'
+            } ${(hazardKey && (hazardKey.includes('flood') || hazardKey.includes('drought'))) ? 'gap-3 lg:gap-4' : 'gap-4 lg:gap-6'}`}>
             {/* 1. Hazard Base Info */}
             {hasHazard && (
               <div className={`flex flex-col justify-center ${(hazardKey && (hazardKey.includes('flood') || hazardKey.includes('drought'))) ? 'min-w-[90px]' : 'min-w-[140px]'}`}>
-                <div className={`font-extrabold mb-1.5 tracking-widest uppercase truncate ${
-                  darkMode ? 'text-gray-300' : 'text-slate-700'
-                } ${(hazardKey && (hazardKey.includes('flood') || hazardKey.includes('drought'))) ? 'text-[7px]' : 'text-[8px]'}`}>
+                <div className={`font-extrabold mb-1.5 tracking-widest uppercase truncate ${darkMode ? 'text-gray-300' : 'text-slate-700'
+                  } ${(hazardKey && (hazardKey.includes('flood') || hazardKey.includes('drought'))) ? 'text-[7px]' : 'text-[8px]'}`}>
                   Hazard: {hazardInfo.label} ({hazardInfo.unit || 'Index'})
                 </div>
                 <div
@@ -2379,9 +2723,8 @@ const ReactLegendOverlay = ({
                     background: `linear-gradient(to right, ${hazardInfo.colorStops.map(s => s[1]).join(',')})`
                   }}
                 ></div>
-                <div className={`flex justify-between font-bold ${
-                  darkMode ? 'text-white' : 'text-slate-900'
-                } ${(hazardKey && (hazardKey.includes('flood') || hazardKey.includes('drought'))) ? 'text-[8px]' : 'text-[9px]'}`}>
+                <div className={`flex justify-between font-bold ${darkMode ? 'text-white' : 'text-slate-900'
+                  } ${(hazardKey && (hazardKey.includes('flood') || hazardKey.includes('drought'))) ? 'text-[8px]' : 'text-[9px]'}`}>
                   <span>{format(rasterStats.min)} {hazardInfo.unit}</span>
                   <span>{format(rasterStats.max)} {hazardInfo.unit}</span>
                 </div>
@@ -2447,9 +2790,8 @@ const ReactLegendOverlay = ({
 
           {/* Sidebar Panel */}
           <div
-            className={`absolute top-0 right-0 z-[2002] h-full flex flex-col backdrop-blur-sm shadow-[-4px_0_24px_rgb(0,0,0,0.08)] border-l transition-transform duration-300 ${
-              darkMode ? 'bg-[#1E2023] border-gray-800' : 'bg-white border-slate-200'
-            }`}
+            className={`absolute top-0 right-0 z-[2002] h-full flex flex-col backdrop-blur-sm shadow-[-4px_0_24px_rgb(0,0,0,0.08)] border-l transition-transform duration-300 ${darkMode ? 'bg-[#1E2023] border-gray-800' : 'bg-white border-slate-200'
+              }`}
             style={{
               width: `${sidebarWidth}px`,
               transform: isAalSidebarOpen ? 'translateX(0)' : 'translateX(100%)',
@@ -2468,9 +2810,8 @@ const ReactLegendOverlay = ({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setIsAalSidebarOpen(false)}
-                    className={`p-1 rounded-sm transition-colors ${
-                      darkMode ? 'text-gray-500 hover:text-gray-300 bg-gray-800 hover:bg-gray-700' : 'text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100'
-                    }`}
+                    className={`p-1 rounded-sm transition-colors ${darkMode ? 'text-gray-500 hover:text-gray-300 bg-gray-800 hover:bg-gray-700' : 'text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100'
+                      }`}
                     title="Sembunyikan Panel AAL"
                   >
                     <ChevronRight size={14} strokeWidth={2.5} />
@@ -2480,9 +2821,8 @@ const ReactLegendOverlay = ({
                 {selectedCityFeature ? (
                   <div className="flex items-center gap-1 mt-1 flex-wrap">
                     <span className={`text-[10px] font-bold leading-tight mr-1 truncate max-w-[100px] ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>{selectedCityFeature.properties.id_kota || 'Kota'}</span>
-                    <button onClick={onClearCity} className={`text-[8px] border px-1.5 py-0.5 rounded transition-colors flex-shrink-0 ${
-                      darkMode ? 'text-gray-400 hover:text-red-400 bg-gray-800 border-gray-700 hover:bg-red-900/20 hover:border-red-900/30' : 'text-slate-400 hover:text-red-500 bg-slate-50 border-slate-100 hover:bg-red-50 hover:border-red-100'
-                    }`}>✕ Reset</button>
+                    <button onClick={onClearCity} className={`text-[8px] border px-1.5 py-0.5 rounded transition-colors flex-shrink-0 ${darkMode ? 'text-gray-400 hover:text-red-400 bg-gray-800 border-gray-700 hover:bg-red-900/20 hover:border-red-900/30' : 'text-slate-400 hover:text-red-500 bg-slate-50 border-slate-100 hover:bg-red-50 hover:border-red-100'
+                      }`}>✕ Reset</button>
                   </div>
                 ) : (
                   <div className={`text-[9px] mt-1 truncate ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>Total Semua Kota/Kabupaten</div>
@@ -2490,11 +2830,10 @@ const ReactLegendOverlay = ({
               </div>
               <div className="flex flex-col gap-2 flex-shrink-0 items-end">
                 <select
-                  className={`text-[10px] font-semibold py-1 pl-2.5 pr-6 rounded-md focus:outline-none focus:ring-1 appearance-none cursor-pointer w-full shadow-sm transition-all border ${
-                    darkMode 
-                      ? 'bg-gray-800 border-gray-700 text-gray-200 focus:border-blue-500 focus:ring-blue-500' 
+                  className={`text-[10px] font-semibold py-1 pl-2.5 pr-6 rounded-md focus:outline-none focus:ring-1 appearance-none cursor-pointer w-full shadow-sm transition-all border ${darkMode
+                      ? 'bg-gray-800 border-gray-700 text-gray-200 focus:border-blue-500 focus:ring-blue-500'
                       : 'bg-white border-slate-200 text-slate-700 focus:border-blue-400 focus:ring-blue-400'
-                  }`}
+                    }`}
                   style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23${darkMode ? '94a3b8' : '64748b'}' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 4px center', backgroundSize: '10px' }}
                   value={selectedCityFeature ? selectedCityFeature.properties.id_kota : ""}
                   onChange={(e) => {
@@ -2553,8 +2892,8 @@ const ReactLegendOverlay = ({
                     const rpPart = selectedRpId ? selectedRpId.split('_').pop() : null;
                     const rpKey = rpPart && rpPart !== 'default' ? rpPart : null;
                     if (rpKey && droughtSawahData[ccKey]?.[rpKey]) {
-                        const rows = droughtSawahData[ccKey][rpKey];
-                        vals = rows.map(r => r[droughtLossYear] || 0).filter(v => typeof v === 'number' && !isNaN(v));
+                      const rows = droughtSawahData[ccKey][rpKey];
+                      vals = rows.map(r => r[droughtLossYear] || 0).filter(v => typeof v === 'number' && !isNaN(v));
                     }
                   } else {
                     if (selectedGroup === 'banjir') {
@@ -2636,11 +2975,10 @@ const ReactLegendOverlay = ({
 
               {/* Proportional Map Note */}
               {infraLayers?.modelHazard && (hasDirectLoss || hasAAL) && (
-                <div className={`mt-3 text-[8px] p-2 rounded border flex items-start gap-1.5 leading-relaxed ${
-                  darkMode 
-                    ? 'text-orange-300/80 bg-orange-950/20 border-orange-900/30' 
+                <div className={`mt-3 text-[8px] p-2 rounded border flex items-start gap-1.5 leading-relaxed ${darkMode
+                    ? 'text-orange-300/80 bg-orange-950/20 border-orange-900/30'
                     : 'text-slate-500 bg-orange-50/50 border-orange-100/50'
-                }`}>
+                  }`}>
                   <Info size={10} className={`${darkMode ? 'text-orange-500/70' : 'text-orange-400'} mt-[1px] shrink-0`} />
                   <span>Area kotak batas diubah menjadi transparan. Warna dan ukuran <strong>lingkaran di tengah batas</strong> merepresentasikan besaran nilai AAL/Direct Loss secara proporsional.</span>
                 </div>
@@ -2649,30 +2987,43 @@ const ReactLegendOverlay = ({
 
             {/* ─── Bar Charts ─── */}
             <div className="overflow-y-auto flex-1 custom-scrollbar">
-              {hasDirectLoss && (selectedGroup !== 'banjir' || floodView === 'building') && (
-                <DirectLossChartPanel
-                  boundaryData={boundaryDataDL}
-                  selectedCityFeature={selectedCityFeature}
+              {hasDirectLoss && selectedGroup === 'kekeringan' && (
+                <DroughtSawahChartPanel
                   selectedGroup={selectedGroup}
-                  onOpenTable={onOpenTable}
+                  selectedCityFeature={selectedCityFeature}
+                  onOpenDownload={onOpenDownload}
                 />
               )}
+
               {hasDirectLoss && selectedGroup === 'banjir' && floodView === 'sawah' && (
                 <FloodSawahChartPanel
                   selectedCityFeature={selectedCityFeature}
                   floodData={floodSawahData}
                   selectedSawahYear={floodSawahYear}
+                  setSelectedSawahYear={setFloodSawahYear}
+                  onOpenDownload={onOpenDownload}
                 />
               )}
-              {hasDirectLoss && selectedGroup === 'kekeringan' && (
-                <DroughtSawahChartPanel selectedGroup={selectedGroup} selectedCityFeature={selectedCityFeature} />
+
+              {hasDirectLoss && (selectedGroup !== 'kekeringan' && (selectedGroup !== 'banjir' || floodView === 'building')) && (
+                <DirectLossChartPanel
+                  boundaryData={boundaryDataDL}
+                  selectedGroup={selectedGroup}
+                  selectedRpId={selectedRpId}
+                  selectedCityFeature={selectedCityFeature}
+                  onOpenTable={onOpenTable}
+                  onOpenDownload={onOpenDownload}
+                />
               )}
+
               {hasAAL && (
                 <AALChartPanel
                   boundaryData={boundaryDataAAL}
                   selectedCityFeature={selectedCityFeature}
                   rekapData={boundaryDataDL}
                   selectedGroup={selectedGroup}
+                  onOpenDownload={onOpenDownload}
+                  onOpenTable={onOpenTable}
                 />
               )}
             </div>

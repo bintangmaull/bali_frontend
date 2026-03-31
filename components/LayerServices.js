@@ -3,9 +3,10 @@ import {
   ChevronLeft, Layers, SlidersHorizontal, Layout,
   AlertTriangle, BarChart3, Box, Plus,
   Stethoscope, GraduationCap, Zap, Plane, Bed, Home, Landmark, Sprout, Database,
-  ArrowRight
+  ArrowRight, Download
 } from 'lucide-react'
 import { useTheme } from '../context/ThemeContext'
+import DownloadModal from './DownloadModal'
 
 const SectionTitle = ({ children, icon: Icon, onSettingsClick, isActive }) => {
   const { darkMode } = useTheme();
@@ -100,19 +101,19 @@ const ExposureCard = ({ id, label, active, onClick, disabled }) => {
       onClick={onClick}
       disabled={disabled}
       className={`relative group flex flex-col items-center justify-center gap-1 p-1 rounded-xl border transition-all duration-300 overflow-hidden ${active
-          ? (darkMode ? 'bg-blue-500/10 border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.1)]' : 'bg-blue-50 border-blue-200 shadow-sm')
-          : (darkMode ? 'bg-white/[0.02] border-white/5 hover:border-white/10 hover:bg-white/[0.04]' : 'bg-slate-50 border-slate-100 hover:border-slate-200 hover:bg-slate-100')
+        ? (darkMode ? 'bg-blue-500/10 border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.1)]' : 'bg-blue-50 border-blue-200 shadow-sm')
+        : (darkMode ? 'bg-white/[0.02] border-white/5 hover:border-white/10 hover:bg-white/[0.04]' : 'bg-slate-50 border-slate-100 hover:border-slate-200 hover:bg-slate-100')
         } ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer active:scale-95'}`}
     >
       <div className={`p-1.5 rounded-lg transition-transform duration-300 group-hover:scale-110 ${active
-          ? (darkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-600 text-white')
-          : (darkMode ? 'bg-white/5 text-gray-400' : 'bg-white text-slate-400 shadow-sm')
+        ? (darkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-600 text-white')
+        : (darkMode ? 'bg-white/5 text-gray-400' : 'bg-white text-slate-400 shadow-sm')
         }`}>
         <CustomIcon id={id} active={active} darkMode={darkMode} />
       </div>
       <span className={`text-[8.5px] font-bold tracking-tight transition-colors duration-300 ${active
-          ? (darkMode ? 'text-blue-100' : 'text-blue-900')
-          : (darkMode ? 'text-gray-500' : 'text-slate-500')
+        ? (darkMode ? 'text-blue-100' : 'text-blue-900')
+        : (darkMode ? 'text-gray-500' : 'text-slate-500')
         }`}>
         {label}
       </span>
@@ -127,13 +128,13 @@ const RadioItem = ({ label, name, value, checked, onChange, disabled }) => {
       onClick={() => onChange(value)}
       disabled={disabled}
       className={`group flex items-center justify-between w-full p-1.5 rounded-xl border transition-all duration-300 ${checked
-          ? (darkMode ? 'bg-emerald-500/10 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 'bg-emerald-50 border-emerald-100 shadow-sm')
-          : (darkMode ? 'bg-white/[0.02] border-white/5 hover:border-white/10' : 'bg-white border-slate-100 hover:border-slate-200')
+        ? (darkMode ? 'bg-emerald-500/10 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 'bg-emerald-50 border-emerald-100 shadow-sm')
+        : (darkMode ? 'bg-white/[0.02] border-white/5 hover:border-white/10' : 'bg-white border-slate-100 hover:border-slate-200')
         }`}
     >
       <span className={`text-[11px] font-bold tracking-tight transition-colors duration-300 ${checked
-          ? (darkMode ? 'text-white' : 'text-blue-900')
-          : (darkMode ? 'text-gray-400' : 'text-slate-500')
+        ? (darkMode ? 'text-white' : 'text-blue-900')
+        : (darkMode ? 'text-gray-400' : 'text-slate-500')
         }`}>
         {label}
       </span>
@@ -153,13 +154,13 @@ const CheckItem = ({ label, checked, onChange, disabled, icon: Icon }) => {
       disabled={disabled}
       onClick={onChange}
       className={`group flex items-center gap-3 w-full p-2.5 rounded-xl border transition-all duration-300 ${checked
-          ? (darkMode ? 'bg-emerald-500/10 border-emerald-500/40' : 'bg-emerald-50 border-emerald-100')
-          : (darkMode ? 'bg-white/[0.02] border-white/5 hover:border-white/10 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200 shadow-sm')
+        ? (darkMode ? 'bg-emerald-500/10 border-emerald-500/40' : 'bg-emerald-50 border-emerald-100')
+        : (darkMode ? 'bg-white/[0.02] border-white/5 hover:border-white/10 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200 shadow-sm')
         } ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer active:scale-[0.98]'}`}
     >
       <div className={`w-4 h-4 rounded border transition-all duration-300 flex items-center justify-center shrink-0 ${checked
-          ? 'bg-emerald-500 border-emerald-500'
-          : (darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200')
+        ? 'bg-emerald-500 border-emerald-500'
+        : (darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200')
         }`}>
         {checked && (
           <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
@@ -170,8 +171,8 @@ const CheckItem = ({ label, checked, onChange, disabled, icon: Icon }) => {
       <div className="flex items-center gap-2 min-w-0">
         {Icon && <Icon size={14} className={checked ? 'text-emerald-500' : 'text-gray-400'} />}
         <span className={`text-[11px] font-bold tracking-tight transition-colors duration-300 truncate ${checked
-            ? (darkMode ? 'text-white' : 'text-emerald-900')
-            : (darkMode ? 'text-gray-400' : 'text-slate-600')
+          ? (darkMode ? 'text-white' : 'text-emerald-900')
+          : (darkMode ? 'text-gray-400' : 'text-slate-600')
           }`}>
           {label}
         </span>
@@ -222,9 +223,31 @@ export default function LayerServices({
   setFloodView,
   floodSawahYear,
   setFloodSawahYear,
+  // Data for download
+  exposureData,
+  boundaryDataDL,
+  boundaryDataAAL,
+  droughtSawahData,
+  floodSawahData,
+  onOpenDownload
 }) {
   const { darkMode } = useTheme()
   const [openSettings, setOpenSettings] = useState(null) // 'basemap' | 'hazard' | 'aal' | 'sawah' | null
+  const [isDownloadOpen, setIsDownloadOpen] = useState(false)
+  const [user, setUser] = React.useState(null)
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedUser = localStorage.getItem('user')
+      if (savedUser) {
+        try {
+          setUser(JSON.parse(savedUser))
+        } catch (e) {
+          console.error('Failed to parse user from localStorage')
+        }
+      }
+    }
+  }, [])
 
   return (
     <aside className={`absolute left-0 top-0 h-full z-[2001] transition-all duration-500 ease-in-out flex
@@ -361,8 +384,8 @@ export default function LayerServices({
                           value={selectedRpId}
                           onChange={(e) => setSelectedRpId(e.target.value)}
                           className={`w-full text-[11px] font-bold py-2 px-3 rounded-lg border focus:outline-none appearance-none cursor-pointer transition-all ${darkMode
-                              ? 'bg-transparent border-white/10 text-white'
-                              : 'bg-white text-slate-700 border-slate-200'
+                            ? 'bg-transparent border-white/10 text-white'
+                            : 'bg-white text-slate-700 border-slate-200'
                             }`}
                           style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233b82f6' stroke-width='3'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', backgroundSize: '12px' }}
                         >
@@ -384,8 +407,8 @@ export default function LayerServices({
               disabled={!selectedGroup || (hazardGroupFiles.length > 0 && !isSingleLayer && !selectedRpId)}
               onClick={() => setInfraLayers(prev => ({ ...prev, modelHazard: !prev.modelHazard }))}
               className={`w-full flex items-center justify-center gap-3 p-3 rounded-xl border font-black text-[10px] tracking-widest uppercase transition-all duration-300 ${infraLayers.modelHazard && !!selectedGroup
-                  ? (darkMode ? 'bg-blue-500/20 border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.15)] text-blue-400' : 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/20')
-                  : (darkMode ? 'bg-white/[0.03] border-white/5 text-gray-500 hover:bg-white/[0.05]' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100')
+                ? (darkMode ? 'bg-blue-500/20 border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.15)] text-blue-400' : 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/20')
+                : (darkMode ? 'bg-white/[0.03] border-white/5 text-gray-500 hover:bg-white/[0.05]' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100')
                 } ${(!selectedGroup) ? 'opacity-40 cursor-not-allowed' : 'active:scale-95'}`}
             >
               <Box size={14} />
@@ -436,8 +459,8 @@ export default function LayerServices({
                       value={activeAalExposure}
                       onChange={(e) => setActiveAalExposure(e.target.value)}
                       className={`w-full text-[11px] font-bold py-2 px-3 rounded-lg border focus:outline-none appearance-none cursor-pointer transition-all ${darkMode
-                          ? 'bg-[#1A1D21] border-white/10 text-white'
-                          : 'bg-white text-slate-700 border-slate-200'
+                        ? 'bg-[#1A1D21] border-white/10 text-white'
+                        : 'bg-white text-slate-700 border-slate-200'
                         }`}
                       style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233b82f6' stroke-width='3'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', backgroundSize: '12px' }}
                     >
@@ -471,8 +494,8 @@ export default function LayerServices({
                           key={key}
                           onClick={() => setDroughtLossYear && setDroughtLossYear(key)}
                           className={`text-[10px] font-black py-1.5 rounded-lg border transition-all ${(droughtLossYear || 'loss_2022') === key
-                              ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/20'
-                              : (darkMode ? 'bg-white/5 text-gray-400 border-white/5 hover:border-white/10' : 'bg-white text-slate-400 border-slate-100')
+                            ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/20'
+                            : (darkMode ? 'bg-white/5 text-gray-400 border-white/5 hover:border-white/10' : 'bg-white text-slate-400 border-slate-100')
                             }`}
                         >
                           {label}
@@ -488,8 +511,8 @@ export default function LayerServices({
                     <div className={`p-1 rounded-xl border flex gap-1 ${darkMode ? 'bg-white/[0.03] border-white/5' : 'bg-slate-50 border-slate-100'}`}>
                       <button
                         className={`flex-1 py-1.5 rounded-lg text-[10px] font-black tracking-wider transition-all ${(floodView || 'building') === 'building'
-                            ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20'
-                            : (darkMode ? 'text-gray-500 hover:text-white' : 'text-slate-400 hover:text-slate-600')
+                          ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20'
+                          : (darkMode ? 'text-gray-500 hover:text-white' : 'text-slate-400 hover:text-slate-600')
                           }`}
                         onClick={() => setFloodView && setFloodView('building')}
                       >
@@ -497,12 +520,12 @@ export default function LayerServices({
                       </button>
                       <button
                         className={`flex-1 py-1.5 rounded-lg text-[10px] font-black tracking-wider transition-all ${floodView === 'sawah'
-                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
-                            : (darkMode ? 'text-gray-500 hover:text-white' : 'text-slate-400 hover:text-slate-600')
+                          ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                          : (darkMode ? 'text-gray-500 hover:text-white' : 'text-slate-400 hover:text-slate-600')
                           }`}
                         onClick={() => setFloodView && setFloodView('sawah')}
                       >
-                        AGRICULTURE
+                        RICE FIELD
                       </button>
                     </div>
 
@@ -515,8 +538,8 @@ export default function LayerServices({
                               key={key}
                               onClick={() => setFloodSawahYear && setFloodSawahYear(key)}
                               className={`text-[10px] font-black py-1.5 rounded-lg border transition-all ${(floodSawahYear || 'loss_2022') === key
-                                  ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/20'
-                                  : (darkMode ? 'bg-white/5 text-gray-400 border-white/5 hover:border-white/10' : 'bg-white text-slate-400 border-slate-100')
+                                ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/20'
+                                : (darkMode ? 'bg-white/5 text-gray-400 border-white/5 hover:border-white/10' : 'bg-white text-slate-400 border-slate-100')
                                 }`}
                             >
                               {label}
@@ -557,7 +580,7 @@ export default function LayerServices({
                 { id: 'airport', label: 'Airport' },
                 { id: 'hotel', label: 'Hotel' },
                 { id: 'bmn', label: 'BMN' },
-                { id: 'sawah', label: 'Rice' },
+                { id: 'sawah', label: 'Rice Field' },
                 { id: 'residential', label: 'Residential' },
               ].map(item => (
                 <ExposureCard
@@ -633,7 +656,7 @@ export default function LayerServices({
 
           {/* Administratif Section */}
           <section className="relative">
-            <SectionTitle icon={Database}>Data Spatial</SectionTitle>
+            <SectionTitle icon={Database}>BATAS ADMINISTRASI</SectionTitle>
             <div className="space-y-2">
               <CheckItem
                 label="Batas Kota / Kabupaten"
@@ -646,7 +669,7 @@ export default function LayerServices({
 
           {/* Manajemen Data Section */}
           <section className={`pt-4 border-t ${darkMode ? 'border-white/5' : 'border-slate-100'}`}>
-            <SectionTitle icon={Layout}>Management</SectionTitle>
+            <SectionTitle icon={Layout}>MANAJEMEN DATA</SectionTitle>
             <div className="grid grid-cols-1 gap-2 mt-2">
               <button
                 onClick={onOpenHSBGN}
@@ -677,6 +700,21 @@ export default function LayerServices({
                   <ArrowRight size={14} className="text-gray-500 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
                 </button>
               )}
+
+              {/* Download Data Section */}
+              <button
+                onClick={() => onOpenDownload('building')}
+                className={`group flex items-center justify-between p-3 rounded-xl border transition-all duration-300 ${darkMode ? 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04] hover:border-white/10' : 'bg-slate-50 border-slate-100 hover:bg-slate-100 hover:border-slate-200'
+                  }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${darkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
+                    <Download size={14} strokeWidth={2.5} />
+                  </div>
+                  <span className={`text-[11px] font-black tracking-tight ${darkMode ? 'text-gray-200' : 'text-slate-700'}`}>Download Data</span>
+                </div>
+                <ArrowRight size={14} className="text-gray-500 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
+              </button>
             </div>
           </section>
         </div>

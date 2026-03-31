@@ -35,7 +35,9 @@ export default function ExposureTableContent({
     { id: 'educational', label: 'Educational Facilities' },
     { id: 'electricity', label: 'Electricity' },
     { id: 'airport', label: 'Airport' },
-    { id: 'hotel', label: 'Hotel' }
+    { id: 'hotel', label: 'Hotel' },
+    { id: 'bmn', label: 'BMN' },
+    { id: 'residential', label: 'Residential' }
   ];
 
   // Derived columns based on selectedGroup
@@ -94,6 +96,8 @@ export default function ExposureTableContent({
         if (activeTab === 'electricity' && id.startsWith('ELECTRICITY')) matchesTab = true;
         if (activeTab === 'airport' && id.startsWith('AIRPORT')) matchesTab = true;
         if (activeTab === 'hotel' && id.startsWith('HOTEL')) matchesTab = true;
+        if (activeTab === 'bmn' && id.startsWith('BMN')) matchesTab = true;
+        if (activeTab === 'residential' && (id.startsWith('RESIDENTIAL') || id.startsWith('RES'))) matchesTab = true;
         if (!matchesTab) return false;
 
         // 3. Filter by Search Term
@@ -240,7 +244,17 @@ export default function ExposureTableContent({
                               }
 
                               if (dlExp) {
-                                const catData = dlExp[activeTab] || {};
+                                const tabToKey = {
+                                  healthcare: 'fs',
+                                  educational: 'fd',
+                                  electricity: 'electricity',
+                                  airport: 'airport',
+                                  hotel: 'hotel',
+                                  residential: 'residential',
+                                  bmn: 'bmn'
+                                };
+                                const catKey = tabToKey[activeTab] || activeTab;
+                                const catData = dlExp[catKey] || {};
                                 const rpSuffix = col.key; // e.g. "pga_100"
                                 const ratio = catData[rpSuffix];
                                 

@@ -10,6 +10,7 @@ import LayerServices from './LayerServices'
 import ReactLegendOverlay from './ReactLegendOverlay'
 import { DROUGHT_CURVE } from '../src/lib/drought_curve'
 import Modal from './ui/Modal'
+import DownloadModal from './DownloadModal'
 import CrudHSBGN from './CrudHSBGN'
 import CrudBuildings from './CrudBuildings'
 import ExposureTableContent from './ExposureTableContent'
@@ -323,6 +324,19 @@ export default function CogHazardMap() {
   const [fetchingExposure, setFetchingExposure] = useState(false)
   const [selectedBuildingHtml, setSelectedBuildingHtml] = useState(null)
   const [selectedBuildingId, setSelectedBuildingId] = useState(null)
+  const [user, setUser] = useState(null)
+
+  // Load user from localStorage on mount
+  useEffect(() => {
+    const savedUser = typeof window !== 'undefined' ? localStorage.getItem('user') : null
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser))
+      } catch (e) {
+        console.error('Failed to parse user from localStorage')
+      }
+    }
+  }, [])
 
   // Memoized lookups for O(1) access
   const exposureLookup = useMemo(() => {
@@ -396,7 +410,7 @@ export default function CogHazardMap() {
           </div>
         </div>
 
-        <div class="space-y-3 mt-1 ${isBMNRes ? 'hidden' : ''}">
+        <div class="space-y-3 mt-1">
           <!-- Gempa Bumi -->
           <div class="p-2.5 rounded-xl border ${darkMode ? 'bg-blue-500/5 border-blue-500/10' : 'bg-blue-50/50 border-blue-100'}">
             <div class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1.5 flex items-center justify-between">
@@ -410,12 +424,12 @@ export default function CogHazardMap() {
                   const dlExp = cityFeature?.properties?.dl_exposure || {};
                   
                   let category = 'bmn';
-                  if (id.startsWith('FS')) category = 'healthcare';
-                  else if (id.startsWith('FD')) category = 'educational';
+                  if (id.startsWith('FS')) category = 'fs';
+                  else if (id.startsWith('FD')) category = 'fd';
                   else if (id.startsWith('ELECTRICITY')) category = 'electricity';
                   else if (id.startsWith('AIRPORT')) category = 'airport';
                   else if (id.startsWith('HOTEL')) category = 'hotel';
-                  else if (id.startsWith('RESIDENTIAL')) category = 'residential';
+                  else if (id.startsWith('RESIDENTIAL') || id.startsWith('RES')) category = 'residential';
                   
                   const catData = dlExp[category] || {};
                   const ratio = catData[`pga_${rp}`];
@@ -431,23 +445,49 @@ export default function CogHazardMap() {
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-2">
+
+          ${isBMNRes ? '' : `
+          <div class="grid grid-cols-1 gap-2">
             <!-- Banjir (R) -->
             <div class="p-2.5 rounded-xl border ${darkMode ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-emerald-50/50 border-emerald-100'}">
-              <div class="text-[9px] font-black text-emerald-500 uppercase tracking-widest mb-1.5">Banjir (R)</div>
-              <div class="grid grid-cols-1 gap-1 font-mono text-[9px] ${darkMode ? 'text-gray-300' : 'text-slate-600'}">
-                <div>250: <b>${formatNumberWithUnit(p.direct_loss_r_250 || 0)}</b> ${formatPercent(p.direct_loss_r_250, assetValue)}</div>
-                <div>100: <b>${formatNumberWithUnit(p.direct_loss_r_100 || 0)}</b> ${formatPercent(p.direct_loss_r_100, assetValue)}</div>
-                <div>50:  <b>${formatNumberWithUnit(p.direct_loss_r_50 || 0)}</b> ${formatPercent(p.direct_loss_r_50, assetValue)}</div>
+              <div class="text-[9px] font-black text-emerald-500 uppercase tracking-widest mb-1.5 flex justify-between items-center">
+                <span>Banjir (R) - Non-Climate Change</span>
+                <span class="text-[8px] opacity-60">Loss / Share</span>
+              </div>
+              <div class="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-[9px] ${darkMode ? 'text-gray-300' : 'text-slate-600'}">
+                ${['250', '100', '50', '25', '10', '5', '2'].map(rp => {
+                  const val = p[`direct_loss_r_${rp}`] || 0;
+                  return `
+                    <div class="flex justify-between items-center border-b border-emerald-500/5 pb-0.5">
+                      <span class="opacity-70">${rp}y</span>
+                      <div class="flex items-center gap-1">
+                        <b class="${val > 0 ? 'text-emerald-500' : ''}">${formatNumberWithUnit(val)}</b>
+                        ${formatPercent(val, assetValue)}
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
               </div>
             </div>
             <!-- Banjir (RC) -->
             <div class="p-2.5 rounded-xl border ${darkMode ? 'bg-teal-500/5 border-teal-500/10' : 'bg-teal-50/50 border-teal-100'}">
-              <div class="text-[9px] font-black text-teal-400 uppercase tracking-widest mb-1.5">Banjir (RC)</div>
-              <div class="grid grid-cols-1 gap-1 font-mono text-[9px] ${darkMode ? 'text-gray-300' : 'text-slate-600'}">
-                <div>250: <b>${formatNumberWithUnit(p.direct_loss_rc_250 || 0)}</b> ${formatPercent(p.direct_loss_rc_250, assetValue)}</div>
-                <div>100: <b>${formatNumberWithUnit(p.direct_loss_rc_100 || 0)}</b> ${formatPercent(p.direct_loss_rc_100, assetValue)}</div>
-                <div>50:  <b>${formatNumberWithUnit(p.direct_loss_rc_50 || 0)}</b> ${formatPercent(p.direct_loss_rc_50, assetValue)}</div>
+              <div class="text-[9px] font-black text-teal-400 uppercase tracking-widest mb-1.5 flex justify-between items-center">
+                <span>Banjir (RC) - Climate Change</span>
+                <span class="text-[8px] opacity-60">Loss / Share</span>
+              </div>
+              <div class="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-[9px] ${darkMode ? 'text-gray-300' : 'text-slate-600'}">
+                ${['250', '100', '50', '25', '10', '5', '2'].map(rp => {
+                  const val = p[`direct_loss_rc_${rp}`] || 0;
+                  return `
+                    <div class="flex justify-between items-center border-b border-teal-500/5 pb-0.5">
+                      <span class="opacity-70">${rp}y</span>
+                      <div class="flex items-center gap-1">
+                        <b class="${val > 0 ? 'text-teal-400' : ''}">${formatNumberWithUnit(val)}</b>
+                        ${formatPercent(val, assetValue)}
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
               </div>
             </div>
           </div>
@@ -463,6 +503,7 @@ export default function CogHazardMap() {
               <span class="text-[9px] font-black text-amber-500">${formatPercent(p.direct_loss_inundansi, assetValue)}</span>
             </div>
           </div>
+          `}
         </div>
       </div>
     `
@@ -843,6 +884,8 @@ export default function CogHazardMap() {
   const [exposurePanelPos, setExposurePanelPos] = useState({ x: 0, y: 0 })
   const [isExposureDragging, setIsExposureDragging] = useState(false)
   const [initialExposureTab, setInitialExposureTab] = useState('healthcare')
+  const [isDownloadOpen, setIsDownloadOpen] = useState(false)
+  const [downloadInitialType, setDownloadInitialType] = useState('building')
   const exposureDragStartPos = useRef({ x: 0, y: 0 })
 
   const handleExposurePointerDown = (e) => {
@@ -2204,6 +2247,15 @@ export default function CogHazardMap() {
           }}
           droughtLossYear={droughtLossYear}
           setDroughtLossYear={setDroughtLossYear}
+          exposureData={exposureData}
+          boundaryDataDL={enrichedBoundaryDataDL}
+          boundaryDataAAL={enrichedBoundaryDataAAL}
+          droughtSawahData={droughtSawahData}
+          floodSawahData={floodSawahData}
+          onOpenDownload={(type) => {
+            setDownloadInitialType(type || 'building');
+            setIsDownloadOpen(true);
+          }}
         />
 
         {/* ── Map area ── */}
@@ -2331,10 +2383,26 @@ export default function CogHazardMap() {
                 ...prev,
                 [tab || 'healthcare']: true
               }));
-              // Reset position if re-opened
               setExposurePanelPos({ x: 0, y: 0 });
               setIsExposurePanelOpen(true);
             }}
+            onOpenDownload={(type) => {
+              setDownloadInitialType(type || 'building');
+              setIsDownloadOpen(true);
+            }}
+          />
+
+          <DownloadModal 
+            isOpen={isDownloadOpen}
+            onClose={() => setIsDownloadOpen(false)}
+            exposureData={exposureData}
+            boundaryDataDL={enrichedBoundaryDataDL}
+            boundaryDataAAL={enrichedBoundaryDataAAL}
+            droughtSawahData={droughtSawahData}
+            floodSawahData={floodSawahData}
+            selectedGroup={selectedGroup}
+            user={user}
+            initialType={downloadInitialType}
           />
 
           {error && (
