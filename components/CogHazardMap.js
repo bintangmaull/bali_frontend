@@ -1104,6 +1104,7 @@ export default function CogHazardMap() {
       const cacheName = 'exposure-cache-v2'
 
       try {
+        if (typeof caches === 'undefined') return null;
         const cache = await caches.open(cacheName)
         const cachedResponse = await cache.match(url)
 
@@ -1155,6 +1156,7 @@ export default function CogHazardMap() {
       const cacheName = 'boundary-cache-v4'
 
       try {
+        if (typeof caches === 'undefined') return null;
         const cache = await caches.open(cacheName)
 
         // --- 1. Fetch AAL ---
@@ -1865,6 +1867,7 @@ export default function CogHazardMap() {
         georaster = geoCache.current.get('sawah_' + publicUrl)
       } else {
         const cacheName = 'cog-cache-v2'
+        if (typeof caches === 'undefined') return null;
         const cache = await caches.open(cacheName)
         const cachedResponse = await cache.match(publicUrl)
         if (cachedResponse) {
@@ -1995,6 +1998,7 @@ export default function CogHazardMap() {
       } else {
         // 2. Check Persistence Cache
         const cacheName = 'cog-cache-v2'
+        if (typeof caches === 'undefined') return null;
         const cache = await caches.open(cacheName)
         const cachedResponse = await cache.match(publicUrl)
 
