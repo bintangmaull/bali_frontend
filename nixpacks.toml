@@ -1,0 +1,10 @@
+# nixpacks.toml for Next.js 15/16 + Tailwind v4
+[variables]
+    NIXPACKS_NODE_VERSION = '22'
+    NODE_ENV = 'production'
+
+[phases.install]
+    cmds = ['npm install --include=optional']
+
+[phases.build]
+    cmds = ['npm run build']
