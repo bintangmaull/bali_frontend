@@ -1904,19 +1904,25 @@ export default function CogHazardMap() {
       if (geoCache.current.has('sawah_' + publicUrl)) {
         georaster = geoCache.current.get('sawah_' + publicUrl)
       } else {
-        const cacheName = 'cog-cache-v2'
-        if (typeof caches === 'undefined') return null;
-        const cache = await caches.open(cacheName)
-        const cachedResponse = await cache.match(publicUrl)
-        if (cachedResponse) {
-          const arrayBuffer = await cachedResponse.clone().arrayBuffer()
-          georaster = await parseGeoraster(arrayBuffer)
-        } else {
+        if (typeof caches === 'undefined') {
           const response = await fetch(publicUrl)
           if (!response.ok) throw new Error(`HTTP ${response.status}`)
-          await cache.put(publicUrl, response.clone())
           const arrayBuffer = await response.arrayBuffer()
           georaster = await parseGeoraster(arrayBuffer)
+        } else {
+          const cacheName = 'cog-cache-v2'
+          const cache = await caches.open(cacheName)
+          const cachedResponse = await cache.match(publicUrl)
+          if (cachedResponse) {
+            const arrayBuffer = await cachedResponse.clone().arrayBuffer()
+            georaster = await parseGeoraster(arrayBuffer)
+          } else {
+            const response = await fetch(publicUrl)
+            if (!response.ok) throw new Error(`HTTP ${response.status}`)
+            await cache.put(publicUrl, response.clone())
+            const arrayBuffer = await response.arrayBuffer()
+            georaster = await parseGeoraster(arrayBuffer)
+          }
         }
         geoCache.current.set('sawah_' + publicUrl, georaster)
       }
@@ -2035,10 +2041,13 @@ export default function CogHazardMap() {
         rMax = cached.rMax
       } else {
         // 2. Check Persistence Cache
-        const cacheName = 'cog-cache-v2'
-        if (typeof caches === 'undefined') return null;
-        const cache = await caches.open(cacheName)
-        const cachedResponse = await cache.match(publicUrl)
+        let cache = null;
+        let cachedResponse = null;
+        if (typeof caches !== 'undefined') {
+          const cacheName = 'cog-cache-v2'
+          cache = await caches.open(cacheName)
+          cachedResponse = await cache.match(publicUrl)
+        }
 
         if (cachedResponse) {
           console.log('Serving from persistent cache (initial):', publicUrl)
@@ -2057,7 +2066,7 @@ export default function CogHazardMap() {
             console.log('Persistent cache obsolete, updating...')
             const res = await fetch(publicUrl)
             if (res.ok) {
-              await cache.put(publicUrl, res.clone())
+              if (cache) await cache.put(publicUrl, res.clone())
               const newBuf = await res.arrayBuffer()
               const newGeo = await parseGeoraster(newBuf)
               const nrMin = newGeo.mins[0], nrMax = newGeo.maxs[0]
@@ -2074,7 +2083,7 @@ export default function CogHazardMap() {
         console.log('No cache found. Fetching...')
         const response = await fetch(publicUrl)
         if (!response.ok) throw new Error(`HTTP ${response.status}`)
-        await cache.put(publicUrl, response.clone())
+        if (cache) await cache.put(publicUrl, response.clone())
         const arrayBuffer = await response.arrayBuffer()
         georaster = await parseGeoraster(arrayBuffer)
         rMin = georaster.mins[0]; rMax = georaster.maxs[0];
