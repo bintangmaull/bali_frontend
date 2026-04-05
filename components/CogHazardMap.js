@@ -1104,7 +1104,18 @@ export default function CogHazardMap() {
       const cacheName = 'exposure-cache-v2'
 
       try {
-        if (typeof caches === 'undefined') return null;
+        if (typeof caches === 'undefined') {
+          // If CacheStorage API is unavailable (e.g. over HTTP without localhost),
+          // fallback to standard fetch without caching.
+          setFetchingExposure(true);
+          const response = await fetch(url);
+          if (response.ok) {
+            const data = await response.json();
+            setExposureData(data);
+          }
+          return;
+        }
+
         const cache = await caches.open(cacheName)
         const cachedResponse = await cache.match(url)
 
@@ -1156,7 +1167,34 @@ export default function CogHazardMap() {
       const cacheName = 'boundary-cache-v4'
 
       try {
-        if (typeof caches === 'undefined') return null;
+        if (typeof caches === 'undefined') {
+          // Fallback to standard fetch when CacheStorage is unavailable
+          const respAal = await fetch(urlAal).catch(() => null)
+          if (respAal && respAal.ok) {
+            const dataAal = await respAal.json()
+            setBoundaryDataAAL(dataAal)
+            if (selectedCityFeature && !boundaryDataDL) {
+               const newFeat = dataAal.features.find(f => 
+                (f.properties.id_kota || f.properties.nama_kota) === (selectedCityFeature.properties.id_kota || selectedCityFeature.properties.nama_kota)
+              );
+              if (newFeat) setSelectedCityFeature(newFeat);
+            }
+          }
+          const urlDlFresh = urlDl.includes('?') ? `${urlDl}&t=${Date.now()}` : `${urlDl}?t=${Date.now()}`
+          const respDl = await fetch(urlDlFresh).catch(() => null)
+          if (respDl && respDl.ok) {
+            const dataDl = await respDl.json()
+            setBoundaryDataDL(dataDl)
+            if (selectedCityFeature) {
+              const newFeat = dataDl.features.find(f =>
+                (f.properties.id_kota || f.properties.nama_kota) === (selectedCityFeature.properties.id_kota || selectedCityFeature.properties.nama_kota)
+              );
+              if (newFeat) setSelectedCityFeature(newFeat);
+            }
+          }
+          return;
+        }
+
         const cache = await caches.open(cacheName)
 
         // --- 1. Fetch AAL ---
