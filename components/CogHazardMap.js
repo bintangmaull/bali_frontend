@@ -2408,7 +2408,7 @@ export default function CogHazardMap() {
           <div ref={mapEl} className="w-full h-full z-0" />
 
           {/* Building Detail Overlay */}
-          {selectedBuildingHtml && (
+          {selectedBuildingData && (
             <div
               className={`absolute top-20 left-3 md:left-[280px] z-[1020] backdrop-blur-xl rounded-xl shadow-2xl p-2.5 md:p-3 w-[calc(100vw-24px)] md:w-[220px] max-h-[80vh] overflow-y-auto custom-scrollbar border animate-in fade-in slide-in-from-left-4 duration-300 pointer-events-auto cursor-grab active:cursor-grabbing transition-all ${
                 darkMode ? 'bg-[#0D0F12]/95 border-white/10 shadow-black/60' : 'bg-white/95 border-slate-200 shadow-slate-200/50'
@@ -2427,7 +2427,7 @@ export default function CogHazardMap() {
                   <span className={`text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-300' : 'text-slate-500'}`}>Building Info</span>
                 </div>
                 <button 
-                  onClick={() => { setSelectedBuildingHtml(null); setSelectedBuildingId(null); }} 
+                  onClick={() => { setSelectedBuildingData(null); setSelectedBuildingId(null); }} 
                   className={`close-btn transition-all p-1.5 rounded-lg ${darkMode ? 'text-gray-500 hover:text-white hover:bg-white/10' : 'text-slate-400 hover:text-slate-800 hover:bg-slate-100'}`}
                 >
                   <X size={14} strokeWidth={2.5} />
