@@ -14,7 +14,7 @@ const SectionTitle = ({ children, icon: Icon, onSettingsClick, isActive }) => {
     <div className="flex items-center justify-between mt-2 mb-2">
       <div className="flex items-center gap-2">
         {Icon && <Icon size={12} className={darkMode ? 'text-blue-400' : 'text-blue-600'} />}
-        <h3 className={`text-[9px] font-black tracking-[0.12em] uppercase ${darkMode ? 'text-blue-200/80' : 'text-slate-700'}`}>
+        <h3 className={`text-[8px] md:text-[9px] font-black tracking-[0.12em] uppercase ${darkMode ? 'text-blue-200/80' : 'text-slate-700'}`}>
           {children}
         </h3>
       </div>
@@ -100,18 +100,18 @@ const ExposureCard = ({ id, label, active, onClick, disabled }) => {
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`relative group flex flex-col items-center justify-center gap-1 p-1 rounded-xl border transition-all duration-300 overflow-hidden ${active
+      className={`relative group flex flex-col items-center justify-center gap-1 p-1 md:p-1.5 rounded-xl border transition-all duration-300 overflow-hidden ${active
         ? (darkMode ? 'bg-blue-500/10 border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.1)]' : 'bg-blue-50 border-blue-200 shadow-sm')
         : (darkMode ? 'bg-white/[0.02] border-white/5 hover:border-white/10 hover:bg-white/[0.04]' : 'bg-slate-50 border-slate-100 hover:border-slate-200 hover:bg-slate-100')
         } ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer active:scale-95'}`}
     >
-      <div className={`p-1.5 rounded-lg transition-transform duration-300 group-hover:scale-110 ${active
+      <div className={`p-1 md:p-1.5 rounded-lg transition-transform duration-300 group-hover:scale-110 ${active
         ? (darkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-600 text-white')
         : (darkMode ? 'bg-white/5 text-gray-400' : 'bg-white text-slate-400 shadow-sm')
         }`}>
         <CustomIcon id={id} active={active} darkMode={darkMode} />
       </div>
-      <span className={`text-[8.5px] font-bold tracking-tight transition-colors duration-300 ${active
+      <span className={`text-[8px] md:text-[8.5px] font-bold tracking-tight transition-colors duration-300 ${active
         ? (darkMode ? 'text-blue-100' : 'text-blue-900')
         : (darkMode ? 'text-gray-500' : 'text-slate-500')
         }`}>
@@ -132,7 +132,7 @@ const RadioItem = ({ label, name, value, checked, onChange, disabled }) => {
         : (darkMode ? 'bg-white/[0.02] border-white/5 hover:border-white/10' : 'bg-white border-slate-100 hover:border-slate-200')
         }`}
     >
-      <span className={`text-[11px] font-bold tracking-tight transition-colors duration-300 ${checked
+      <span className={`text-[9.5px] md:text-[11px] font-bold tracking-tight transition-colors duration-300 ${checked
         ? (darkMode ? 'text-white' : 'text-blue-900')
         : (darkMode ? 'text-gray-400' : 'text-slate-500')
         }`}>
@@ -170,7 +170,7 @@ const CheckItem = ({ label, checked, onChange, disabled, icon: Icon }) => {
       </div>
       <div className="flex items-center gap-2 min-w-0">
         {Icon && <Icon size={14} className={checked ? 'text-emerald-500' : 'text-gray-400'} />}
-        <span className={`text-[11px] font-bold tracking-tight transition-colors duration-300 truncate ${checked
+        <span className={`text-[9.5px] md:text-[11px] font-bold tracking-tight transition-colors duration-300 truncate ${checked
           ? (darkMode ? 'text-white' : 'text-emerald-900')
           : (darkMode ? 'text-gray-400' : 'text-slate-600')
           }`}>
@@ -252,7 +252,7 @@ export default function LayerServices({
   return (
     <aside className={`absolute left-0 top-0 h-full z-[2001] transition-all duration-500 ease-in-out flex
       ${darkMode ? 'bg-[#0D0F12]/95 backdrop-blur-xl border-r border-white/5 shadow-[20px_0_40px_rgba(0,0,0,0.5)]' : 'bg-white border-r border-slate-200 shadow-2xl'}
-      ${isSidebarOpen ? 'w-[280px]' : 'w-0'}`}>
+      ${isSidebarOpen ? 'w-[220px] sm:w-[240px] md:w-[280px]' : 'w-0'}`}>
 
       <div className="flex-1 flex flex-col h-full pt-[40px] relative overflow-hidden">
         {/* Header sidebar - Very compact */}
@@ -383,7 +383,7 @@ export default function LayerServices({
                         <select
                           value={selectedRpId}
                           onChange={(e) => setSelectedRpId(e.target.value)}
-                          className={`w-full text-[11px] font-bold py-2 px-3 rounded-lg border focus:outline-none appearance-none cursor-pointer transition-all ${darkMode
+                          className={`w-full text-[9px] md:text-[10px] font-bold py-1.5 md:py-2 px-2.5 md:px-3 rounded-lg border focus:outline-none appearance-none cursor-pointer transition-all ${darkMode
                             ? 'bg-transparent border-white/10 text-white'
                             : 'bg-white text-slate-700 border-slate-200'
                             }`}
@@ -406,7 +406,7 @@ export default function LayerServices({
             <button
               disabled={!selectedGroup || (hazardGroupFiles.length > 0 && !isSingleLayer && !selectedRpId)}
               onClick={() => setInfraLayers(prev => ({ ...prev, modelHazard: !prev.modelHazard }))}
-              className={`w-full flex items-center justify-center gap-3 p-3 rounded-xl border font-black text-[10px] tracking-widest uppercase transition-all duration-300 ${infraLayers.modelHazard && !!selectedGroup
+              className={`w-full flex items-center justify-center gap-2.5 md:gap-3 p-2.5 md:p-3 rounded-xl border font-black text-[8px] md:text-[9.5px] tracking-widest uppercase transition-all duration-300 ${infraLayers.modelHazard && !!selectedGroup
                 ? (darkMode ? 'bg-blue-500/20 border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.15)] text-blue-400' : 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/20')
                 : (darkMode ? 'bg-white/[0.03] border-white/5 text-gray-500 hover:bg-white/[0.05]' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100')
                 } ${(!selectedGroup) ? 'opacity-40 cursor-not-allowed' : 'active:scale-95'}`}
@@ -673,14 +673,14 @@ export default function LayerServices({
             <div className="grid grid-cols-1 gap-2 mt-2">
               <button
                 onClick={onOpenHSBGN}
-                className={`group flex items-center justify-between p-3 rounded-xl border transition-all duration-300 ${darkMode ? 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04] hover:border-white/10' : 'bg-slate-50 border-slate-100 hover:bg-slate-100 hover:border-slate-200'
+                className={`group flex items-center justify-between p-2.5 md:p-3 rounded-xl border transition-all duration-300 ${darkMode ? 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04] hover:border-white/10' : 'bg-slate-50 border-slate-100 hover:bg-slate-100 hover:border-slate-200'
                   }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${darkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
+                  <div className={`p-1.5 md:p-2 rounded-lg ${darkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
                     <Database size={14} strokeWidth={2.5} />
                   </div>
-                  <span className={`text-[11px] font-black tracking-tight ${darkMode ? 'text-gray-200' : 'text-slate-700'}`}>Manajemen HSBGN</span>
+                  <span className={`text-[9px] md:text-[11px] font-black tracking-tight ${darkMode ? 'text-gray-200' : 'text-slate-700'}`}>Manajemen HSBGN</span>
                 </div>
                 <ArrowRight size={14} className="text-gray-500 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
               </button>
@@ -688,30 +688,30 @@ export default function LayerServices({
               {onOpenBangunan && (
                 <button
                   onClick={onOpenBangunan}
-                  className={`group flex items-center justify-between p-3 rounded-xl border transition-all duration-300 ${darkMode ? 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04] hover:border-white/10' : 'bg-slate-50 border-slate-100 hover:bg-slate-100 hover:border-slate-200'
+                  className={`group flex items-center justify-between p-2.5 md:p-3 rounded-xl border transition-all duration-300 ${darkMode ? 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04] hover:border-white/10' : 'bg-slate-50 border-slate-100 hover:bg-slate-100 hover:border-slate-200'
                     }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${darkMode ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-600'}`}>
+                    <div className={`p-1.5 md:p-2 rounded-lg ${darkMode ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-600'}`}>
                       <Home size={14} strokeWidth={2.5} />
                     </div>
-                    <span className={`text-[11px] font-black tracking-tight ${darkMode ? 'text-gray-200' : 'text-slate-700'}`}>Manajemen Bangunan</span>
+                    <span className={`text-[9px] md:text-[11px] font-black tracking-tight ${darkMode ? 'text-gray-200' : 'text-slate-700'}`}>Manajemen Bangunan</span>
                   </div>
                   <ArrowRight size={14} className="text-gray-500 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
                 </button>
               )}
-
+ 
               {/* Download Data Section */}
               <button
                 onClick={() => onOpenDownload('building')}
-                className={`group flex items-center justify-between p-3 rounded-xl border transition-all duration-300 ${darkMode ? 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04] hover:border-white/10' : 'bg-slate-50 border-slate-100 hover:bg-slate-100 hover:border-slate-200'
+                className={`group flex items-center justify-between p-2.5 md:p-3 rounded-xl border transition-all duration-300 ${darkMode ? 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04] hover:border-white/10' : 'bg-slate-50 border-slate-100 hover:bg-slate-100 hover:border-slate-200'
                   }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${darkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
+                  <div className={`p-1.5 md:p-2 rounded-lg ${darkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
                     <Download size={14} strokeWidth={2.5} />
                   </div>
-                  <span className={`text-[11px] font-black tracking-tight ${darkMode ? 'text-gray-200' : 'text-slate-700'}`}>Download Data</span>
+                  <span className={`text-[9px] md:text-[11px] font-black tracking-tight ${darkMode ? 'text-gray-200' : 'text-slate-700'}`}>Download Data</span>
                 </div>
                 <ArrowRight size={14} className="text-gray-500 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
               </button>

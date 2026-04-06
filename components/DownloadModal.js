@@ -493,18 +493,18 @@ export default function DownloadModal({
             <div className={`p-2 rounded-xl ${darkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
               <Download size={20} strokeWidth={2.5} />
             </div>
-            <h2 className={`text-xl font-black ${darkMode ? 'text-white' : 'text-slate-900'} uppercase tracking-tight`}>
+            <h2 className={`text-lg md:text-xl font-black ${darkMode ? 'text-white' : 'text-slate-900'} uppercase tracking-tight`}>
               Export Data Selection
             </h2>
           </div>
-          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>
+          <p className={`text-xs md:text-sm ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>
             Pilih jenis data dan format yang ingin Anda unduh ke perangkat Anda.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
           <div className="flex flex-col gap-3">
-            <label className={`text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>
+            <label className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>
               Tipe Data
             </label>
             <div className="flex flex-col gap-2">
@@ -530,7 +530,7 @@ export default function DownloadModal({
                   }`}
                 >
                   <item.icon size={18} />
-                  <span className="text-sm font-bold">{item.label}</span>
+                  <span className="text-[11px] md:text-sm font-bold">{item.label}</span>
                 </button>
               ))}
             </div>
@@ -538,7 +538,7 @@ export default function DownloadModal({
 
           <div className="flex flex-col gap-5">
             <div className="flex flex-col gap-3">
-              <label className={`text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>
+              <label className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>
                 Format File
               </label>
               <div className="flex gap-2">
@@ -568,7 +568,7 @@ export default function DownloadModal({
                       }`}
                     >
                       <item.icon size={16} />
-                      <span className="text-[10px] font-black">{item.label}</span>
+                      <span className="text-[9px] md:text-[10px] font-black">{item.label}</span>
                     </button>
                   ))
                 )}
@@ -577,7 +577,7 @@ export default function DownloadModal({
 
             {downloadType === 'building' && (
               <div className="flex flex-col gap-3">
-                <label className={`text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>
+                <label className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>
                   Filter Wilayah
                 </label>
                 <select
@@ -597,7 +597,7 @@ export default function DownloadModal({
 
             {(downloadType === 'building' || downloadType === 'city' || downloadType === 'sawah') && (
               <div className="flex flex-col gap-3">
-                <label className={`text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>
+                <label className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>
                   Kolom Informasi
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -619,7 +619,7 @@ export default function DownloadModal({
                       }`}
                     >
                       {selectedColumns[col.id] ? <CheckSquare size={14} /> : <Square size={14} />}
-                      <span className="text-[10px] font-bold">{col.label}</span>
+                      <span className="text-[9px] md:text-[10px] font-bold">{col.label}</span>
                     </button>
                   ))}
                 </div>
@@ -650,7 +650,7 @@ export default function DownloadModal({
         <div className="flex gap-3 mt-6">
           <button
             onClick={onClose}
-            className={`flex-1 py-3.5 rounded-2xl font-black text-xs tracking-widest uppercase transition-all duration-300 ${
+            className={`flex-1 py-3.5 rounded-2xl font-black text-[10px] md:text-xs tracking-widest uppercase transition-all duration-300 ${
               darkMode ? 'bg-white/5 text-gray-400 hover:bg-white/10' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
             }`}
           >
@@ -659,7 +659,7 @@ export default function DownloadModal({
           <button
             onClick={handleDownload}
             disabled={isProcessing}
-            className={`flex-[2] py-3.5 rounded-2xl font-black text-xs tracking-widest uppercase transition-all duration-300 flex items-center justify-center gap-2 ${
+            className={`flex-[2] py-3.5 rounded-2xl font-black text-[10px] md:text-xs tracking-widest uppercase transition-all duration-300 flex items-center justify-center gap-2 ${
               isProcessing 
                 ? 'bg-blue-500/50 cursor-wait' 
                 : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/25 active:scale-[0.98]'

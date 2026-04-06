@@ -41,7 +41,7 @@ export default function Header() {
         ? 'bg-[#0D0F12]/80 backdrop-blur-md border-white/5 text-white'
         : 'bg-white/90 backdrop-blur-md border-slate-200 text-slate-900 shadow-sm'
       }`}>
-      <div className="max-w-screen-2xl mx-auto grid grid-cols-3 items-center py-1.5 px-6">
+      <div className="max-w-screen-2xl mx-auto flex items-center justify-between py-1.5 px-3 md:px-6">
         {/* Left: Logo Area */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 pr-3 border-r border-white/10">
@@ -49,9 +49,9 @@ export default function Header() {
             <img src="/logobali.png" alt="Bali" className="h-6 w-auto" />
           </div>
           <Link href="/" className="flex flex-col leading-none">
-            <h1 className="text-xl tracking-tighter flex items-center gap-2">
+            <h1 className="text-base md:text-xl tracking-tighter flex items-center gap-1.5 md:gap-2">
               <span className={`font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>Bali</span>
-              <span className="text-blue-500 font-semibold">Risk Dashboard</span>
+              <span className="text-blue-500 font-semibold max-w-[120px] md:max-w-none truncate md:overflow-visible">Risk Dashboard</span>
             </h1>
           </Link>
         </div>

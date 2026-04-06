@@ -2315,29 +2315,30 @@ export default function CogHazardMap() {
           {!isSidebarOpen && (
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className="absolute left-0 top-4 z-[2002] bg-orange-500 text-white p-2 rounded-r-lg shadow-xl hover:bg-orange-600 transition-all animate-in slide-in-from-left duration-300"
+              className="absolute left-0 top-6 md:top-4 z-[1010] bg-orange-500 text-white p-1.5 md:p-2 rounded-r-lg shadow-xl hover:bg-orange-600 transition-all animate-in slide-in-from-left duration-300"
             >
-              <ChevronRight size={28} />
+              <ChevronRight className="w-5 h-5 md:w-7 md:h-7" />
             </button>
           )}
 
           {/* Exposure Search Bar */}
           {isExposureActive && !isBangunanPanelOpen && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[2002] w-full max-w-md px-4">
-              <div className={`rounded-full shadow-2xl border transition-all flex items-center px-4 py-2 group focus-within:ring-2 focus-within:ring-[#1E5C9A]/40 ${
-                darkMode ? 'bg-[#1E2023] border-gray-700' : 'bg-white border-gray-100'
+            <div className="absolute top-6 md:top-4 left-1/2 -translate-x-1/2 z-[1010] w-[140px] sm:w-[240px] md:w-full max-w-[320px] md:max-w-md px-1 md:px-4">
+              <div className={`rounded-full shadow-xl border transition-all flex items-center px-3 py-1.5 md:px-4 md:py-2 h-[28px] md:h-auto group focus-within:ring-2 focus-within:ring-[#1E5C9A]/40 ${
+                darkMode ? 'bg-[#1E2023]/95 border-gray-700' : 'bg-white/95 border-gray-200'
               }`}>
                 <input
                   type="text"
-                  placeholder="Cari gedung, sekolah, atau infrastruktur..."
+                  placeholder="Cari..."
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className={`flex-1 bg-transparent text-[12px] font-medium outline-none placeholder:text-gray-400 transition-all ${
+                  className={`flex-1 w-full bg-transparent text-[10px] md:text-[12px] font-bold outline-none border-0 ring-0 focus:ring-0 focus:outline-none placeholder:text-gray-400 transition-all ${
                     darkMode ? 'text-white' : 'text-gray-800'
                   }`}
+                  style={{ boxShadow: 'none' }}
                 />
                 <button className="text-gray-400 group-hover:text-gray-600">
-                  <Layers size={16} />
+                  <Layers className="w-3 h-3 md:w-4 md:h-4" />
                 </button>
               </div>
 
@@ -2375,7 +2376,7 @@ export default function CogHazardMap() {
           {/* Building Detail Overlay */}
           {selectedBuildingHtml && (
             <div
-              className={`absolute top-24 left-[280px] z-[2000] backdrop-blur-xl rounded-2xl shadow-2xl p-4 w-[280px] border animate-in fade-in slide-in-from-left-4 duration-300 pointer-events-auto cursor-grab active:cursor-grabbing transition-all ${
+              className={`absolute top-24 left-4 md:left-[280px] z-[2000] backdrop-blur-xl rounded-2xl shadow-2xl p-4 w-[calc(100vw-32px)] md:w-[280px] border animate-in fade-in slide-in-from-left-4 duration-300 pointer-events-auto cursor-grab active:cursor-grabbing transition-all ${
                 darkMode ? 'bg-[#0D0F12]/95 border-white/10 shadow-black/60' : 'bg-white/95 border-slate-200 shadow-slate-200/50'
               }`}
               style={{ transform: `translate(${panelPos.x}px, ${panelPos.y}px)` }}
@@ -2478,7 +2479,7 @@ export default function CogHazardMap() {
           {/* Draggable HSBGN Floating Panel */}
           {isHSBGNPanelOpen && (
             <div
-              className={`absolute top-[64px] left-[290px] z-[2000] backdrop-blur-xl rounded-[24px] shadow-2xl min-w-[340px] w-[500px] min-h-[300px] h-[400px] resize overflow-hidden border animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col transition-all ${
+              className={`absolute top-[70px] md:top-[64px] left-2 md:left-[290px] z-[1020] backdrop-blur-xl rounded-[20px] md:rounded-[24px] shadow-2xl min-w-[280px] md:min-w-[340px] w-[calc(100vw-16px)] md:w-[500px] h-[calc(100dvh-120px)] md:h-[400px] md:resize overflow-hidden border animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col transition-all ${
                 darkMode ? 'bg-[#0D0F12]/95 border-white/10 shadow-black/60' : 'bg-white/95 border-slate-200 shadow-slate-200/50'
               }`}
               style={{ transform: `translate(${hsbgnPanelPos.x}px, ${hsbgnPanelPos.y}px)` }}
@@ -2514,7 +2515,7 @@ export default function CogHazardMap() {
           {/* Draggable Bangunan Floating Panel */}
           {isBangunanPanelOpen && (
             <div
-              className={`absolute top-[64px] left-[320px] z-[2000] backdrop-blur-xl rounded-[24px] shadow-2xl min-w-[360px] w-[640px] min-h-[400px] h-[550px] resize overflow-hidden border animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col transition-all ${
+              className={`absolute top-[70px] md:top-[64px] left-2 md:left-[320px] z-[1020] backdrop-blur-xl rounded-[20px] md:rounded-[24px] shadow-2xl min-w-[280px] md:min-w-[360px] w-[calc(100vw-16px)] md:w-[640px] h-[calc(100dvh-120px)] md:h-[550px] md:resize overflow-hidden border animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col transition-all ${
                 darkMode ? 'bg-[#0D0F12]/95 border-white/10 shadow-black/60' : 'bg-white/95 border-slate-200 shadow-slate-200/50'
               }`}
               style={{ transform: `translate(${bangunanPanelPos.x}px, ${bangunanPanelPos.y}px)` }}
@@ -2571,7 +2572,7 @@ export default function CogHazardMap() {
           {/* Draggable Exposure Table Floating Panel */}
           {isExposurePanelOpen && (
             <div
-              className={`absolute top-[64px] left-[350px] z-[2000] backdrop-blur-xl rounded-[24px] shadow-2xl min-w-[420px] w-[500px] min-h-[400px] h-[550px] resize overflow-hidden border animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col transition-all ${
+              className={`absolute top-[70px] md:top-[64px] left-2 md:left-[350px] z-[1020] backdrop-blur-xl rounded-[20px] md:rounded-[24px] shadow-2xl min-w-[280px] md:min-w-[420px] w-[calc(100vw-16px)] md:w-[500px] h-[calc(100dvh-120px)] md:h-[550px] md:resize overflow-hidden border animate-in fade-in zoom-in-95 duration-200 pointer-events-auto flex flex-col transition-all ${
                 darkMode ? 'bg-[#0D0F12]/95 border-white/10 shadow-black/60' : 'bg-white/95 border-slate-200 shadow-slate-200/50'
               }`}
               style={{ transform: `translate(${exposurePanelPos.x}px, ${exposurePanelPos.y}px)` }}

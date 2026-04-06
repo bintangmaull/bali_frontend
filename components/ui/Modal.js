@@ -16,7 +16,7 @@ export default function Modal({ isOpen, onClose, maxWidth = "max-w-6xl", forceLi
 
   return createPortal(
     <div 
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 pointer-events-auto"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-3 sm:p-4 pointer-events-auto"
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
     >
@@ -25,7 +25,7 @@ export default function Modal({ isOpen, onClose, maxWidth = "max-w-6xl", forceLi
           darkMode 
             ? 'bg-[#0D0F12]/95 border-white/10 text-white shadow-[0_0_50px_rgba(0,0,0,0.5)]' 
             : 'bg-white border-slate-200 text-slate-900 shadow-2xl'
-        } rounded-[32px] border backdrop-blur-xl p-8 w-full ${maxWidth} relative transition-all duration-500 animate-in zoom-in-95 fade-in duration-300`}
+        } rounded-[32px] border backdrop-blur-xl p-5 md:p-8 w-full ${maxWidth} relative transition-all duration-500 animate-in zoom-in-95 fade-in duration-300`}
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
       >

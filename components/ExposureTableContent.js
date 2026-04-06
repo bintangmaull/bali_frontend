@@ -119,17 +119,17 @@ export default function ExposureTableContent({
   return (
     <div className={`flex flex-col h-full w-full relative transition-colors duration-300 ${darkMode ? 'bg-[#1E2023] text-gray-200' : 'bg-white text-gray-800'}`}>
       {/* Toolbar */}
-      <div className={`px-3 py-2 border-b flex flex-col gap-2 sticky top-0 z-[20] transition-colors duration-300 ${
+      <div className={`px-2 md:px-3 py-1.5 md:py-2 border-b flex flex-col gap-1.5 md:gap-2 sticky top-0 z-[20] transition-colors duration-300 ${
         darkMode ? 'bg-[#1E2023] border-gray-800' : 'bg-white border-gray-100'
       }`}>
         
         {/* Redundant header removed, replaced with smaller context sub-indicator if needed */}
-        <div className={`text-[9px] font-bold tracking-wider uppercase mb-1 flex items-center gap-1.5 opacity-60 ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>
+        <div className={`text-[8px] md:text-[9px] font-bold tracking-wider uppercase mb-0.5 flex items-center gap-1 opacity-60 ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>
           <span>{selectedCityFeature?.properties?.id_kota || selectedCityFeature?.properties?.kota || 'Semua Kota'}</span>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1.5 overflow-x-auto w-full pb-1 custom-scrollbar">
+        <div className="flex gap-1 md:gap-1.5 overflow-x-auto w-full pb-1 custom-scrollbar">
           {tabs.map(tab => (
             <button
               key={tab.id}
@@ -137,7 +137,7 @@ export default function ExposureTableContent({
                 setActiveTab(tab.id);
                 if (onTabChange) onTabChange(tab.id);
               }}
-              className={`px-2 py-0.5 text-[8px] font-bold rounded-md transition-all whitespace-nowrap border ${
+              className={`px-1.5 md:px-2 py-0.5 text-[7px] md:text-[8px] font-bold rounded-md transition-all whitespace-nowrap border ${
                 activeTab === tab.id 
                   ? darkMode 
                     ? 'bg-blue-900/40 text-blue-300 border-blue-800 shadow-sm' 
@@ -186,14 +186,14 @@ export default function ExposureTableContent({
               <table className="w-full text-left border-collapse text-[10px]">
                 <thead>
                   <tr className={`border-b transition-colors duration-300 ${darkMode ? 'bg-gray-800/80 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
-                    <th className={`px-2 py-1.5 font-bold whitespace-nowrap sticky left-0 z-20 min-w-[70px] border-r transition-colors duration-300 ${
+                    <th className={`px-1.5 py-1.5 font-bold whitespace-nowrap sticky left-0 z-20 min-w-[50px] md:min-w-[70px] border-r transition-colors duration-300 ${
                       darkMode ? 'bg-[#1E2023] text-gray-300 border-gray-700' : 'bg-gray-50 text-gray-600 border-gray-200'
-                    }`} style={{ fontSize: '9px' }}>ID Bgn</th>
-                    <th className={`px-2 py-1.5 font-bold sticky left-[70px] z-20 min-w-[120px] border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] truncate text-left transition-colors duration-300 ${
+                    }`} style={{ fontSize: '8px' }}>ID Bgn</th>
+                    <th className={`px-1.5 py-1.5 font-bold sticky left-[50px] md:left-[70px] z-20 min-w-[90px] md:min-w-[120px] border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] truncate text-left transition-colors duration-300 ${
                       darkMode ? 'bg-[#1E2023] text-gray-300 border-gray-700' : 'bg-gray-50 text-gray-600 border-gray-200'
-                    }`} style={{ fontSize: '9px' }}>Nama Gedung</th>
-                    <th className={`px-2 py-1.5 font-bold whitespace-nowrap pl-3 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`} style={{ fontSize: '9px' }}>Kota</th>
-                    <th className={`px-2 py-1.5 font-bold text-right whitespace-nowrap ${darkMode ? 'text-gray-300' : 'text-gray-600'}`} style={{ fontSize: '9px' }}>Nilai Aset</th>
+                    }`} style={{ fontSize: '8px' }}>Nama Gedung</th>
+                    <th className={`px-2 py-1.5 font-bold whitespace-nowrap pl-3 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`} style={{ fontSize: '8px' }}>Kota</th>
+                    <th className={`px-2 py-1.5 font-bold text-right whitespace-nowrap ${darkMode ? 'text-gray-300' : 'text-gray-600'}`} style={{ fontSize: '8px' }}>Nilai Aset</th>
                     {columns.map(col => (
                       <th key={col.key} className={`px-2 py-1.5 font-black text-right whitespace-nowrap border-l transition-colors duration-300 ${
                         darkMode ? 'text-blue-400 border-blue-900/30 bg-blue-950/20' : 'text-blue-800 border-blue-50 bg-blue-50/50'
@@ -215,14 +215,14 @@ export default function ExposureTableContent({
                           }`}
                           onClick={() => onRowClick && onRowClick(row)}
                         >
-                          <td className={`px-2 py-1.5 font-mono text-[8px] sticky left-0 z-10 min-w-[70px] border-r truncate transition-colors duration-300 ${
+                          <td className={`px-1.5 py-1.5 font-mono text-[7px] md:text-[8px] sticky left-0 z-10 min-w-[50px] md:min-w-[70px] border-r truncate transition-colors duration-300 ${
                             darkMode ? 'bg-[#1E2023] text-gray-500 group-hover:bg-gray-800 border-gray-800' : 'bg-white text-gray-500 group-hover:bg-slate-50 border-gray-100'
                           }`}>{row.id_bangunan || '-'}</td>
-                          <td className={`px-2 py-1.5 font-bold sticky left-[70px] z-10 min-w-[120px] truncate border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-left transition-colors duration-300 ${
+                          <td className={`px-1.5 py-1.5 font-bold sticky left-[50px] md:left-[70px] z-10 min-w-[90px] md:min-w-[120px] truncate border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-left transition-colors duration-300 ${
                             darkMode ? 'bg-[#1E2023] text-gray-200 group-hover:bg-gray-800 border-gray-800' : 'bg-white text-gray-800 group-hover:bg-slate-50 border-gray-100'
-                          }`} title={row.nama_gedung} style={{ fontSize: '10px' }}>{row.nama_gedung || '-'}</td>
-                          <td className={`px-2 py-1.5 text-[9px] pl-3 whitespace-nowrap ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{row.kota || '-'}</td>
-                          <td className={`px-2 py-1.5 text-right font-bold whitespace-nowrap ${darkMode ? 'text-emerald-400' : 'text-emerald-700'}`} style={{ fontSize: '9px' }}>{assetValue > 0 ? formatRupiah(assetValue) : '-'}</td>
+                          }`} title={row.nama_gedung} style={{ fontSize: '9px' }}>{row.nama_gedung || '-'}</td>
+                          <td className={`px-2 py-1.5 text-[8px] md:text-[9px] pl-3 whitespace-nowrap ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{row.kota || '-'}</td>
+                          <td className={`px-2 py-1.5 text-right font-black whitespace-nowrap ${darkMode ? 'text-emerald-400' : 'text-emerald-700'}`} style={{ fontSize: '8px' }}>{assetValue > 0 ? formatRupiah(assetValue) : '-'}</td>
                           {columns.map(col => {
                             let displayVal = '-';
                             
@@ -287,7 +287,7 @@ export default function ExposureTableContent({
 
         {/* Footer / Pagination */}
         {filteredData.length > 0 && (
-          <div className={`px-3 py-2 border-t flex justify-between items-center text-[10px] sticky bottom-0 z-[20] transition-colors duration-300 ${
+          <div className={`px-2.5 py-1.5 md:px-3 md:py-2 border-t flex justify-between items-center text-[9px] md:text-[10px] sticky bottom-0 z-[20] transition-colors duration-300 ${
             darkMode ? 'bg-[#1E2023] border-gray-800' : 'bg-white border-gray-100'
           }`}>
             <div className="flex items-center gap-1.5">

@@ -551,14 +551,14 @@ export default function CrudBuildings({
       )}
 
       {/* Upload & Filter Section (Premium Toolbar) */}
-      <div className={`p-4 rounded-3xl mb-4 border transition-all duration-300 ${
+      <div className={`p-2 md:p-4 rounded-3xl mb-2 md:mb-4 border transition-all duration-300 ${
         darkMode ? 'bg-white/[0.03] border-white/10' : 'bg-slate-50 border-slate-200 shadow-sm'
       }`}>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1.5 md:gap-2">
           {/* Row 1: Upload & Templates */}
-          <div className={`p-2.5 rounded-xl flex flex-col sm:flex-row gap-2 items-center border ${darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
+          <div className={`p-1.5 md:p-2.5 rounded-xl flex flex-col md:flex-row gap-1.5 md:gap-2 items-center border ${darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
             {/* Custom File Input */}
-            <div className={`relative flex-1 group ${darkMode ? 'text-gray-300' : 'text-slate-600'}`}>
+            <div className={`relative w-full md:w-auto md:flex-1 group ${darkMode ? 'text-gray-300' : 'text-slate-600'}`}>
               <input
                 type="file"
                 accept=".csv"
@@ -566,70 +566,72 @@ export default function CrudBuildings({
                 onChange={handleFileChange}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               />
-              <div className={`flex items-center gap-2.5 px-3 h-8 rounded-lg border-2 border-dashed transition-all ${
+              <div className={`flex items-center gap-1.5 md:gap-2.5 px-2 md:px-3 h-7 md:h-8 rounded-lg border-2 border-dashed transition-all ${
                 file 
                   ? (darkMode ? 'bg-blue-500/10 border-blue-500/50 text-blue-300' : 'bg-blue-50 border-blue-300 text-blue-700')
                   : (darkMode ? 'bg-white/5 border-white/10 hover:border-white/20' : 'bg-white border-slate-200 hover:border-slate-300')
               }`}>
-                <FileText size={14} className={file ? 'text-blue-500' : 'text-gray-400'} />
-                <span className="text-[9px] font-bold truncate max-w-[350px]">
+                <FileText size={12} className={file ? 'text-blue-500' : 'text-gray-400'} />
+                <span className="text-[8px] md:text-[9px] font-bold truncate max-w-[200px] md:max-w-[350px]">
                   {file ? file.name : 'Pilih File .CSV'}
                 </span>
                 {!file && (
-                  <span className={`ml-auto text-[7px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded bg-blue-500 text-white animate-pulse`}>
+                  <span className={`ml-auto text-[6px] md:text-[7px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded bg-blue-500 text-white animate-pulse`}>
                     Browse
                   </span>
                 )}
               </div>
             </div>
 
-            <button
-              onClick={onUpload}
-              disabled={!file || isUploading}
-              className={`h-8 px-4 rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center gap-2 transition-all shadow-lg active:scale-95 ${
-                file && !isUploading
-                  ? 'bg-emerald-600 text-white shadow-emerald-600/20 hover:bg-emerald-700'
-                  : (darkMode ? 'bg-white/5 text-gray-500' : 'bg-slate-200 text-slate-400')
-              }`}
-            >
-              {isUploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
-              Unggah Data
-            </button>
+            <div className="flex w-full md:w-auto gap-1.5 md:gap-2">
+              <button
+                onClick={onUpload}
+                disabled={!file || isUploading}
+                className={`flex-1 md:flex-none justify-center h-7 md:h-8 px-3 md:px-4 rounded-xl text-[8px] md:text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 md:gap-2 transition-all shadow-lg active:scale-95 ${
+                  file && !isUploading
+                    ? 'bg-emerald-600 text-white shadow-emerald-600/20 hover:bg-emerald-700'
+                    : (darkMode ? 'bg-white/5 text-gray-500' : 'bg-slate-200 text-slate-400')
+                }`}
+              >
+                {isUploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+                Unggah Data
+              </button>
 
-            <a
-              href="/sample_bangunan.csv"
-              download="template_data_bangunan.csv"
-              className={`h-8 px-4 rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all ${
-                darkMode 
-                  ? 'bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10' 
-                  : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'
-              }`}
-            >
-              <Download size={13} />
-              Template
-            </a>
+              <a
+                href="/sample_bangunan.csv"
+                download="template_data_bangunan.csv"
+                className={`flex-1 md:flex-none justify-center h-7 md:h-8 px-3 md:px-4 rounded-xl text-[8px] md:text-[9px] font-black uppercase tracking-wider flex items-center gap-1 md:gap-1.5 transition-all ${
+                  darkMode 
+                    ? 'bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10' 
+                    : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'
+                }`}
+              >
+                <Download size={12} />
+                Template
+              </a>
+            </div>
           </div>
 
           {/* Row 2: Search & Actions */}
-          <div className="flex flex-wrap gap-2 items-center">
-            <div className="w-[85px]">
+          <div className="flex flex-wrap gap-1.5 md:gap-2 items-center">
+            <div className="w-[70px] md:w-[85px]">
               <Select 
                 id="kotaFilter" 
                 value={activeKotaFilter} 
                 onChange={(val) => doSetKotaFilter(val)} 
                 options={kotaList} 
                 placeholder="KOTA" 
-                className="w-full text-[9px] font-black h-8 rounded-xl !bg-transparent border-0" 
+                className="w-full text-[8px] md:text-[9px] font-black h-7 md:h-8 rounded-xl !bg-transparent border-0" 
               />
             </div>
-            <div className="relative group flex-1 min-w-[100px]">
-              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${darkMode ? 'text-gray-500 group-focus-within:text-blue-400' : 'text-slate-400 group-focus-within:text-blue-600'}`} size={11} />
+            <div className="relative group flex-1 min-w-[80px] md:min-w-[100px]">
+              <Search className={`absolute left-2.5 md:left-3 top-1/2 -translate-y-1/2 transition-colors ${darkMode ? 'text-gray-500 group-focus-within:text-blue-400' : 'text-slate-400 group-focus-within:text-blue-600'}`} size={11} />
               <input
                 type="text"
                 placeholder="Cari..."
                 value={search}
                 onChange={e => doSetSearch(e.target.value)}
-                className={`w-full h-8 pl-8 pr-3 rounded-xl border transition-all duration-300 text-[9px] font-medium outline-none ${
+                className={`w-full h-7 md:h-8 pl-7 md:pl-8 pr-2 md:pr-3 rounded-xl border transition-all duration-300 text-[8px] md:text-[9px] font-medium outline-none ${
                   darkMode 
                     ? 'bg-white/5 border-white/10 text-white focus:bg-white/10 focus:border-blue-500/50' 
                     : 'bg-white border-slate-200 text-slate-900 focus:bg-white focus:border-blue-500 shadow-inner'
@@ -638,7 +640,7 @@ export default function CrudBuildings({
             </div>
             <button
               onClick={() => setModalMode('add')}
-              className="h-8 px-4 bg-blue-600 text-white rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+              className="h-7 md:h-8 px-3 md:px-4 bg-blue-600 text-white rounded-xl text-[8px] md:text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
             >
               <Plus size={12} strokeWidth={3} />
               Data

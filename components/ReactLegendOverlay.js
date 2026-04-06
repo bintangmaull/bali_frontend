@@ -2707,8 +2707,8 @@ const ReactLegendOverlay = ({
   return (
     <>
       {(hasHazard || hasExposure) && (
-        <div className="absolute bottom-6 left-[260px] right-0 lg:right-[320px] pointer-events-none z-[2002] flex justify-center">
-          <div className={`backdrop-blur-sm px-4 lg:px-5 py-3 rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border pointer-events-auto transition-all duration-300 max-w-(full) min-w-max flex flex-row items-center overflow-x-auto custom-scrollbar ${darkMode ? 'bg-gray-900/95 border-gray-800 shadow-black/40' : 'bg-white/95 border-slate-200'
+        <div className="absolute bottom-6 left-0 md:left-[280px] right-0 lg:right-[320px] pointer-events-none z-[1010] flex justify-center px-2">
+          <div className={`backdrop-blur-sm px-4 lg:px-5 py-3 rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border pointer-events-auto transition-all duration-300 max-w-full flex flex-row items-center overflow-x-auto custom-scrollbar ${darkMode ? 'bg-gray-900/95 border-gray-800 shadow-black/40' : 'bg-white/95 border-slate-200'
             } ${(hazardKey && (hazardKey.includes('flood') || hazardKey.includes('drought'))) ? 'gap-3 lg:gap-4' : 'gap-4 lg:gap-6'}`}>
             {/* 1. Hazard Base Info */}
             {hasHazard && (
@@ -2782,15 +2782,15 @@ const ReactLegendOverlay = ({
           {!isAalSidebarOpen && (
             <button
               onClick={() => setIsAalSidebarOpen(true)}
-              className="absolute right-0 top-4 z-[2002] bg-orange-500 text-white p-2 rounded-l-lg shadow-xl hover:bg-orange-600 transition-all animate-in slide-in-from-right duration-300"
+              className="absolute right-0 top-6 md:top-4 z-[1015] bg-orange-500 text-white p-1.5 md:p-2 rounded-l-lg shadow-xl hover:bg-orange-600 transition-all animate-in slide-in-from-right duration-300"
             >
-              <ChevronLeft size={28} />
+              <ChevronLeft className="w-5 h-5 md:w-7 md:h-7" />
             </button>
           )}
 
           {/* Sidebar Panel */}
           <div
-            className={`absolute top-0 right-0 z-[2002] h-full flex flex-col backdrop-blur-sm shadow-[-4px_0_24px_rgb(0,0,0,0.08)] border-l transition-transform duration-300 ${darkMode ? 'bg-[#1E2023] border-gray-800' : 'bg-white border-slate-200'
+            className={`absolute top-0 right-0 z-[1020] h-full flex flex-col max-w-[85vw] md:max-w-none backdrop-blur-sm shadow-[-4px_0_24px_rgb(0,0,0,0.08)] border-l transition-transform duration-300 ${darkMode ? 'bg-[#1E2023] border-gray-800' : 'bg-white border-slate-200'
               }`}
             style={{
               width: `${sidebarWidth}px`,
