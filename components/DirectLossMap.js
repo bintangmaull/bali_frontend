@@ -3,6 +3,7 @@ import { useTheme } from '../context/ThemeContext'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { getKotaBoundary } from '../src/lib/api'
+import BuildingInfoPanel from './BuildingInfoPanel'
 
 const icons = {
   FS: L.icon({
@@ -101,7 +102,8 @@ export default function DirectLossMap({ geojson, cityGeojson, filters, search, s
   const clusterRef = useRef(null)
   const legendRef = useRef(null)
   const boundaryRef = useRef(null)
-  const [selectedBuildingHtml, setSelectedBuildingHtml] = useState(null)
+  const [selectedBuildingData, setSelectedBuildingData] = useState(null)
+  const [activeBuildingTab, setActiveBuildingTab] = useState('eq')
 
   // Drag state for Building Detail Panel
   const [panelPos, setPanelPos] = useState({ x: 0, y: 0 })
@@ -241,148 +243,9 @@ export default function DirectLossMap({ geojson, cityGeojson, filters, search, s
           .bindTooltip(p.nama_gedung, { permanent: false, direction: 'right', offset: [10, 0], className: 'building-label' })
         
         marker.on('click', () => {
-          const luasVal = parseFloat(p.luas) || 0;
-          const hsbgnVal = parseFloat(p.hsbgn) || 0;
-          const assetValue = luasVal * hsbgnVal;
-
-          const formatPercent = (loss, totalVal) => {
-            if (!totalVal || totalVal === 0 || !loss) return '<span class="text-gray-400 font-normal">(0%)</span>'
-            const pct = (loss / totalVal) * 100
-            if (pct < 0.1 && pct > 0) return '<span class="text-gray-400 font-normal">(<0.1%)</span>'
-            if (pct >= 99.9) return '<span class="text-[#2FA69A] font-normal opacity-80">(100%)</span>'
-            return `<span class="text-gray-500 font-normal opacity-80">(${pct.toFixed(1)}%)</span>`
-          }
-
-          const assetStr = assetValue > 0 ? formatNumberWithUnit(assetValue) : '-';
-
-          // Helper to check if any value in a group is > 0
-          const hasBanjirR = [p.direct_loss_r_250, p.direct_loss_r_100, p.direct_loss_r_50, p.direct_loss_r_25, p.direct_loss_r_10, p.direct_loss_r_5, p.direct_loss_r_2].some(v => (v || 0) > 0);
-          const hasBanjirRC = [p.direct_loss_rc_250, p.direct_loss_rc_100, p.direct_loss_rc_50, p.direct_loss_rc_25, p.direct_loss_rc_10, p.direct_loss_rc_5, p.direct_loss_rc_2].some(v => (v || 0) > 0);
-          const hasGempa = true; // Always show earthquake section since we have ratios in dl_exposure now
-          const hasTsunami = (p.direct_loss_inundansi || 0) > 0;
-
-          // Helper to conditionally render a row
-          const renderRow = (label, val, className = "") => {
-            const numVal = parseFloat(val) || 0;
-            return '<div class="' + className + '">' + label + ': <b class="' + (darkMode ? 'text-white' : 'text-gray-800') + '">' + formatNumberWithUnit(numVal) + '</b> ' + formatPercent(numVal, assetValue) + '</div>';
-          };
-
-          let hazardContent = '';
-
-          if (hasGempa) {
-            hazardContent += `
-              <div class="flex border-l-2 border-[#2F6FAF] pl-1">
-                <div class="w-12 text-[8px] font-bold shrink-0 ${darkMode ? 'text-blue-400' : 'text-[#1E5C9A]'}">PGA</div>
-                <div class="flex-1 grid grid-cols-1 gap-y-0 text-[8px] leading-tight ${darkMode ? 'text-gray-300' : 'text-gray-600'}">
-                  ${['1000', '500', '250', '200', '100'].map(rp => {
-                    const cityFeature = (cityGeojson?.features || []).find(f => 
-                      (f.properties.nama_kota || f.properties.id_kota || '').toUpperCase() === (p.kota || '').toUpperCase()
-                    );
-                    const dlExp = cityFeature?.properties?.dl_exposure || {};
-                    
-                    // Map building type to ratio category
-                    const id = (p.id_bangunan || '').toUpperCase();
-                    let category = 'bmn';
-                    if (id.startsWith('FS')) category = 'healthcare';
-                    else if (id.startsWith('FD')) category = 'educational';
-                    else if (id.startsWith('ELECTRICITY')) category = 'electricity';
-                    else if (id.startsWith('AIRPORT')) category = 'airport';
-                    else if (id.startsWith('HOTEL')) category = 'hotel';
-                    else if (id.startsWith('RESIDENTIAL')) category = 'residential';
-                    
-                    const catData = dlExp[category] || {};
-                    const ratio = catData[`pga_${rp}`];
-                    const ratioStr = ratio != null ? (parseFloat(ratio) * 100).toFixed(6) + '%' : '-';
-                    
-                    return `<div>${rp}th: <b class="${darkMode ? 'text-blue-300' : 'text-blue-700'}">${ratioStr}</b> (Loss Ratio)</div>`;
-                  }).join('')}
-                </div>
-              </div>
-            `;
-          }
-
-          if (hasBanjirR) {
-            hazardContent += `
-              <div class="flex border-l-2 border-green-500 pl-1">
-                <div class="w-12 text-[8px] font-bold shrink-0 ${darkMode ? 'text-green-400' : 'text-green-600'}">Banjir R</div>
-                <div class="flex-1 grid grid-cols-2 gap-x-1 gap-y-0 text-[8px] leading-tight ${darkMode ? 'text-gray-300' : 'text-gray-600'}">
-                  ${renderRow('250th', p.direct_loss_r_250)}
-                  ${renderRow('100th', p.direct_loss_r_100)}
-                  ${renderRow('50th', p.direct_loss_r_50)}
-                  ${renderRow('25th', p.direct_loss_r_25)}
-                  ${renderRow('10th', p.direct_loss_r_10)}
-                  ${renderRow('5th', p.direct_loss_r_5)}
-                  ${renderRow('2th', p.direct_loss_r_2, 'col-span-2')}
-                </div>
-              </div>
-            `;
-           }
-
-           if (hasBanjirRC) {
-            hazardContent += `
-              <div class="flex border-l-2 border-emerald-500 pl-1">
-                <div class="w-12 text-[8px] font-bold shrink-0 ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}">Banjir RC</div>
-                <div class="flex-1 grid grid-cols-2 gap-x-1 gap-y-0 text-[8px] leading-tight ${darkMode ? 'text-gray-300' : 'text-gray-600'}">
-                  ${renderRow('250th', p.direct_loss_rc_250)}
-                  ${renderRow('100th', p.direct_loss_rc_100)}
-                  ${renderRow('50th', p.direct_loss_rc_50)}
-                  ${renderRow('25th', p.direct_loss_rc_25)}
-                  ${renderRow('10th', p.direct_loss_rc_10)}
-                  ${renderRow('5th', p.direct_loss_rc_5)}
-                  ${renderRow('2th', p.direct_loss_rc_2, 'col-span-2')}
-                </div>
-              </div>
-            `;
-           }
-
-           if (hasTsunami) {
-             hazardContent += `
-              <div class="flex border-l-2 border-[#6FB5C2] pl-1">
-                <div class="w-12 text-[8px] font-bold shrink-0 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}">Tsunami</div>
-                <div class="flex-1 text-[8px] leading-tight ${darkMode ? 'text-gray-300' : 'text-gray-600'}">
-                  ${renderRow('Total', p.direct_loss_inundansi)}
-                </div>
-              </div>
-             `;
-           }
-
-           if (!hasGempa && !hasBanjirR && !hasBanjirRC && !hasTsunami) {
-             hazardContent += `<div class="text-[9px] text-gray-400 italic text-center py-1">Tidak ada risiko (Rp 0)</div>`;
-           }
-
-          const popupHtml = `
-            <div class="flex flex-col gap-1.5 font-[SF Pro] text-left ${darkMode ? 'text-gray-200' : 'text-gray-800'}">
-              <!-- Header -->
-              <div>
-                <h3 class="font-bold text-[11px] leading-tight ${darkMode ? 'text-white' : 'text-gray-800'}">${p.nama_gedung || 'Tanpa Nama'}</h3>
-                <p class="text-[9px] italic mt-0.5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}">${p.taxonomy || '-'} • Lt: ${p.jumlah_lantai || '-'}</p>
-                <p class="text-[8px] mt-0.5 font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}">${p.alamat || '-'}</p>
-              </div>
-              
-              <!-- Core Attrs -->
-              <div class="grid grid-cols-2 gap-1 text-[9px] p-1 rounded border ${
-                darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-slate-50 border-slate-100'
-              }">
-                <div class="flex flex-col leading-tight ${darkMode ? 'text-gray-400' : 'text-gray-500'}">
-                  <span class="text-[8px] uppercase tracking-tighter opacity-70">Luas</span>
-                  <span class="font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-700'}">${p.luas || '-'} m²</span>
-                </div>
-                <div class="flex flex-col leading-tight ${darkMode ? 'text-gray-400' : 'text-gray-500'}">
-                  <span class="text-[8px] uppercase tracking-tighter opacity-70">Nilai Aset</span>
-                  <span class="font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-700'}">Rp ${assetStr}</span>
-                </div>
-              </div>
-
-              <!-- Hazards -->
-              <div class="space-y-1 mt-0.5 border-t pt-1 ${darkMode ? 'border-gray-800' : 'border-gray-100'}">
-                ${hazardContent}
-              </div>
-            </div>
-          `;
-
           // Reset panel position when selecting a new building
           setPanelPos({ x: 0, y: 0 })
-          setSelectedBuildingHtml(popupHtml)
+          setSelectedBuildingData(p)
         })
         
         cluster.addLayer(marker)
@@ -478,10 +341,10 @@ export default function DirectLossMap({ geojson, cityGeojson, filters, search, s
         `}
       </style>
       <div ref={mapEl} className="h-full w-full rounded-lg" />
-      {selectedBuildingHtml && (
+      {selectedBuildingData && (
         <div 
-          className={`absolute top-24 left-[280px] z-[2000] backdrop-blur-md rounded-xl shadow-2xl p-4 w-[240px] border pointer-events-auto cursor-grab active:cursor-grabbing transition-all ${
-            darkMode ? 'bg-[#1E2023]/95 border-gray-700 shadow-black/40' : 'bg-white/95 border-gray-100 shadow-xl'
+          className={`absolute top-20 left-3 md:left-[280px] z-[2000] backdrop-blur-xl rounded-xl shadow-2xl p-2.5 md:p-3 w-[calc(100vw-24px)] md:w-[220px] max-h-[80vh] overflow-y-auto custom-scrollbar border animate-in fade-in slide-in-from-left-4 duration-300 pointer-events-auto cursor-grab active:cursor-grabbing transition-all ${
+            darkMode ? 'bg-[#0D0F12]/95 border-white/10 shadow-black/60' : 'bg-white/95 border-slate-200 shadow-slate-200/50'
           }`}
           style={{ transform: `translate(${panelPos.x}px, ${panelPos.y}px)` }}
           onPointerDown={handlePointerDown}
@@ -489,14 +352,33 @@ export default function DirectLossMap({ geojson, cityGeojson, filters, search, s
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
         >
-          <div className="flex justify-end pb-1 mb-1 border-b border-gray-100">
-            <button onClick={() => setSelectedBuildingHtml(null)} className="close-btn text-gray-400 hover:text-gray-800 focus:outline-none cursor-pointer transition-colors bg-gray-50 hover:bg-gray-100 rounded-full p-1">
+          <div className="flex justify-between items-center pb-2 mb-4 border-b border-white/5">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-500">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <span className={`text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-300' : 'text-slate-500'}`}>Building Info</span>
+            </div>
+            <button 
+              onClick={() => { setSelectedBuildingData(null); }} 
+              className={`close-btn transition-all p-1.5 rounded-lg ${darkMode ? 'text-gray-500 hover:text-white hover:bg-white/10' : 'text-slate-400 hover:text-slate-800 hover:bg-slate-100'}`}
+            >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-          <div className="pointer-events-none" dangerouslySetInnerHTML={{ __html: selectedBuildingHtml }} />
+          <BuildingInfoPanel 
+            data={selectedBuildingData}
+            darkMode={darkMode}
+            dlExposure={(cityGeojson?.features || []).find(f => 
+              (f.properties.nama_kota || f.properties.id_kota || '').toUpperCase() === (selectedBuildingData?.kota || '').toUpperCase()
+            )?.properties?.dl_exposure}
+            activeTab={activeBuildingTab}
+            setActiveTab={setActiveBuildingTab}
+          />
         </div>
       )}
     </div>
