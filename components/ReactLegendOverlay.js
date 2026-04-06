@@ -2750,20 +2750,26 @@ const ReactLegendOverlay = ({
 
             {/* 3. Eksposur */}
             {hasExposure && Object.keys(EXPOSURE_COLORS).some(key => infraLayers[key]) && (
-              <div className="flex flex-col justify-center min-w-[80px]">
-                <div className="font-bold mb-1 text-[7px] text-slate-400 tracking-widest uppercase">
+              <div className={`flex flex-col justify-center ${!hasHazard ? 'min-w-[200px] py-1' : 'min-w-[80px]'}`}>
+                <div className={`font-black mb-2 text-[7.5px] tracking-[0.2em] uppercase flex items-center gap-1.5 ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>
+                  {!hasHazard && <Layers size={8} strokeWidth={2.5} />}
                   Eksposur
                 </div>
-                <div className={`grid grid-cols-2 gap-x-2 gap-y-0.5 ${darkMode ? 'text-gray-300' : 'text-slate-600'}`}>
-                  {['healthcare', 'educational', 'electricity', 'airport', 'hotel', 'bmn', 'residential'].map(type => (
-                    <div key={type} className="flex items-center gap-1">
-                      <div
-                        className={`w-1 h-1 rounded-full border border-white ring-[0.2px] ${darkMode ? 'ring-gray-700' : 'ring-slate-200'}`}
-                        style={{ backgroundColor: EXPOSURE_COLORS[type] }}
-                      ></div>
-                      <span className="text-[7px] font-semibold capitalize whitespace-nowrap">{type}</span>
-                    </div>
-                  ))}
+                <div className={`grid ${!hasHazard ? 'grid-cols-4 gap-x-4 gap-y-2' : 'grid-cols-2 gap-x-2 gap-y-0.5'} ${darkMode ? 'text-gray-200' : 'text-slate-600'}`}>
+                  {['healthcare', 'educational', 'electricity', 'airport', 'hotel', 'bmn', 'residential'].map(type => {
+                    if (!infraLayers[type]) return null;
+                    return (
+                      <div key={type} className="flex items-center gap-1.5 group cursor-default">
+                        <div
+                          className={`w-1.5 h-1.5 rounded-full border border-white/20 ring-[1px] transition-transform group-hover:scale-125 ${darkMode ? 'ring-gray-800' : 'ring-slate-100'}`}
+                          style={{ backgroundColor: EXPOSURE_COLORS[type] }}
+                        ></div>
+                        <span className="text-[7.5px] font-bold whitespace-nowrap">
+                          {type === 'bmn' ? 'BMN' : type.charAt(0).toUpperCase() + type.slice(1)}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
