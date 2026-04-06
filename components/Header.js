@@ -144,7 +144,7 @@ export default function Header() {
               <button
                 key={item.path}
                 onClick={() => { router.push(item.path); setIsMobileMenuOpen(false); }}
-                className={`px-4 py-3 rounded-xl transition text-left font-medium ${isActive(item.path)
+                className={`px-4 py-2.5 rounded-lg transition text-left text-sm font-semibold ${isActive(item.path)
                     ? 'bg-[#1E5C9A] text-white'
                     : darkMode ? 'text-gray-200 hover:bg-[#333538]' : 'text-slate-600 hover:bg-slate-100'
                   }`}
@@ -160,7 +160,7 @@ export default function Header() {
                 </div>
                 <button
                   onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
-                  className="px-4 py-3 rounded-xl transition text-left font-medium text-red-500 hover:bg-red-500/10"
+                  className="px-4 py-2.5 rounded-lg transition text-left text-sm font-semibold text-red-500 hover:bg-red-500/10"
                 >
                   Keluar
                 </button>
@@ -168,7 +168,7 @@ export default function Header() {
             ) : (
               <button
                 onClick={() => { router.push('/login'); setIsMobileMenuOpen(false); }}
-                className="px-4 py-3 rounded-xl bg-[#1E5C9A] text-white font-semibold transition text-left shadow-sm"
+                className="px-4 py-2.5 rounded-lg bg-[#1E5C9A] text-white text-sm font-black transition text-left shadow-sm"
               >
                 Masuk
               </button>
