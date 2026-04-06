@@ -2750,18 +2750,18 @@ const ReactLegendOverlay = ({
 
             {/* 3. Eksposur */}
             {hasExposure && Object.keys(EXPOSURE_COLORS).some(key => infraLayers[key]) && (
-              <div className="flex flex-col justify-center min-w-[100px]">
-                <div className="font-bold mb-1.5 text-[8px] text-slate-400 tracking-widest uppercase">
+              <div className="flex flex-col justify-center min-w-[80px]">
+                <div className="font-bold mb-1 text-[7px] text-slate-400 tracking-widest uppercase">
                   Eksposur
                 </div>
-                <div className={`grid grid-cols-2 gap-x-3 gap-y-1 ${darkMode ? 'text-gray-300' : 'text-slate-600'}`}>
+                <div className={`grid grid-cols-2 gap-x-2 gap-y-0.5 ${darkMode ? 'text-gray-300' : 'text-slate-600'}`}>
                   {['healthcare', 'educational', 'electricity', 'airport', 'hotel', 'bmn', 'residential'].map(type => (
-                    <div key={type} className="flex items-center gap-1.5">
+                    <div key={type} className="flex items-center gap-1">
                       <div
-                        className={`w-1.5 h-1.5 rounded-full border border-white ring-[0.5px] ${darkMode ? 'ring-gray-700' : 'ring-slate-200'}`}
+                        className={`w-1 h-1 rounded-full border border-white ring-[0.2px] ${darkMode ? 'ring-gray-700' : 'ring-slate-200'}`}
                         style={{ backgroundColor: EXPOSURE_COLORS[type] }}
                       ></div>
-                      <span className="text-[8px] font-semibold capitalize whitespace-nowrap">{type}</span>
+                      <span className="text-[7px] font-semibold capitalize whitespace-nowrap">{type}</span>
                     </div>
                   ))}
                 </div>

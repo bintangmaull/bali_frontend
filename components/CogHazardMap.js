@@ -388,36 +388,36 @@ export default function CogHazardMap() {
     const isBMNRes = id.startsWith('BMN') || id.startsWith('RESIDENTIAL')
 
     return `
-      <div class="flex flex-col gap-3 font-[Inter] text-left p-1">
+      <div class="flex flex-col gap-1.5 font-[Inter] text-left p-0">
         <!-- Header -->
-        <div class="border-b ${darkMode ? 'border-white/10' : 'border-slate-200'} pb-2">
-          <h3 class="font-black text-[14px] leading-tight ${darkMode ? 'text-white' : 'text-slate-900'}">${p.nama_gedung || 'Tanpa Nama'}</h3>
-          <p class="text-[10px] font-bold uppercase tracking-widest ${darkMode ? 'text-gray-400' : 'text-slate-500'} mt-1">
+        <div class="border-b ${darkMode ? 'border-white/10' : 'border-slate-200'} pb-1">
+          <h3 class="font-black text-[10.5px] leading-tight ${darkMode ? 'text-white' : 'text-slate-900'}">${p.nama_gedung || 'Tanpa Nama'}</h3>
+          <p class="text-[8.5px] font-bold uppercase tracking-widest ${darkMode ? 'text-gray-400' : 'text-slate-500'} mt-0.5">
             ${p.taxonomy || '-'} • LT: ${p.jumlah_lantai || '-'} • ${p.kota || ''}
           </p>
-          <p class="text-[10px] ${darkMode ? 'text-gray-400' : 'text-slate-400'} mt-1 truncate">${p.alamat || '-'}</p>
+          <p class="text-[8.5px] ${darkMode ? 'text-gray-400' : 'text-slate-400'} mt-0.5 truncate">${p.alamat || '-'}</p>
         </div>
         
         <!-- Core Attrs -->
-        <div class="grid grid-cols-2 gap-2">
-          <div class="p-2 rounded-xl border ${darkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}">
-            <span class="block text-[9px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-500' : 'text-slate-400'}">Luas</span>
-            <span class="text-[11px] font-black ${darkMode ? 'text-white' : 'text-slate-800'}">${p.luas || '-'} <span class="text-[9px] opacity-60">m²</span></span>
+        <div class="grid grid-cols-2 gap-1">
+          <div class="p-1 px-1.5 rounded-lg border ${darkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}">
+            <span class="block text-[7.5px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-500' : 'text-slate-400'}">Luas</span>
+            <span class="text-[9.5px] font-black ${darkMode ? 'text-white' : 'text-slate-800'}">${p.luas || '-'} <span class="text-[7.5px] opacity-60">m²</span></span>
           </div>
-          <div class="p-2 rounded-xl border ${darkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}">
-            <span class="block text-[9px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-500' : 'text-slate-400'}">Aset</span>
-            <span class="text-[11px] font-black ${darkMode ? 'text-white' : 'text-slate-800'}">Rp ${assetStr}</span>
+          <div class="p-1 px-1.5 rounded-lg border ${darkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}">
+            <span class="block text-[7.5px] font-black uppercase tracking-widest ${darkMode ? 'text-gray-500' : 'text-slate-400'}">Aset</span>
+            <span class="text-[9.5px] font-black ${darkMode ? 'text-white' : 'text-slate-800'}">Rp ${assetStr}</span>
           </div>
         </div>
 
-        <div class="space-y-3 mt-1">
+        <div class="space-y-1.5 mt-0.5">
           <!-- Gempa Bumi -->
-          <div class="p-2.5 rounded-xl border ${darkMode ? 'bg-blue-500/5 border-blue-500/10' : 'bg-blue-50/50 border-blue-100'}">
-            <div class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1.5 flex items-center justify-between">
+          <div class="p-1.5 rounded-lg border ${darkMode ? 'bg-blue-500/5 border-blue-500/10' : 'bg-blue-50/50 border-blue-100'}">
+            <div class="text-[8px] font-black text-blue-500 uppercase tracking-widest mb-1 flex items-center justify-between">
               <span>Gempa (PGA)</span>
-              <span class="text-[9px] opacity-60">Loss Ratio</span>
+              <span class="text-[7.5px] opacity-60">Loss Ratio</span>
             </div>
-            <div class="grid grid-cols-1 gap-1">
+            <div class="grid grid-cols-1 gap-0">
               ${['1000', '500', '250', '200', '100'].map(rp => {
                   const cityKey = (p.kota || '').toUpperCase()
                   const cityFeature = boundaryLookup.get(cityKey);
@@ -436,7 +436,7 @@ export default function CogHazardMap() {
                   const ratioStr = ratio != null ? (parseFloat(ratio) * 100).toFixed(4) + '%' : '-';
                   
                   return `
-                    <div class="flex justify-between items-center text-[10px]">
+                    <div class="flex justify-between items-center text-[8.5px] py-0.5 border-b border-blue-500/5 last:border-0">
                       <span class="${darkMode ? 'text-gray-300' : 'text-slate-500'} font-medium">${rp} Yr</span>
                       <b class="text-blue-500 font-black font-mono">${ratioStr}</b>
                     </div>
@@ -449,16 +449,16 @@ export default function CogHazardMap() {
           ${isBMNRes ? '' : `
           <div class="grid grid-cols-1 gap-2">
             <!-- Banjir (R) -->
-            <div class="p-2.5 rounded-xl border ${darkMode ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-emerald-50/50 border-emerald-100'}">
-              <div class="text-[9px] font-black text-emerald-500 uppercase tracking-widest mb-1.5 flex justify-between items-center">
-                <span>Banjir (R) - Non-Climate Change</span>
-                <span class="text-[8px] opacity-60">Loss / Share</span>
+            <div class="p-2 rounded-xl border ${darkMode ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-emerald-50/50 border-emerald-100'}">
+              <div class="text-[8px] font-black text-emerald-500 uppercase tracking-widest mb-1 flex justify-between items-center">
+                <span>Banjir (R) - Non-CC</span>
+                <span class="text-[7px] opacity-60">Loss / Share</span>
               </div>
-              <div class="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-[9px] ${darkMode ? 'text-gray-300' : 'text-slate-600'}">
+              <div class="grid grid-cols-2 gap-x-3 gap-y-0.5 font-mono text-[8px] ${darkMode ? 'text-gray-300' : 'text-slate-600'}">
                 ${['250', '100', '50', '25', '10', '5', '2'].map(rp => {
                   const val = p[`direct_loss_r_${rp}`] || 0;
                   return `
-                    <div class="flex justify-between items-center border-b border-emerald-500/5 pb-0.5">
+                    <div class="flex justify-between items-center border-b border-emerald-500/5">
                       <span class="opacity-70">${rp}y</span>
                       <div class="flex items-center gap-1">
                         <b class="${val > 0 ? 'text-emerald-500' : ''}">${formatNumberWithUnit(val)}</b>
@@ -470,16 +470,16 @@ export default function CogHazardMap() {
               </div>
             </div>
             <!-- Banjir (RC) -->
-            <div class="p-2.5 rounded-xl border ${darkMode ? 'bg-teal-500/5 border-teal-500/10' : 'bg-teal-50/50 border-teal-100'}">
-              <div class="text-[9px] font-black text-teal-400 uppercase tracking-widest mb-1.5 flex justify-between items-center">
+            <div class="p-2 rounded-xl border ${darkMode ? 'bg-teal-500/5 border-teal-500/10' : 'bg-teal-50/50 border-teal-100'}">
+              <div class="text-[8px] font-black text-teal-400 uppercase tracking-widest mb-1 flex justify-between items-center">
                 <span>Banjir (RC) - Climate Change</span>
-                <span class="text-[8px] opacity-60">Loss / Share</span>
+                <span class="text-[7px] opacity-60">Loss / Share</span>
               </div>
-              <div class="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-[9px] ${darkMode ? 'text-gray-300' : 'text-slate-600'}">
+              <div class="grid grid-cols-2 gap-x-3 gap-y-0.5 font-mono text-[8px] ${darkMode ? 'text-gray-300' : 'text-slate-600'}">
                 ${['250', '100', '50', '25', '10', '5', '2'].map(rp => {
                   const val = p[`direct_loss_rc_${rp}`] || 0;
                   return `
-                    <div class="flex justify-between items-center border-b border-teal-500/5 pb-0.5">
+                    <div class="flex justify-between items-center border-b border-teal-500/5">
                       <span class="opacity-70">${rp}y</span>
                       <div class="flex items-center gap-1">
                         <b class="${val > 0 ? 'text-teal-400' : ''}">${formatNumberWithUnit(val)}</b>
@@ -493,14 +493,14 @@ export default function CogHazardMap() {
           </div>
 
           <!-- Tsunami -->
-          <div class="p-2.5 rounded-xl border ${darkMode ? 'bg-amber-500/5 border-amber-500/10' : 'bg-amber-50/50 border-amber-100'}">
-            <div class="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1 flex items-center justify-between">
+          <div class="p-2 rounded-xl border ${darkMode ? 'bg-amber-500/5 border-amber-500/10' : 'bg-amber-50/50 border-amber-100'}">
+            <div class="text-[9px] font-black text-amber-500 uppercase tracking-widest mb-1 flex items-center justify-between">
               <span>Tsunami</span>
-              <span class="text-[9px] opacity-60">Inundansi</span>
+              <span class="text-[8px] opacity-60">Inundansi</span>
             </div>
-            <div class="text-[11px] font-black ${darkMode ? 'text-white' : 'text-slate-800'} flex items-baseline gap-2">
+            <div class="text-[10px] font-black ${darkMode ? 'text-white' : 'text-slate-800'} flex items-baseline gap-2">
               <span>Rp ${formatNumberWithUnit(p.direct_loss_inundansi || 0)}</span>
-              <span class="text-[9px] font-black text-amber-500">${formatPercent(p.direct_loss_inundansi, assetValue)}</span>
+              <span class="text-[8px] font-black text-amber-500">${formatPercent(p.direct_loss_inundansi, assetValue)}</span>
             </div>
           </div>
           `}
@@ -2376,7 +2376,7 @@ export default function CogHazardMap() {
           {/* Building Detail Overlay */}
           {selectedBuildingHtml && (
             <div
-              className={`absolute top-24 left-4 md:left-[280px] z-[2000] backdrop-blur-xl rounded-2xl shadow-2xl p-4 w-[calc(100vw-32px)] md:w-[280px] border animate-in fade-in slide-in-from-left-4 duration-300 pointer-events-auto cursor-grab active:cursor-grabbing transition-all ${
+              className={`absolute top-20 left-3 md:left-[280px] z-[1020] backdrop-blur-xl rounded-xl shadow-2xl p-2.5 md:p-3 w-[calc(100vw-24px)] md:w-[220px] max-h-[80vh] overflow-y-auto custom-scrollbar border animate-in fade-in slide-in-from-left-4 duration-300 pointer-events-auto cursor-grab active:cursor-grabbing transition-all ${
                 darkMode ? 'bg-[#0D0F12]/95 border-white/10 shadow-black/60' : 'bg-white/95 border-slate-200 shadow-slate-200/50'
               }`}
               style={{ transform: `translate(${panelPos.x}px, ${panelPos.y}px)` }}
