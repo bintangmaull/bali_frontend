@@ -49,9 +49,9 @@ export default function Header() {
             <img src="/logobali.png" alt="Bali" className="h-6 w-auto" />
           </div>
           <Link href="/" className="flex flex-col leading-none">
-            <h1 className="text-base md:text-xl tracking-tighter flex items-center gap-1.5 md:gap-2">
-              <span className={`font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>Bali</span>
-              <span className="text-blue-500 font-semibold max-w-[120px] md:max-w-none truncate md:overflow-visible">Risk Dashboard</span>
+            <h1 className="text-base md:text-lg tracking-tighter flex flex-col gap-0">
+              <span className={`font-black uppercase ${darkMode ? 'text-white' : 'text-slate-900'}`}>CATALYST</span>
+              <span className="text-blue-500 font-semibold text-[10px] md:text-xs truncate md:overflow-visible uppercase tracking-wider">Catastrophic Average Annual Loss Analyst</span>
             </h1>
           </Link>
         </div>

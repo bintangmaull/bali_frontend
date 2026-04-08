@@ -49,12 +49,12 @@ export default function Header() {
               <img src="/logobali.png" alt="Bali" className="h-full w-auto" />
             </div>
             <Link href="/" className="flex flex-col leading-tight min-w-0">
-              <h1 className={`${isMapPage ? 'text-xs' : 'text-xl'} tracking-tighter flex flex-col font-black whitespace-nowrap`}>
-                <span className={`uppercase tracking-widest ${isMapPage ? 'text-[10px]' : ''} ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  Bali
+              <h1 className={`${isMapPage ? 'text-[10px]' : 'text-lg'} tracking-tighter flex flex-col font-black whitespace-nowrap`}>
+                <span className={`uppercase tracking-widest ${isMapPage ? 'text-[8px]' : ''} ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  CATALYST
                 </span>
-                <span className={`text-blue-500 uppercase tracking-widest ${isMapPage ? 'text-[8px] antialiased' : ''}`}>
-                  Risk Dashboard
+                <span className={`text-blue-500 uppercase tracking-widest ${isMapPage ? 'text-[6px] antialiased' : 'text-[10px]'}`}>
+                  Catastrophic Average Annual Loss Analyst
                 </span>
               </h1>
             </Link>

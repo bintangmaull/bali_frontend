@@ -57,7 +57,8 @@ export default function Register() {
       <div className={`w-full max-w-md mx-4 rounded-2xl border shadow-xl p-8 ${card}`}>
         {/* Header */}
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-[#1E5C9A] tracking-tight">Bali Risk Dashboard</h1>
+          <h1 className="text-2xl font-bold text-[#1E5C9A] tracking-tight uppercase">CATALYST</h1>
+          <p className={`text-[10px] font-semibold text-blue-500 uppercase tracking-[0.2em] mb-2`}>Catastrophic Average Annual Loss Analyst</p>
           <p className={`mt-1 text-sm ${labelCls}`}>Buat akun untuk mengajukan akses Manajemen Data</p>
         </div>
 
