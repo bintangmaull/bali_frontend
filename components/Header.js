@@ -48,9 +48,10 @@ export default function Header() {
             <img src="/logoitb.png" alt="ITB" className="h-6 w-auto" />
             <img src="/logobali.png" alt="Bali" className="h-6 w-auto" />
           </div>
-          <Link href="/" className="flex flex-col leading-none">
-            <h1 className="text-base md:text-lg tracking-tighter flex flex-col gap-0">
+          <Link href="/" className="flex items-center leading-none">
+            <h1 className="text-base md:text-lg tracking-tighter flex items-center gap-2">
               <span className={`font-black uppercase ${darkMode ? 'text-white' : 'text-slate-900'}`}>CATALYST</span>
+              <span className={`text-[#1E5C9A] font-bold opacity-40 mx-0.5 text-sm md:text-base`}>:</span>
               <span className="text-blue-500 font-semibold text-[10px] md:text-xs truncate md:overflow-visible uppercase tracking-wider">Catastrophic Average Annual Loss Analyst</span>
             </h1>
           </Link>

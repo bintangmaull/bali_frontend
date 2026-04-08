@@ -48,11 +48,12 @@ export default function Header() {
               <img src="/logoitb.png" alt="ITB" className="h-full w-auto" />
               <img src="/logobali.png" alt="Bali" className="h-full w-auto" />
             </div>
-            <Link href="/" className="flex flex-col leading-tight min-w-0">
-              <h1 className={`${isMapPage ? 'text-[10px]' : 'text-lg'} tracking-tighter flex flex-col font-black whitespace-nowrap`}>
+            <Link href="/" className="flex items-center leading-tight min-w-0">
+              <h1 className={`${isMapPage ? 'text-[10px]' : 'text-lg'} tracking-tighter flex items-baseline gap-2 font-black whitespace-nowrap`}>
                 <span className={`uppercase tracking-widest ${isMapPage ? 'text-[8px]' : ''} ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                   CATALYST
                 </span>
+                <span className={`text-[#1E5C9A] font-bold opacity-40 mx-0.5 ${isMapPage ? 'text-[10px]' : 'text-sm'}`}>:</span>
                 <span className={`text-blue-500 uppercase tracking-widest ${isMapPage ? 'text-[6px] antialiased' : 'text-[10px]'}`}>
                   Catastrophic Average Annual Loss Analyst
                 </span>
