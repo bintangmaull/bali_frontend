@@ -167,22 +167,133 @@ function Figure({ src, caption, darkMode }) {
   );
 }
 
-function DataTable({ parsedData, darkMode, caption }) {
+function DataTable({ parsedData, darkMode, caption, tableType = 'summary' }) {
   const [page, setPage] = useState(1);
+  const [selectedRegency, setSelectedRegency] = useState('All');
+  const [visibleGroups, setVisibleGroups] = useState([]);
+
+  // Initialize filters based on table type
+  useEffect(() => {
+    if (tableType === 'B02_T4') {
+      setVisibleGroups(['Earthquake', 'Flood', 'Tsunami']);
+    } else if (tableType === 'B02_T5') {
+      setVisibleGroups(['Disabled Status', 'Age Group', 'Combined']);
+    }
+  }, [tableType]);
+
   if (!parsedData) return <div className="p-10 text-center animate-pulse">Loading table...</div>;
 
   const { headers, rows } = parsedData;
+
+  // 1. Get unique values for Regency filter (index 3 corresponds to Regency/City)
+  const regencies = ['All', ...new Set(rows.map(row => row[3]).filter(Boolean))].sort();
+
+  // 2. Filter logic for rows
+  const filteredRows = rows.filter(row => {
+    if (selectedRegency === 'All') return true;
+    return row[3] === selectedRegency;
+  });
+
+  // 3. Filter logic for columns
+  const getVisibleColumnIndices = () => {
+    const indices = [];
+    // Always show first 5 columns (Administrative) + T5 specifically needs Household/Total (5,6)
+    const adminCutoff = tableType === 'B02_T5' ? 7 : 5;
+    for (let i = 0; i < adminCutoff; i++) indices.push(i);
+
+    headers.forEach((h, i) => {
+      if (i < adminCutoff) return;
+      
+      if (tableType === 'B02_T4') {
+        const hUpper = h.toUpperCase();
+        if (visibleGroups.includes('Earthquake') && hUpper.includes('EARTHQUAKE')) indices.push(i);
+        if (visibleGroups.includes('Flood') && hUpper.includes('FLOOD')) indices.push(i);
+        if (visibleGroups.includes('Tsunami') && hUpper.includes('TSUNAMI')) indices.push(i);
+      } else if (tableType === 'B02_T5') {
+        // Table 5 Logic: 
+        // Disabled Status: D1_.. to D4_.. (indices 7-10 approx)
+        // Age Group: A1_.. to A6_.. (indices 11-16 approx)
+        // Combined: D1A1.. (indices 17+)
+        if (visibleGroups.includes('Disabled Status') && h.startsWith('D') && h.includes('_')) indices.push(i);
+        if (visibleGroups.includes('Age Group') && h.startsWith('A') && h.includes('_')) indices.push(i);
+        if (visibleGroups.includes('Combined') && /D\dA\d/.test(h)) indices.push(i);
+      } else {
+        indices.push(i);
+      }
+    });
+    return indices;
+  };
+
+  const colIndices = getVisibleColumnIndices();
+  const visibleHeaders = colIndices.map(i => headers[i]);
   const rowsPerPage = 50;
-  const totalPages = Math.ceil(rows.length / rowsPerPage);
-  const displayedRows = rows.slice((page - 1) * rowsPerPage, page * rowsPerPage);
+  const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
+  const displayedRows = filteredRows.slice((page - 1) * rowsPerPage, page * rowsPerPage);
+
+  const toggleGroup = (group) => {
+    setVisibleGroups(prev => 
+      prev.includes(group) ? prev.filter(g => g !== group) : [...prev, group]
+    );
+    setPage(1);
+  };
 
   return (
-    <figure className="my-10 w-full flex flex-col gap-3">
+    <figure className="my-10 w-full flex flex-col gap-4">
       <figcaption className={`text-xs text-center italic max-w-2xl mx-auto px-4 ${
         darkMode ? 'text-slate-400' : 'text-slate-500'
       }`}>
         {caption}
       </figcaption>
+
+      {/* FILTER UI */}
+      {(tableType === 'B02_T4' || tableType === 'B02_T5') && (
+        <div className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-6 p-5 rounded-2xl border ${
+          darkMode ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-slate-50/50'
+        }`}>
+          <div className="flex flex-col gap-3">
+             <span className={`text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+               Filter Wilayah
+             </span>
+             <select
+               value={selectedRegency}
+               onChange={(e) => { setSelectedRegency(e.target.value); setPage(1); }}
+               className={`px-4 py-2 text-sm rounded-xl border focus:ring-2 outline-none transition-all cursor-pointer w-full md:w-56 ${
+                 darkMode 
+                   ? 'bg-slate-900 border-white/10 text-white focus:border-blue-500/50' 
+                   : 'bg-white border-slate-200 text-slate-900 focus:border-blue-400'
+               }`}
+             >
+               {regencies.map(r => <option key={r} value={r}>{r}</option>)}
+             </select>
+          </div>
+
+          <div className="flex flex-col gap-3">
+             <span className={`text-[10px] font-black uppercase tracking-widest ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+               Tampilkan Data
+             </span>
+             <div className="flex flex-wrap gap-4">
+               {(tableType === 'B02_T4' ? ['Earthquake', 'Flood', 'Tsunami'] : ['Disabled Status', 'Age Group', 'Combined']).map(group => (
+                 <label key={group} className="flex items-center gap-2 cursor-pointer group">
+                   <input
+                     type="checkbox"
+                     checked={visibleGroups.includes(group)}
+                     onChange={() => toggleGroup(group)}
+                     className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                   />
+                   <span className={`text-xs font-medium transition-colors ${
+                     visibleGroups.includes(group) 
+                       ? (darkMode ? 'text-white' : 'text-slate-900') 
+                       : (darkMode ? 'text-slate-500' : 'text-slate-400')
+                   } group-hover:text-blue-500`}>
+                     {group}
+                   </span>
+                 </label>
+               ))}
+             </div>
+          </div>
+        </div>
+      )}
+
       <div className="w-full overflow-hidden rounded-2xl border" style={{
         borderColor: darkMode ? 'rgba(255,255,255,0.08)' : '#e2e8f0',
         backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.02)' : '#ffffff'
@@ -191,7 +302,7 @@ function DataTable({ parsedData, darkMode, caption }) {
           <table className="min-w-full text-xs md:text-[13px] border-collapse relative">
             <thead className="sticky top-0 z-10 shadow-sm">
               <tr className={darkMode ? 'bg-[#0a1118]' : 'bg-blue-50'}>
-                {headers.map((h, i) => (
+                {visibleHeaders.map((h, i) => (
                   <th key={i} className={`px-4 py-3 text-left font-black uppercase tracking-wider text-[10px] whitespace-nowrap ${
                     darkMode ? 'text-blue-300 border-b border-white/10' : 'text-blue-800 border-b border-blue-200'
                   }`}>
@@ -201,21 +312,27 @@ function DataTable({ parsedData, darkMode, caption }) {
               </tr>
             </thead>
             <tbody>
-              {displayedRows.map((row, ri) => (
+              {displayedRows.length > 0 ? displayedRows.map((row, ri) => (
                 <tr key={ri} className={`transition-colors flex-none ${
                   ri % 2 === 0
                     ? (darkMode ? 'bg-white/[0.01]' : 'bg-white')
                     : (darkMode ? 'bg-white/[0.03]' : 'bg-slate-50/50')
                 } flex-none ${darkMode ? 'hover:bg-blue-500/10' : 'hover:bg-blue-50/50'}`}>
-                  {row.map((cell, ci) => (
+                  {colIndices.map((idx, ci) => (
                     <td key={ci} className={`px-4 py-2.5 whitespace-nowrap ${
                       darkMode ? 'text-slate-300 border-b border-white/5' : 'text-slate-700 border-b border-slate-100'
-                    } ${ci <= 1 ? 'font-medium' : ''}`}>
-                      {cell}
+                    } ${idx <= 1 ? 'font-medium' : ''}`}>
+                      {row[idx]}
                     </td>
                   ))}
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                   <td colSpan={visibleHeaders.length} className="px-4 py-12 text-center text-slate-500 animate-pulse">
+                     Tidak ada data yang sesuai dengan filter.
+                   </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -351,13 +468,13 @@ export default function PopulasiTerdampak() {
             Tabel 4 menyajikan hasil perhitungan rasio penduduk mengungsi sesuai skenario bahaya di setiap desa di Provinsi Bali. Dalam setiap model bahaya, kategori No Class atau No Damage didefinisikan untuk mewakili area yang tidak memiliki potensi bahaya banjir. Proporsi yang dihitung menunjukkan bahwa kategori No Class atau No Damage cenderung mendominasi dibandingkan dengan kelas bahaya lainnya, yang menunjukkan bahwa sebagian besar area di desa-desa relatif aman. Dalam kajian ini, area yang diklasifikasikan dalam tingkat bahaya banjir dan tsunami sedang dan tinggi dianggap sebagai zona dimana populasi harus mengevakuasi diri. Sementara itu, untuk bahaya gempa bumi, area yang dikategorikan sebagai moderate, extensive, dan collapse dianggap sebagai zona yang memerlukan evakuasi populasi.
           </Paragraph>
 
-          <DataTable parsedData={table4Data} darkMode={darkMode} caption="Tabel 4. Rasio penduduk mengungsi setiap skenario bahaya untuk setiap desa di Bali" />
+          <DataTable parsedData={table4Data} darkMode={darkMode} caption="Tabel 4. Rasio penduduk mengungsi setiap skenario bahaya untuk setiap desa di Bali" tableType="B02_T4" />
 
           <Paragraph darkMode={darkMode}>
             Setelah rasio populasi yang mengevakuasi diri diperoleh untuk setiap desa dan setiap jenis bahaya, langkah selanjutnya adalah menghitung rasio penduduk terdampak untuk setiap kelompok kombinasi antara kelompok disabilitas dan kelompok usia. Hasil perhitungan rasio penduduk mengungsi ditunjukkan oleh Tabel 5.
           </Paragraph>
 
-          <DataTable parsedData={table5Data} darkMode={darkMode} caption="Tabel 5. Rasio penduduk menurut kelompok kombinasi (kelompok disabilitas dan kelompok usia) setiap desa di Bali" />
+          <DataTable parsedData={table5Data} darkMode={darkMode} caption="Tabel 5. Rasio penduduk menurut kelompok kombinasi (kelompok disabilitas dan kelompok usia) setiap desa di Bali" tableType="B02_T5" />
 
           <Paragraph darkMode={darkMode}>
             Berdasarkan hasil perhitungan rasio penduduk mengungsi (Tabel 4) dan rasio penduduk menurut kelompok kombinasi (Tabel 5), dapat dihitung estimasi populasi terdampak bencana. Estimasi ini dapat dilakukan dengan mengalikan jumlah penduduk secara keseluruhan dengan rasio penduduk mengungsi dan rasio penduduk menurut kelmpok kombinasi.
