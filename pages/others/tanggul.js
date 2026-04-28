@@ -1,3 +1,4 @@
+// pages/others/tanggul.js
 import React, { useState } from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
@@ -14,7 +15,9 @@ import {
   ShieldCheck,
   Building2,
   Droplets,
-  BadgePercent
+  BadgePercent,
+  Calculator,
+  LayoutList
 } from 'lucide-react';
 
 const APP_DIR = '/Kajian/B06 TANGGUL PENAHAN BANJIR DI DAERAH RAWAN BANJIR-20260421T164545Z-3-001/B06 TANGGUL PENAHAN BANJIR DI DAERAH RAWAN BANJIR';
@@ -23,10 +26,10 @@ const APP_DIR = '/Kajian/B06 TANGGUL PENAHAN BANJIR DI DAERAH RAWAN BANJIR-20260
 
 function SectionHeading({ children, darkMode, icon: Icon }) {
   return (
-    <h2 className={`text-xl md:text-2xl font-black uppercase tracking-tight mb-6 mt-12 flex items-center gap-3 ${
-      darkMode ? 'text-white' : 'text-slate-900 border-slate-200'
+    <h2 className={`text-xl md:text-2xl font-black uppercase tracking-tight mb-8 mt-16 flex items-center gap-3 ${
+      darkMode ? 'text-white' : 'text-slate-900'
     }`}>
-      {Icon && <div className="p-2 bg-blue-500/10 rounded-lg"><Icon size={24} className="text-blue-500" /></div>}
+      {Icon && <div className="p-2.5 bg-blue-500/10 rounded-xl"><Icon size={24} className="text-blue-500" /></div>}
       {children}
     </h2>
   );
@@ -34,7 +37,7 @@ function SectionHeading({ children, darkMode, icon: Icon }) {
 
 function Paragraph({ children, darkMode }) {
   return (
-    <p className={`text-[15px] md:text-[16px] leading-relaxed mb-6 font-medium ${
+    <p className={`text-[15.5px] md:text-[16.5px] leading-[1.8] mb-8 font-medium ${
       darkMode ? 'text-slate-400' : 'text-slate-600'
     }`}>
       {children}
@@ -44,21 +47,21 @@ function Paragraph({ children, darkMode }) {
 
 function Figure({ src, caption, number, darkMode }) {
   return (
-    <figure className="my-14 flex flex-col items-center group">
+    <figure className="my-16 flex flex-col items-center group">
       <div className={`relative w-full rounded-[2.5rem] overflow-hidden border ${
         darkMode ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-white shadow-2xl shadow-blue-900/5'
-      } p-5 transition-all duration-700 group-hover:shadow-blue-500/10`}>
+      } p-6 transition-all duration-700 group-hover:shadow-blue-500/10`}>
         <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/5 to-transparent pointer-events-none" />
         <img
           src={src}
           alt={caption}
           className="max-w-full mx-auto rounded-3xl object-contain shadow-sm transition-transform duration-700 group-hover:scale-[1.01]"
-          style={{ maxHeight: '600px' }}
+          style={{ maxHeight: '650px' }}
         />
       </div>
-      <div className="mt-5 text-center max-w-2xl px-6">
-        <span className="text-blue-500 text-[10px] font-black uppercase tracking-[0.2em] block mb-1">Figure {number}</span>
-        <figcaption className={`text-sm font-semibold tracking-tight ${
+      <div className="mt-6 text-center max-w-2xl px-6">
+        <span className="text-blue-500 text-[10px] font-black uppercase tracking-[0.25em] block mb-2">Figure {number}</span>
+        <figcaption className={`text-sm font-bold tracking-tight leading-relaxed ${
           darkMode ? 'text-slate-300' : 'text-slate-700'
         }`}>
           {caption}
@@ -70,19 +73,19 @@ function Figure({ src, caption, number, darkMode }) {
 
 function ComparisonTable({ title, headers, data, darkMode, subtitle }) {
   return (
-    <div className={`my-12 overflow-hidden rounded-[2.5rem] border ${
+    <div className={`my-14 overflow-hidden rounded-[2.5rem] border ${
       darkMode ? 'border-white/10 bg-black/20 backdrop-blur-xl' : 'border-slate-200 bg-white shadow-2xl'
     } transition-all duration-500`}>
-      <div className={`px-8 py-6 border-b ${darkMode ? 'border-white/10 bg-white/5' : 'border-slate-100 bg-slate-50/80'}`}>
-        <h3 className={`text-lg font-bold tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>{title}</h3>
-        {subtitle && <p className={`text-xs mt-1 font-medium ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{subtitle}</p>}
+      <div className={`px-10 py-7 border-b ${darkMode ? 'border-white/10 bg-white/5' : 'border-slate-100 bg-slate-50/80'}`}>
+        <h3 className={`text-lg font-extrabold tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>{title}</h3>
+        {subtitle && <p className={`text-xs mt-2 font-semibold ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{subtitle}</p>}
       </div>
       <div className="overflow-x-auto custom-scrollbar">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className={darkMode ? 'bg-white/5' : 'bg-slate-50/50'}>
               {headers.map((h, i) => (
-                <th key={i} className={`px-6 py-4 text-[12px] font-black uppercase tracking-wider border-b border-r last:border-r-0 ${
+                <th key={i} className={`px-8 py-5 text-[11.5px] font-black uppercase tracking-wider border-b border-r last:border-r-0 ${
                   darkMode ? 'text-slate-400 border-white/5' : 'text-slate-500 border-slate-100'
                 } whitespace-nowrap`}>
                   {h}
@@ -94,11 +97,11 @@ function ComparisonTable({ title, headers, data, darkMode, subtitle }) {
             {data.map((row, i) => (
               <tr key={i} className={`transition-all duration-300 ${
                 row.isMitigated 
-                  ? (darkMode ? 'bg-emerald-500/10 text-emerald-400 font-bold' : 'bg-emerald-50/60 text-emerald-700 font-bold') 
+                  ? (darkMode ? 'bg-emerald-500/10 text-emerald-400 font-bold' : 'bg-emerald-50/60 text-emerald-700 font-bold shadow-inner') 
                   : (darkMode ? 'text-slate-300 hover:bg-white/5' : 'text-slate-600 hover:bg-slate-50/50')
               }`}>
                 {row.cells.map((cell, j) => (
-                  <td key={j} className={`px-6 py-4 text-[13px] border-r last:border-r-0 ${
+                  <td key={j} className={`px-8 py-5 text-[13.5px] border-r last:border-r-0 ${
                     darkMode ? 'border-white/5' : 'border-slate-100'
                   }`}>
                     {cell}
@@ -205,11 +208,11 @@ export default function TanggulBanjir() {
         }`} />
       </div>
 
-      <main className="max-w-7xl mx-auto px-6 pt-28 pb-32">
-        {/* Animated Breadcrumb */}
+      <main className="max-w-7xl mx-auto px-6 pt-28 pb-36">
+        {/* Breadcrumb */}
         <button
           onClick={() => router.push('/others')}
-          className={`group flex items-center gap-3 mb-12 text-[11px] font-black uppercase tracking-[0.25em] transition-all ${
+          className={`group flex items-center gap-3 mb-14 text-[11px] font-black uppercase tracking-[0.3em] transition-all ${
             darkMode ? 'text-slate-500 hover:text-white' : 'text-slate-400 hover:text-blue-600'
           }`}
         >
@@ -217,92 +220,132 @@ export default function TanggulBanjir() {
           Kembali ke Kajian Lain
         </button>
 
-        <div className="flex flex-col lg:flex-row gap-16">
+        <div className="flex flex-col lg:flex-row gap-20">
           
           {/* Main Content Column */}
-          <div className="lg:w-[70%] order-2 lg:order-1">
+          <div className="lg:w-[72%] order-2 lg:order-1">
             <div>
               <article className="prose prose-slate max-w-none prose-headings:font-black">
                 
+                {/* ── PENDAHULUAN ────────────────────────────────────────── */}
                 <SectionHeading darkMode={darkMode} icon={Construction}>PENDAHULUAN</SectionHeading>
                 <Paragraph darkMode={darkMode}>
-                  Pada studi ini juga dilakukan kajian terkait pembangunan tanggul penahan banjir sebagai salah satu bentuk upaya mitigasi struktural dalam mengurangi dampak bencana banjir. Pembangunan tanggul dipandang sebagai bentuk investasi pemerintah yang bertujuan untuk melindungi wilayah rentan, khususnya kawasan permukiman, lahan pertanian, dan infrastruktur penting, dari potensi genangan akibat luapan sungai. Dengan adanya tanggul, diharapkan intensitas dan luas genangan banjir dapat diminimalkan sehingga kerugian yang ditimbulkan dapat ditekan.
+                  Pada studi ini juga dilakukan kajian terkait pembangunan tanggul penahan banjir sebagai salah satu bentuk upaya mitigasi struktural dalam mengurangi dampak bencana banjir. Pembangunan tanggul dipandang sebagai bentuk investasi pemerintah yang bertujuan untuk melindungi wilayah rentan, khususnya kawasan permukiman, lahan pertanian, dan infrastruktur penting, dari potensi genangan akibat luapan sungai. Dengan adanya tanggul, diharapkan intensitas dan luas genangan banjir dapat minimalkan sehingga kerugian yang ditimbulkan dapat ditekan.
                 </Paragraph>
                 <Paragraph darkMode={darkMode}>
                   Kajian ini tidak hanya mempertimbangkan aspek teknis pembangunan tanggul, tetapi juga relevansinya dalam konteks pengurangan risiko bencana secara keseluruhan. Analisis dilakukan untuk memahami sejauh mana keberadaan tanggul dapat mempengaruhi tingkat paparan dan potensi kerugian pada wilayah terdampak. Dengan demikian, hasil kajian ini diharapkan dapat memberikan masukan dalam perencanaan kebijakan serta pengambilan keputusan terkait prioritas investasi mitigasi banjir di wilayah kajian.
                 </Paragraph>
 
+                <Paragraph darkMode={darkMode}>
+                  Gambar 1 menunjukkan desain tanggul penahan banjir yang direncanakan di Makassar, Sulawesi Selatan, sebagai bagian dari upaya mitigasi struktural terhadap risiko banjir di wilayah tersebut. Desain tanggul yang diusulkan memiliki dimensi ketinggian 2,5 meter dan lebar 1 meter, yang disesuaikan dengan kondisi hidrologis serta karakteristik aliran sungai di lokasi kajian. Penentuan dimensi ini mempertimbangkan kebutuhan perlindungan terhadap potensi genangan yang dapat terjadi di sekitar kawasan sungai.
+                </Paragraph>
+
                 <Figure 
                   src={`${APP_DIR}/B06_FIGURE_1.PNG`}
                   number="1"
-                  caption="Desain tanggul penahan banjir (studi kasus Makassar, Sulawesi Selatan) dengan ketinggian 2,5m dan lebar 1m."
+                  caption="Desain tanggul (studi kasus Makassar, Sulawesi Selatan)"
                   darkMode={darkMode}
                 />
 
                 <Paragraph darkMode={darkMode}>
-                  Ketinggian tanggul ditetapkan berdasarkan hasil pemodelan banjir, khususnya pada skenario periode ulang 5 tahun, yang menunjukkan bahwa ketinggian maksimum genangan mencapai sekitar 2,2 meter. Dengan demikian, tinggi tanggul dirancang sedikit lebih tinggi dari elevasi genangan maksimum sebagai bentuk faktor keamanan untuk mengantisipasi ketidakpastian dan variasi kondisi di lapangan.
+                  Ketinggian tanggul ditetapkan berdasarkan hasil pemodelan banjir, khususnya pada skenario periode ulang 5 tahun, yang menunjukkan bahwa ketinggian maksimum genangan mencapai sekitar 2,2 meter. Dengan demikian, tinggi tanggul dirancang sedikit lebih tinggi dari elevasi genangan maksimum sebagai bentuk faktor keamanan untuk mengantisipasi ketidakpastian dan variasi kondisi di lapangan. Pendekatan ini umum digunakan dalam perencanaan infrastruktur pengendali banjir guna meningkatkan efektivitas perlindungan.
+                </Paragraph>
+
+                <Paragraph darkMode={darkMode}>
+                  Pada kasus sungai di Makassar, tanggul direncanakan dibangun di kedua sisi sungai, yaitu pada sisi utara dan selatan, untuk memberikan perlindungan yang menyeluruh terhadap wilayah di sekitarnya. Panjang tanggul pada masing-masing sisi mencapai sekitar 19,02 km di sisi utara dan 16,20 km di sisi selatan. Perbedaan panjang ini mencerminkan kondisi morfologi sungai dan kebutuhan perlindungan pada masing-masing sisi, sehingga desain tanggul dapat lebih optimal dalam mereduksi dampak banjir di wilayah kajian.
+                </Paragraph>
+
+                <Paragraph darkMode={darkMode}>
+                  Gambar 2 menunjukkan hasil simulasi pemodelan banjir yang membandingkan kondisi sebelum dan sesudah pembangunan tanggul penahan banjir. Simulasi ini dilakukan untuk mengevaluasi efektivitas tanggul dalam mengurangi dampak genangan banjir di wilayah kajian. Perbandingan tersebut memberikan gambaran yang lebih jelas mengenai perubahan pola dan sebaran genangan akibat adanya intervensi struktural berupa tanggul.
                 </Paragraph>
 
                 <Figure 
                   src={`${APP_DIR}/B06_FIGURE_2.PNG`}
                   number="2"
-                  caption="Hasil simulasi pemodelan banjir membandingkan kondisi Baseline (kiri) vs Mitigasi (kanan)."
+                  caption="Hasil simulasi model banjir dengan dan tanpa pengaruh tanggul"
                   darkMode={darkMode}
                 />
 
                 <Paragraph darkMode={darkMode}>
-                  Secara visual, hasil simulasi menunjukkan adanya penurunan luas genangan banjir setelah pembangunan tanggul. Area yang sebelumnya tergenang pada kondisi tanpa tanggul mengalami pengurangan yang cukup signifikan pada skenario dengan tanggul. Terjadi penurunan luas genangan banjir sebesar <b>38,21%</b>. Hal ini mengindikasikan bahwa tanggul mampu menahan aliran air agar tidak meluap ke wilayah sekitarnya.
+                  Secara visual, hasil simulasi menunjukkan adanya penurunan luas genangan banjir setelah pembangunan tanggul. Area yang sebelumnya tergenang pada kondisi tanpa tanggul mengalami pengurangan yang cukup signifikan pada skenario dengan tanggul. Adapun hasil perhitungan luas banjir ditunjukkan oleh Gambar 3. Terjadi penurunan luas genangan banjir sebesar 38,21%. Hal ini mengindikasikan bahwa tanggul mampu menahan aliran air agar tidak meluap ke wilayah sekitarnya, sehingga dapat mengurangi tingkat paparan terhadap bahaya banjir.
                 </Paragraph>
 
                 <Figure 
                   src={`${APP_DIR}/B06_FIGURE_3.PNG`}
                   number="3"
-                  caption="Grafik analisis perbandingan luas genangan banjir."
+                  caption="Grafik perbandingan luas genangan banjir dengan dan tanpa pengaruh tanggul"
                   darkMode={darkMode}
                 />
 
-                <SectionHeading darkMode={darkMode} icon={BadgePercent}>BIAYA PEMBANGUNAN TANGGUL</SectionHeading>
                 <Paragraph darkMode={darkMode}>
-                  Dari sisi ekonomi, penentuan biaya konstruksi tanggul dalam penelitian ini mengacu pada kisaran biaya yang dilaporkan dalam literatur <i>Coastal Engineering</i> oleh Igigabel dan Yates (2018), yaitu sebesar <b>Rp 8,5–34 juta per meter</b>. Dalam penelitian ini dipilih nilai batas bawah sebesar <b>Rp 8,5 juta per meter</b> sebagai pendekatan konservatif yang tetap berada dalam rentang yang dapat dipertanggungjawabkan secara ilmiah.
-                </Paragraph>
-                <Paragraph darkMode={darkMode}>
-                  Perhitungan total biaya pembangunan tanggul dilakukan dengan mengalikan biaya satuan yang dipilih dengan panjang total tanggul yang direncanakan, yaitu sekitar <b>35,22 km</b> atau setara dengan 35.220 meter. Berdasarkan pendekatan tersebut, diperoleh estimasi total biaya sebesar <b>Rp 299,4 Miliar</b>.
+                  Meskipun demikian, efektivitas tanggul dalam mengurangi genangan banjir tidak hanya ditentukan oleh desain dan dimensinya, tetapi juga dipengaruhi oleh berbagai faktor eksternal, seperti kapasitas tampungan sungai, intensitas dan distribusi curah hujan, serta kondisi topografi wilayah. Variasi pada faktor-faktor tersebut dapat mempengaruhi besarnya debit aliran dan potensi luapan sungai, sehingga berdampak langsung terhadap kinerja tanggul dalam menahan banjir.
                 </Paragraph>
 
-                {/* Economic Summary Highlight */}
-                <div className={`my-12 p-10 rounded-[2.5rem] border ${
-                  darkMode ? 'bg-blue-600/10 border-blue-500/20 shadow-blue-500/5' : 'bg-blue-50 border-blue-100 shadow-blue-900/5'
-                } relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 p-8 opacity-10 transition-transform group-hover:scale-110 duration-700">
-                    <Zap size={120} className={darkMode ? 'text-blue-400' : 'text-blue-600'} />
-                  </div>
-                  <h4 className={`text-xl font-bold mb-6 flex items-center gap-3 ${darkMode ? 'text-blue-300' : 'text-blue-800'}`}>
-                    <Zap size={24} /> Estimasi Investasi Struktural
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                    <div>
-                      <span className={`text-[10px] font-black uppercase tracking-[0.2em] block mb-2 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Satuan Biaya (Min)</span>
-                      <p className={`text-3xl font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>Rp 8,5 Jt <span className="text-sm font-medium opacity-50">/ meter</span></p>
-                    </div>
-                    <div>
-                      <span className={`text-[10px] font-black uppercase tracking-[0.2em] block mb-2 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Total Biaya Konstruksi</span>
-                      <p className={`text-3xl font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>Rp 299,4 M</p>
-                    </div>
-                  </div>
-                </div>
-
-                <SectionHeading darkMode={darkMode} icon={TrendingDown}>ESTIMASI REDUKSI KERUGIAN</SectionHeading>
                 <Paragraph darkMode={darkMode}>
-                  Berdasarkan simulasi, implementasi tanggul menghasilkan faktor reduksi genangan sebesar <b>38,21%</b>. Hal ini berdampak langsung pada penurunan estimasi risiko kerugian di berbagai sektor. Nilai yang ditandai warna hijau merepresentasikan kondisi mitigasi setelah tanggul dibangun.
+                  Dalam konteks ini, informasi mengenai curah hujan menjadi salah satu aspek penting yang perlu diperhatikan. Hasil pemantauan curah hujan dari beberapa stasiun pengamatan disajikan pada Gambar 4, yang memberikan gambaran mengenai pola dan intensitas hujan di wilayah kajian. Data tersebut dapat digunakan untuk memahami kondisi hidrometeorologi yang mempengaruhi kejadian banjir serta sebagai input dalam evaluasi model yang digunakan.
+                </Paragraph>
+
+                <Paragraph darkMode={darkMode}>
+                  Oleh karena itu, hasil simulasi pemodelan banjir yang telah dilakukan menjadi penting sebagai dasar dalam mengevaluasi kinerja tanggul secara lebih komprehensif. Selain itu, hasil ini juga dapat dimanfaatkan sebagai bahan pertimbangan dalam perencanaan strategi mitigasi banjir yang lebih efektif dan berkelanjutan di masa mendatang.
+                </Paragraph>
+
+                <Figure 
+                  src={`${APP_DIR}/B06_FIGURE_4.png`}
+                  number="4"
+                  caption="Grafik pemantauan curah hujan Bali di beberapa stasiun pemantauan curah hujan"
+                  darkMode={darkMode}
+                />
+
+                {/* ── PENENTUAN BIAYA ────────────────────────────────────── */}
+                <SectionHeading darkMode={darkMode} icon={Calculator}>PENENTUAN BIAYA PEMBANGUNAN TANGGUL</SectionHeading>
+                <Paragraph darkMode={darkMode}>
+                  Penentuan biaya dan dimensi pembangunan tanggul dalam penelitian ini didasarkan pada sintesis literatur coastal engineering yang mengintegrasikan aspek hidraulik, struktural, dan ekonomi. Secara teknis, desain tanggul laut umumnya ditentukan berdasarkan elevasi muka air laut rencana (still water level), tinggi gelombang limpasan (wave run-up), serta tambahan freeboard sebagai faktor keamanan, sebagaimana dirumuskan dalam pedoman EurOtop (2018). Pendekatan ini menyatakan bahwa elevasi puncak tanggul merupakan hasil penjumlahan antara muka air laut, run-up, dan freeboard, sehingga mampu membatasi debit limpasan (overtopping) pada tingkat yang dapat diterima. Dalam praktik rekayasa, dimensi tanggul tipe earthen embankment atau rubble mound umumnya memiliki kemiringan lereng antara 1:2 hingga 1:3, lebar puncak (crest width) minimal sekitar 1–3 meter untuk struktur sederhana, serta lebar dasar yang dapat mencapai 8–15 meter tergantung tinggi tanggul dan stabilitas lereng (USACE, 2006; Van der Meer, 1988). Selain itu, lapisan pelindung (armor layer) yang umumnya berupa batuan memiliki ketebalan berkisar antara 0,4 hingga 1 meter, yang ditentukan berdasarkan stabilitas terhadap gaya gelombang menggunakan pendekatan Hudson atau Van der Meer. Parameter-parameter tersebut menunjukkan bahwa desain tanggul tidak hanya ditentukan oleh tinggi genangan, tetapi juga mempertimbangkan interaksi antara gelombang, material, dan stabilitas struktur secara keseluruhan.
+                </Paragraph>
+
+                <Paragraph darkMode={darkMode}>
+                  Dari sisi ekonomi, penentuan biaya konstruksi tanggul dalam penelitian ini mengacu pada kisaran biaya yang dilaporkan dalam literatur Coastal Engineering oleh Igigabel dan Yates (2018), yaitu sebesar Rp 8,5–34 juta per meter untuk struktur perlindungan pantai konvensional. Kisaran ini dipilih karena mencerminkan komponen biaya utama dalam konstruksi tanggul, termasuk material urugan, lapisan pelindung, tenaga kerja, serta pekerjaan konstruksi lainnya yang umum digunakan dalam pembangunan tanggul tipe embankment. Selain itu, studi oleh Narayan et al. (2016) menunjukkan bahwa biaya struktur proteksi pantai berbasis rekayasa umumnya berada dalam rentang USD 500–2.000 per meter untuk desain sederhana, yang sejalan dengan kisaran biaya tersebut setelah dikonversi ke dalam mata uang rupiah. Sementara itu, pada skala yang lebih besar, seperti proyek Giant Sea Wall di Jakarta, biaya dapat meningkat secara signifikan hingga mencapai lebih dari USD 1 juta per meter akibat kompleksitas sistem yang mencakup polder, pompa, serta perlindungan kawasan perkotaan (Aerts et al., 2014). Oleh karena itu, dalam penelitian ini dipilih nilai batas bawah sebesar Rp 8,5 juta per meter sebagai pendekatan konservatif yang tetap berada dalam rentang yang dapat dipertanggungjawabkan secara ilmiah.
+                </Paragraph>
+
+                <Paragraph darkMode={darkMode}>
+                  Pemilihan nilai minimum tersebut dilakukan untuk menjaga keseimbangan antara kesederhanaan model dan kewajaran estimasi biaya, serta menghindari potensi underestimation yang dapat menyebabkan hasil analisis menjadi tidak realistis. Pendekatan ini penting karena estimasi biaya yang terlalu rendah berpotensi menghasilkan bias dalam analisis kelayakan ekonomi, terutama ketika dibandingkan dengan potensi kerugian akibat genangan. Selain itu, penggunaan biaya dari proyek berskala besar seperti Giant Sea Wall dinilai kurang representatif jika langsung diterapkan pada skala tanggul lokal, karena perbedaan kompleksitas struktur dan sistem pendukung. Dengan demikian, nilai yang digunakan dalam penelitian ini tetap berada dalam batas rasional secara teknik dan sesuai dengan praktik rekayasa yang dilaporkan dalam literatur.
+                </Paragraph>
+
+                <Paragraph darkMode={darkMode}>
+                  Perhitungan total biaya pembangunan tanggul dilakukan dengan mengalikan biaya satuan yang dipilih dengan panjang total tanggul yang direncanakan, yaitu sekitar 35,22 km atau setara dengan 35.220 meter. Berdasarkan pendekatan tersebut, diperoleh estimasi total biaya yang mencerminkan kebutuhan konstruksi langsung untuk pembangunan tanggul sesuai dengan dimensi yang telah ditentukan. Penyajian perhitungan secara eksplisit ini bertujuan untuk meningkatkan transparansi dan memudahkan proses verifikasi, sehingga setiap tahapan estimasi dapat ditelusuri secara sistematis. Dengan demikian, hasil perhitungan yang diperoleh tidak hanya bersifat kuantitatif, tetapi juga memiliki dasar metodologis yang jelas.
+                </Paragraph>
+
+                <Paragraph darkMode={darkMode}>
+                  Meskipun demikian, estimasi biaya yang dihasilkan dalam penelitian ini masih memiliki keterbatasan karena belum mencakup berbagai komponen tambahan yang dalam praktiknya dapat memberikan kontribusi signifikan terhadap total biaya proyek. Komponen tersebut meliputi perbaikan tanah (ground improvement) pada kondisi tanah lunak, sistem drainase dan pompa, perlindungan terhadap erosi kaki tanggul (toe protection), serta biaya tidak langsung seperti perencanaan, supervisi, dan pemeliharaan. Dalam banyak kasus, terutama pada wilayah pesisir dengan kondisi geoteknik yang kompleks, biaya tambahan ini dapat meningkatkan total investasi secara substansial. Oleh karena itu, estimasi yang diperoleh dalam penelitian ini perlu dipahami sebagai batas bawah (lower bound estimate) dari kebutuhan biaya sebenarnya.
+                </Paragraph>
+
+                <Paragraph darkMode={darkMode}>
+                  Dengan mempertimbangkan pendekatan teknis dan ekonomi yang digunakan, estimasi biaya dan dimensi tanggul dalam penelitian ini tetap memberikan gambaran awal yang relevan dalam konteks mitigasi risiko bencana pesisir. Nilai yang diperoleh dapat digunakan sebagai dasar untuk membandingkan antara biaya investasi pembangunan tanggul dan potensi pengurangan kerugian akibat genangan. Meskipun masih bersifat sederhana, pendekatan ini telah mengintegrasikan prinsip dasar desain hidraulik dan stabilitas struktur yang diakui secara internasional, sehingga hasilnya dapat dipertanggungjawabkan secara akademik. Ke depan, integrasi data lokal yang lebih detail serta analisis komponen biaya tambahan akan diperlukan untuk menghasilkan estimasi yang lebih komprehensif dan akurat.
+                </Paragraph>
+
+                {/* ── REDUKSI KERUGIAN ───────────────────────────────────── */}
+                <SectionHeading darkMode={darkMode} icon={TrendingDown}>PENURUNAN ESTIMASI KERUGIAN AKIBAT BENCANA BANJIR</SectionHeading>
+                <Paragraph darkMode={darkMode}>
+                  Dalam penelitian ini, perbedaan antara kondisi tanpa tanggul dan dengan tanggul direpresentasikan secara langsung pada tabel, di mana nilai yang ditampilkan pada baris kedua (ditandai warna hijau) merupakan hasil simulasi setelah implementasi tanggul. Berdasarkan Tabel 1-5, nilai tersebut diperoleh dengan menerapkan faktor reduksi genangan sebesar 38,21%, sehingga kerugian yang terjadi pada skenario dengan tanggul menjadi sekitar 61,79% dari kondisi awal (baseline). Dengan demikian, nilai baseline mencerminkan kondisi eksisting tanpa intervensi, sedangkan nilai hijau merepresentasikan kondisi mitigasi setelah tanggul dibangun.
+                </Paragraph>
+
+                <Paragraph darkMode={darkMode}>
+                  Secara konseptual, pendekatan ini mengasumsikan bahwa pengurangan luas genangan akibat keberadaan tanggul berbanding lurus dengan penurunan nilai kerugian pada berbagai sektor. Oleh karena itu, setiap nilai kerugian pada skenario dengan tanggul dihitung sebagai hasil pengalian antara nilai baseline dengan faktor 0,6179. Pendekatan ini memberikan estimasi yang konsisten dan terukur dalam membandingkan efektivitas mitigasi, tanpa perlu melakukan simulasi ulang yang kompleks untuk setiap sektor.
+                </Paragraph>
+
+                <Paragraph darkMode={darkMode}>
+                  Tabel 1 menyajikan estimasi kerugian ekonomi pada sektor bandara yang mencakup terminal dan infrastruktur bandara di Kabupaten Badung dan Buleleng untuk berbagai periode ulang (R2 hingga R250). Nilai kerugian ditampilkan dalam dua kondisi, yaitu kondisi awal (baseline) dan kondisi setelah penerapan tanggul yang direpresentasikan oleh nilai yang telah mengalami reduksi. Berdasarkan Tabel 1, reduksi kerugian ini dihitung dengan asumsi penurunan genangan sebesar 38,21%, sehingga nilai kerugian setelah mitigasi menjadi sekitar 61,79% dari kondisi awal. Secara umum, terlihat bahwa Kabupaten Badung memiliki nilai kerugian yang jauh lebih besar dibandingkan Buleleng, yang menunjukkan tingkat eksposur aset bandara yang lebih tinggi. Selain itu, peningkatan periode ulang berbanding lurus dengan kenaikan nilai kerugian, yang mencerminkan intensitas bencana yang semakin besar.
                 </Paragraph>
 
                 <ComparisonTable 
-                  title="Tabel 1. Estimasi Kerugian Sektor Bandara"
-                  subtitle="Membandingkan Kerugian (USD) antara Terminal dan Infrastruktur Bandara."
+                  title="Tabel 1. Estimasi Kerugian Sektor Bandara Sebelum dan Sesudah Implementasi Tanggul"
                   headers={['No', 'Regency', 'Terminal', 'Airport', 'R2', 'R5', 'R10', 'R25', 'R50', 'R100', 'R250']}
                   data={TABLE_1_DATA}
                   darkMode={darkMode}
                 />
+
+                <Paragraph darkMode={darkMode}>
+                  Tabel 2 menunjukkan estimasi kerugian pada fasilitas pendidikan di beberapa kabupaten/kota dengan skenario periode ulang yang sama. Data pada tabel ini memperlihatkan bahwa wilayah dengan jumlah dan kepadatan fasilitas pendidikan yang tinggi, seperti Buleleng dan Karangasem, memiliki nilai kerugian yang signifikan. Penerapan tanggul mampu menurunkan nilai kerugian secara konsisten pada semua wilayah. Pola kenaikan kerugian terhadap periode ulang juga terlihat jelas, yang mengindikasikan bahwa fasilitas pendidikan sangat rentan terhadap peningkatan intensitas banjir. Hal ini penting karena sektor pendidikan memiliki peran vital dalam keberlangsungan sosial masyarakat.
+                </Paragraph>
 
                 <ComparisonTable 
                   title="Tabel 2. Estimasi Kerugian Fasilitas Pendidikan"
@@ -311,27 +354,40 @@ export default function TanggulBanjir() {
                   darkMode={darkMode}
                 />
 
-                <SectionHeading darkMode={darkMode} icon={Zap}>INFRASTRUKTUR KELISTRIKAN</SectionHeading>
-                <ComparisonTable 
-                  title="Tabel 3A. Menara Transmisi"
-                  headers={['No', 'Regency', 'Towers', 'R2', 'R5', 'R10', 'R25', 'R50', 'R100', 'R250']}
-                  data={TABLE_3A_DATA}
-                  darkMode={darkMode}
-                />
-                <ComparisonTable 
-                  title="Tabel 3B. Gardu Induk"
-                  headers={['No', 'Regency', 'Substations', 'R2', 'R5', 'R10', 'R25', 'R50', 'R100', 'R250']}
-                  data={TABLE_3B_DATA}
-                  darkMode={darkMode}
-                />
+                <Paragraph darkMode={darkMode}>
+                  Tabel 3 menyajikan estimasi kerugian pada infrastruktur kelistrikan, yang meliputi menara transmisi dan gardu induk. Berdasarkan Tabel 3, kerugian pada sektor ini tidak hanya berdampak secara ekonomi, tetapi juga berpotensi menimbulkan gangguan layanan yang luas. Kabupaten seperti Badung dan Buleleng menunjukkan nilai kerugian yang cukup tinggi, terutama pada gardu induk yang jumlahnya besar. Setelah penerapan tanggul, terjadi penurunan kerugian yang cukup signifikan, meskipun tidak merata di semua wilayah. Hal ini menunjukkan bahwa efektivitas mitigasi sangat dipengaruhi oleh distribusi dan kerentanan infrastruktur.
+                </Paragraph>
 
-                <SectionHeading darkMode={darkMode} icon={ShieldCheck}>FASILITAS KESEHATAN & PARIWISATA</SectionHeading>
+                <div className="space-y-4">
+                  <ComparisonTable 
+                    title="Tabel 3A. Estimasi Kerugian Menara Transmisi"
+                    headers={['No', 'Regency', 'Towers', 'R2', 'R5', 'R10', 'R25', 'R50', 'R100', 'R250']}
+                    data={TABLE_3A_DATA}
+                    darkMode={darkMode}
+                  />
+                  <ComparisonTable 
+                    title="Tabel 3B. Estimasi Kerugian Gardu Induk"
+                    headers={['No', 'Regency', 'Substations', 'R2', 'R5', 'R10', 'R25', 'R50', 'R100', 'R250']}
+                    data={TABLE_3B_DATA}
+                    darkMode={darkMode}
+                  />
+                </div>
+
+                <Paragraph darkMode={darkMode}>
+                  Tabel 4 memperlihatkan estimasi kerugian pada fasilitas kesehatan di berbagai kabupaten/kota. Dari tabel tersebut terlihat bahwa wilayah seperti Jembrana dan Bangli memiliki nilai kerugian yang cukup tinggi, yang menunjukkan tingkat kerentanan fasilitas kesehatan terhadap banjir. Mengacu pada Tabel 4, penerapan tanggul memberikan dampak pengurangan kerugian yang cukup signifikan di seluruh wilayah. Hal ini menjadi krusial karena fasilitas kesehatan merupakan sektor layanan dasar yang harus tetap berfungsi saat terjadi bencana. Oleh karena itu, mitigasi risiko pada sektor ini memiliki prioritas yang tinggi dalam perencanaan kebencanaan.
+                </Paragraph>
+
                 <ComparisonTable 
                   title="Tabel 4. Estimasi Kerugian Fasilitas Kesehatan"
                   headers={['No', 'Regency', 'R2', 'R5', 'R10', 'R25', 'R50', 'R100', 'R250']}
                   data={TABLE_4_DATA}
                   darkMode={darkMode}
                 />
+
+                <Paragraph darkMode={darkMode}>
+                  Tabel 5 menunjukkan estimasi kerugian pada sektor hotel yang merupakan bagian dari industri pariwisata. Data menunjukkan bahwa Kabupaten Badung memiliki nilai kerugian paling tinggi dibandingkan wilayah lainnya, yang sejalan dengan tingginya konsentrasi hotel di daerah tersebut. Kerugian meningkat secara signifikan seiring dengan bertambahnya periode ulang, yang menandakan potensi dampak ekonomi yang besar terhadap sektor pariwisata. Setelah penerapan tanggul, terjadi penurunan nilai kerugian yang cukup besar, namun secara absolut tetap tinggi karena besarnya nilai aset. Hal ini menegaskan pentingnya strategi mitigasi struktural dalam melindungi sektor ekonomi unggulan.
+                </Paragraph>
+
                 <ComparisonTable 
                   title="Tabel 5. Estimasi Kerugian Sektor Pariwisata (Hotel)"
                   headers={['No', 'Regency', 'R2', 'R5', 'R10', 'R25', 'R50', 'R100', 'R250']}
@@ -339,32 +395,54 @@ export default function TanggulBanjir() {
                   darkMode={darkMode}
                 />
 
-                <SectionHeading darkMode={darkMode} icon={Droplets}>KAJIAN LAHAN SAWAH (MAKASSAR)</SectionHeading>
+                <SectionHeading darkMode={darkMode} icon={Droplets}>SEKTOR PERTANIAN (LAHAN SAWAH)</SectionHeading>
                 <Paragraph darkMode={darkMode}>
-                  Pada skenario bendungan di Makassar, kedalaman banjir berkurang sekitar 50% dari kondisi awal (3m menjadi 1,5m). Berikut analisis dampaknya terhadap sektor pertanian lahan sawah:
+                  Berdasarkan hasil simulasi banjir dengan periode ulang 5 tahun di Kota Makassar, Sulawesi Selatan, pada skenario pembangunan bendungan, diketahui bahwa keberadaan bendungan mampu mengurangi kedalaman banjir secara signifikan. Kedalaman banjir berkurang sekitar 50% dari kondisi awal, yaitu dari sekitar 3 meter menjadi sekitar 1,5 meter. Dengan demikian, dalam perhitungan estimasi kerugian ekonomi pada lahan sawah, kedalaman banjir setelah adanya bendungan diasumsikan berkurang sebesar 1,5 meter dari hasil pemodelan awal. Pada Tabel 6 dan Tabel 7, estimasi kerugian sebelum adanya bendungan ditunjukkan oleh baris berwarna putih, sedangkan estimasi setelah adanya bendungan ditunjukkan oleh baris berwarna hijau. Tabel 6 menyajikan estimasi kerugian untuk periode ulang 5 tahun tanpa skenario perubahan iklim, sementara Tabel 7 menyajikan estimasi dengan skenario perubahan iklim.
                 </Paragraph>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 my-10">
                   <ComparisonTable 
-                    title="Tabel 6. Tanpa Perubahan Iklim"
+                    title="Tabel 6. Estimasi Kerugian Lahan Sawah (Tanpa Skenario Perubahan Iklim)"
                     headers={['Scenario', '2022', '2025', '2028']}
                     data={TABLE_6_DATA}
                     darkMode={darkMode}
                   />
                   <ComparisonTable 
-                    title="Tabel 7. Dengan Perubahan Iklim"
+                    title="Tabel 7. Estimasi Kerugian Lahan Sawah (Dengan Skenario Perubahan Iklim)"
                     headers={['Scenario', '2022', '2025', '2028']}
                     data={TABLE_7_DATA}
                     darkMode={darkMode}
                   />
                 </div>
 
-                <SectionHeading darkMode={darkMode}>KESIMPULAN</SectionHeading>
+                {/* ── KESIMPULAN ────────────────────────────────────────── */}
+                <SectionHeading darkMode={darkMode} icon={ShieldCheck}>KESIMPULAN</SectionHeading>
                 <Paragraph darkMode={darkMode}>
-                  Berdasarkan keseluruhan data, pembangunan tanggul sebagai upaya mitigasi struktural mampu menurunkan risiko kerugian secara signifikan pada berbagai sektor. Nilai manfaat ekonomi (<i>benefit</i>) yang diperoleh dari pengurangan kerugian pada satu skenario kejadian (R5 atau RC5) sudah <b>3–4 kali lebih besar</b> dibandingkan dengan biaya pembangunan tanggul.
+                  Berdasarkan keseluruhan data pada tabel-tabel sebelumnya, dilakukan agregasi nilai kerugian untuk membandingkan kondisi tanpa tanggul (baseline) dan dengan tanggul (nilai reduksi/warna hijau) khusus pada periode ulang R5 and RC5. Mengacu pada data di atas, nilai kerugian setelah implementasi tanggul merupakan hasil reduksi sebesar 38,21% dari kondisi awal, sehingga secara teoritis nilai dengan tanggul berada pada kisaran 61,79% dari baseline. Namun demikian, perhitungan langsung dari data menunjukkan besaran yang lebih konkret dalam konteks masing-masing sektor.
                 </Paragraph>
                 <Paragraph darkMode={darkMode}>
-                  Untuk periode ulang R5, total kerugian tanpa tanggul mencapai ± USD 174,5 juta, sedangkan setelah penerapan tanggul menurun menjadi ± USD 107,8 juta. Terjadi penurunan risiko kerugian sebesar <b>± USD 66,7 juta</b>. Investasi ini terbukti sangat <i>cost-effective</i> bagi ketahanan wilayah pesisir di masa depan.
+                  Untuk periode ulang R5, total kerugian tanpa tanggul (akumulasi seluruh sektor: bandara, pendidikan, listrik, kesehatan, dan hotel) mencapai sekitar ± USD 174,5 juta, sedangkan setelah penerapan tanggul menurun menjadi sekitar ± USD 107,8 juta. Dengan demikian, terjadi penurunan risiko kerugian sebesar ± USD 66,7 juta. Nilai ini menunjukkan bahwa intervensi tanggul memberikan dampak signifikan dalam mengurangi potensi kerugian ekonomi akibat banjir, terutama pada sektor dengan kontribusi besar seperti hotel di Kabupaten Badung.
+                </Paragraph>
+                <Paragraph darkMode={darkMode}>
+                  Sementara itu, untuk periode ulang RC5, total kerugian tanpa tanggul tercatat sekitar ± USD 186,3 juta, dan setelah penerapan tanggul menurun menjadi sekitar ± USD 115,1 juta. Dengan demikian, diperoleh selisih pengurangan kerugian sebesar ± USD 71,2 juta. Nilai ini sedikit lebih besar dibandingkan skenario R5, yang mengindikasikan bahwa pada kondisi risiko yang mempertimbangkan komponen tambahan (RC), efektivitas tanggul tetap konsisten bahkan memberikan dampak reduksi yang lebih besar secara absolut.
+                </Paragraph>
+                <Paragraph darkMode={darkMode}>
+                  Secara keseluruhan, hasil ini menunjukkan bahwa pembangunan tanggul sebagai upaya mitigasi struktural mampu menurunkan risiko kerugian secara signifikan pada berbagai sektor. Penurunan ini tidak hanya bersifat proporsional terhadap reduksi genangan, tetapi juga dipengaruhi oleh distribusi aset dan tingkat eksposur di masing-masing wilayah. Dengan demikian, keberadaan tanggul menjadi komponen penting dalam strategi pengurangan risiko bencana, khususnya di wilayah dengan konsentrasi ekonomi tinggi seperti Kabupaten Badung.
+                </Paragraph>
+                <Paragraph darkMode={darkMode}>
+                  Jika dibandingkan antara biaya pembangunan tanggul dan manfaat yang diperoleh berupa penurunan risiko kerugian, maka dapat dilakukan pendekatan analisis sederhana berbasis cost-benefit. Berdasarkan estimasi yang digunakan dalam penelitian ini, total biaya pembangunan tanggul sepanjang 35,22 km adalah sekitar USD 18,7 juta atau setara dengan IDR 299,4 miliar (menggunakan asumsi biaya minimum IDR 8,5 juta/meter). Nilai ini merupakan estimasi konservatif yang belum memasukkan komponen biaya tambahan seperti pembebasan lahan dan sistem drainase.
+                </Paragraph>
+                <Paragraph darkMode={darkMode}>
+                  Di sisi lain, hasil perhitungan sebelumnya menunjukkan bahwa untuk periode ulang R5, pembangunan tanggul mampu menurunkan kerugian dari sekitar USD 174,5 juta menjadi USD 107,8 juta, sehingga terdapat pengurangan kerugian sebesar ± USD 66,7 juta. Sementara itu, untuk skenario RC5, penurunan kerugian bahkan mencapai sekitar ± USD 71,2 juta. Mengacu pada data simulasi, penurunan ini konsisten dengan reduksi genangan sebesar 38,21% akibat keberadaan tanggul.
+                </Paragraph>
+                <Paragraph darkMode={darkMode}>
+                  Apabila dibandingkan secara langsung, maka nilai manfaat ekonomi (benefit) yang diperoleh dari pengurangan kerugian pada satu skenario kejadian (R5 atau RC5) sudah 3–4 kali lebih besar dibandingkan dengan biaya pembangunan tanggul. Dengan kata lain, bahkan dalam satu kejadian banjir dengan periode ulang 5 tahun, investasi tanggul sudah berpotensi “terbayar” secara ekonomi. Hal ini menunjukkan bahwa dari perspektif ekonomi teknik, pembangunan tanggul termasuk dalam kategori highly cost-effective.
+                </Paragraph>
+                <Paragraph darkMode={darkMode}>
+                  Lebih lanjut, jika mempertimbangkan bahwa banjir merupakan kejadian berulang (bukan hanya satu kali selama umur infrastruktur), maka akumulasi manfaat ekonomi dalam jangka panjang akan jauh lebih besar. Artinya, nilai pengurangan kerugian dapat berlipat ganda sepanjang umur layanan tanggul, sementara biaya konstruksi hanya dikeluarkan sekali di awal. Kondisi ini memperkuat argumen bahwa pembangunan tanggul bukan hanya layak, tetapi juga merupakan investasi mitigasi yang sangat menguntungkan secara ekonomi.
+                </Paragraph>
+                <Paragraph darkMode={darkMode}>
+                  Namun demikian, perlu dicatat bahwa analisis ini masih menggunakan pendekatan konservatif, baik dari sisi biaya (menggunakan batas bawah) maupun manfaat (hanya mempertimbangkan beberapa sektor utama). Oleh karena itu, dalam kondisi nyata, nilai manfaat yang diperoleh berpotensi lebih besar, terutama jika mempertimbangkan dampak tidak langsung seperti gangguan ekonomi regional, kehilangan pendapatan pariwisata, dan disrupsi layanan publik.
                 </Paragraph>
 
               </article>
@@ -372,50 +450,53 @@ export default function TanggulBanjir() {
           </div>
 
           {/* Sidebar Column */}
-          <aside className="lg:w-[30%] order-1 lg:order-2">
+          <aside className="lg:w-[28%] order-1 lg:order-2">
             <div className="sticky top-28 space-y-8">
               
-              <div 
-                className={`p-8 rounded-[2rem] border ${
-                  darkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-2xl'
-                }`}
-              >
-                <h4 className={`text-xs font-black uppercase tracking-[0.2em] mb-6 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>Highlights</h4>
-                <ul className="space-y-6">
-                  <li className="flex gap-4">
-                    <div className="p-2 bg-blue-500/10 rounded-lg h-fit"><ShieldCheck size={20} className="text-blue-500" /></div>
+              <div className={`p-10 rounded-[2.5rem] border ${
+                darkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-2xl shadow-blue-900/5'
+              }`}>
+                <h4 className={`text-xs font-black uppercase tracking-[0.2em] mb-8 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>Summary Metrics</h4>
+                <ul className="space-y-7">
+                  <li className="flex gap-5">
+                    <div className="p-3 bg-blue-500/10 rounded-2xl h-fit"><ShieldCheck size={22} className="text-blue-500" /></div>
                     <div>
-                      <p className={`text-xs font-black uppercase tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>Efektivitas</p>
-                      <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Reduksi Luas Genangan 38.21%</p>
+                      <p className={`text-[11px] font-black uppercase tracking-tight mb-1 ${darkMode ? 'text-white' : 'text-slate-900'}`}>Efektivitas Tanggul</p>
+                      <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>38.21% Reduksi Genangan</p>
                     </div>
                   </li>
-                  <li className="flex gap-4">
-                    <div className="p-2 bg-emerald-500/10 rounded-lg h-fit"><TrendingDown size={20} className="text-emerald-500" /></div>
+                  <li className="flex gap-5">
+                    <div className="p-3 bg-emerald-500/10 rounded-2xl h-fit"><TrendingDown size={22} className="text-emerald-500" /></div>
                     <div>
-                      <p className={`text-xs font-black uppercase tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>Manfaat (R5)</p>
-                      <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Penghematan ± USD 66.7 Juta</p>
+                      <p className={`text-[11px] font-black uppercase tracking-tight mb-1 ${darkMode ? 'text-white' : 'text-slate-900'}`}>Potensi Penghematan</p>
+                      <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>± USD 66.7 Juta (R5)</p>
                     </div>
                   </li>
-                  <li className="flex gap-4">
-                    <div className="p-2 bg-amber-500/10 rounded-lg h-fit"><Construction size={20} className="text-amber-500" /></div>
+                  <li className="flex gap-5">
+                    <div className="p-3 bg-amber-500/10 rounded-2xl h-fit"><Calculator size={22} className="text-amber-500" /></div>
                     <div>
-                      <p className={`text-xs font-black uppercase tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>Investasi</p>
-                      <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Estimasi Biaya Rp 299.4 M</p>
+                      <p className={`text-[11px] font-black uppercase tracking-tight mb-1 ${darkMode ? 'text-white' : 'text-slate-900'}`}>ROI Investasi</p>
+                      <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>3-4x Biaya Konstruksi</p>
                     </div>
                   </li>
                 </ul>
               </div>
 
-              <div className={`p-8 rounded-[2rem] border ${
+              <div className={`p-10 rounded-[2.5rem] border ${
                 darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'
               }`}>
-                <h4 className={`text-[10px] font-black uppercase tracking-[0.2em] mb-4 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Navigasi Halaman</h4>
-                <nav className="flex flex-col gap-1">
-                  {['Pendahuluan', 'Metodologi', 'Hasil Simulasi', 'Analisis Ekonomi', 'Kesimpulan'].map((item) => (
-                    <button key={item} className={`text-left px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${
-                      darkMode ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-500 hover:text-blue-600 hover:bg-white'
+                <h4 className={`text-[10px] font-black uppercase tracking-[0.25em] mb-6 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Navigation</h4>
+                <nav className="flex flex-col gap-2">
+                  {[
+                    { label: 'Pendahuluan', icon: Info },
+                    { label: 'Analisis Biaya', icon: Calculator },
+                    { label: 'Reduksi Risiko', icon: LayoutList },
+                    { label: 'Kesimpulan', icon: ShieldCheck }
+                  ].map((item) => (
+                    <button key={item.label} className={`flex items-center gap-3 px-5 py-3 rounded-2xl text-[11px] font-bold uppercase tracking-wider transition-all ${
+                      darkMode ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-500 hover:text-blue-600 hover:bg-white shadow-sm hover:shadow-md'
                     }`}>
-                      {item}
+                      <item.icon size={14} /> {item.label}
                     </button>
                   ))}
                 </nav>
