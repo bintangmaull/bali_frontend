@@ -220,11 +220,8 @@ export default function TanggulBanjir() {
           Kembali ke Kajian Lain
         </button>
 
-        <div className="flex flex-col lg:flex-row gap-20">
-          
-          {/* Main Content Column */}
-          <div className="lg:w-[72%] order-2 lg:order-1">
-            <div>
+        <div className="w-full">
+          <div>
               <article className="prose prose-slate max-w-none prose-headings:font-black">
                 
                 {/* ── PENDAHULUAN ────────────────────────────────────────── */}
@@ -448,65 +445,7 @@ export default function TanggulBanjir() {
               </article>
             </div>
           </div>
-
-          {/* Sidebar Column */}
-          <aside className="lg:w-[28%] order-1 lg:order-2">
-            <div className="sticky top-28 space-y-8">
-              
-              <div className={`p-10 rounded-[2.5rem] border ${
-                darkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-2xl shadow-blue-900/5'
-              }`}>
-                <h4 className={`text-xs font-black uppercase tracking-[0.2em] mb-8 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>Summary Metrics</h4>
-                <ul className="space-y-7">
-                  <li className="flex gap-5">
-                    <div className="p-3 bg-blue-500/10 rounded-2xl h-fit"><ShieldCheck size={22} className="text-blue-500" /></div>
-                    <div>
-                      <p className={`text-[11px] font-black uppercase tracking-tight mb-1 ${darkMode ? 'text-white' : 'text-slate-900'}`}>Efektivitas Tanggul</p>
-                      <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>38.21% Reduksi Genangan</p>
-                    </div>
-                  </li>
-                  <li className="flex gap-5">
-                    <div className="p-3 bg-emerald-500/10 rounded-2xl h-fit"><TrendingDown size={22} className="text-emerald-500" /></div>
-                    <div>
-                      <p className={`text-[11px] font-black uppercase tracking-tight mb-1 ${darkMode ? 'text-white' : 'text-slate-900'}`}>Potensi Penghematan</p>
-                      <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>± USD 66.7 Juta (R5)</p>
-                    </div>
-                  </li>
-                  <li className="flex gap-5">
-                    <div className="p-3 bg-amber-500/10 rounded-2xl h-fit"><Calculator size={22} className="text-amber-500" /></div>
-                    <div>
-                      <p className={`text-[11px] font-black uppercase tracking-tight mb-1 ${darkMode ? 'text-white' : 'text-slate-900'}`}>ROI Investasi</p>
-                      <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>3-4x Biaya Konstruksi</p>
-                    </div>
-                  </li>
-                </ul>
-              </div>
-
-              <div className={`p-10 rounded-[2.5rem] border ${
-                darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'
-              }`}>
-                <h4 className={`text-[10px] font-black uppercase tracking-[0.25em] mb-6 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Navigation</h4>
-                <nav className="flex flex-col gap-2">
-                  {[
-                    { label: 'Pendahuluan', icon: Info },
-                    { label: 'Analisis Biaya', icon: Calculator },
-                    { label: 'Reduksi Risiko', icon: LayoutList },
-                    { label: 'Kesimpulan', icon: ShieldCheck }
-                  ].map((item) => (
-                    <button key={item.label} className={`flex items-center gap-3 px-5 py-3 rounded-2xl text-[11px] font-bold uppercase tracking-wider transition-all ${
-                      darkMode ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-500 hover:text-blue-600 hover:bg-white shadow-sm hover:shadow-md'
-                    }`}>
-                      <item.icon size={14} /> {item.label}
-                    </button>
-                  ))}
-                </nav>
-              </div>
-
-            </div>
-          </aside>
-
-        </div>
-      </main>
+        </main>
 
       <Footer />
     </div>
