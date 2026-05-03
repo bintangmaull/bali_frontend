@@ -9,7 +9,7 @@ export default function App({ Component, pageProps }) {
   return (
     <ThemeProvider>
       <Head>
-        <link rel="icon" href="/logocatalyst.png" />
+        <link rel="icon" href="/logoitb.png" />
       </Head>
       <Component {...pageProps} />
     </ThemeProvider>
